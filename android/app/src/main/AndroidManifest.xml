@@ -34,4 +34,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- required="false": la app sigue instalable/usable en dispositivos sin
+         cámara (queda la opción de "Subir foto" desde galería) -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>

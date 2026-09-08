@@ -997,6 +997,10 @@
    * la pestaña en segundo plano a media visita.
    * =======================================================*/
   const STORAGE_KEY = 'omot_state_v1';
+  // POI que estaba abierto la última vez que se guardó el estado, pendiente
+  // de reabrir al arrancar (ver loadState / resumeSavedSession) — no es lo
+  // mismo que STATE.activePoiId (ver comentario en loadState).
+  let pendingResumePoiId = null;
   const saveState = () => {
     try {
       const explored = {};
@@ -1007,6 +1011,7 @@
         mode: STATE.mode,
         lang: STATE.lang,
         cityId: STATE.cityId,
+        activePoiId: STATE.activePoiId,
         ai: {
           perPoiHistory: STATE.ai.perPoiHistory,
           currentTopic: STATE.ai.currentTopic,
@@ -1025,6 +1030,14 @@
       if (saved.mode === 'kids' || saved.mode === 'adult') STATE.mode = saved.mode;
       if (saved.lang === 'en' || saved.lang === 'es') STATE.lang = saved.lang;
       if (saved.cityId && CITIES[saved.cityId]) STATE.cityId = saved.cityId;
+      // OJO: NO se asigna directo a STATE.activePoiId aquí — ese campo
+      // significa "la ficha está abierta ahora mismo para este POI" en
+      // todo el resto de la app (updateSheetDistance, updateAudioUi...) y
+      // en este punto ni el mapa ni la ficha existen todavía (startApp no
+      // ha corrido). Se guarda aparte y solo se aplica de verdad — vía
+      // selectPoi, que ya deja todo consistente — al reanudar la sesión
+      // (ver resumeSavedSession).
+      if (typeof saved.activePoiId === 'string') pendingResumePoiId = saved.activePoiId;
       if (saved.ai) {
         STATE.ai.perPoiHistory = saved.ai.perPoiHistory || {};
         STATE.ai.currentTopic = saved.ai.currentTopic || {};
@@ -1888,6 +1901,17 @@
   // el permiso se deniega, no pasa nada especial: el mapa sigue igual,
   // simplemente sin cono, como ya era el comportamiento hasta ahora.
   let headingWatchStarted = false;
+  // Suavizado del rumbo: el magnetómetro crudo del móvil es ruidoso de por
+  // sí, y junto a estructuras metálicas grandes (bug real reportado en
+  // pruebas de usuario junto al Uber Arena de Berlín, 2026-09-04, visible en
+  // vídeo como el cono de dirección girando solo sin que el móvil se
+  // moviera) puede dar lecturas erráticas de un evento a otro. Se promedia
+  // con una media móvil exponencial sobre el VECTOR unitario (x,y) del
+  // ángulo, no sobre el ángulo en grados directamente: promediar grados
+  // cerca del salto 0°/360° (p.ej. 350° y 10°, que son casi el mismo rumbo)
+  // daría con una media lineal un resultado absurdo de 180°.
+  let smoothedHeadingVec = null;
+  const HEADING_SMOOTHING = 0.15; // 0-1: más bajo = más suave pero más lento en seguir giros reales
   const handleOrientationEvent = (e) => {
     let heading = null;
     if (typeof e.webkitCompassHeading === 'number') {
@@ -1904,7 +1928,16 @@
       heading = (360 - e.alpha + screenAngle) % 360;
     }
     if (heading === null || Number.isNaN(heading)) return;
-    STATE.userHeading = heading;
+    const rad = heading * Math.PI / 180;
+    const x = Math.cos(rad);
+    const y = Math.sin(rad);
+    if (!smoothedHeadingVec) {
+      smoothedHeadingVec = { x, y };
+    } else {
+      smoothedHeadingVec.x += (x - smoothedHeadingVec.x) * HEADING_SMOOTHING;
+      smoothedHeadingVec.y += (y - smoothedHeadingVec.y) * HEADING_SMOOTHING;
+    }
+    STATE.userHeading = (Math.atan2(smoothedHeadingVec.y, smoothedHeadingVec.x) * 180 / Math.PI + 360) % 360;
     updateUserHeadingUi();
   };
   const startHeadingWatch = () => {
@@ -4106,6 +4139,16 @@
         // la respuesta anterior mientras se genera la nueva.
         stopAudio();
 
+        // Si lo último que hubo fue una pregunta suelta escrita a mano (no
+        // un chip de tema), "Profundiza más" debe seguir profundizando en
+        // ESA pregunta concreta, no saltar al guion general del POI (bug
+        // reportado en pruebas de usuario, 2026-09-04: alguien preguntó por
+        // cafés cerca de un POI y "profundiza más" la mandó a arquitectura
+        // en vez de darle más sobre cafés). Se mira el turno de usuario más
+        // reciente ANTES de añadir el propio bubble de este chip.
+        const priorUserTurn = [...aiHistoryFor(poi.id)].reverse().find((m) => m.role === 'user');
+        const followsFreeQuestion = chip.kind === 'deepen' && !!priorUserTurn && !priorUserTurn.isOptionChip;
+
         aiHistoryFor(poi.id).push({ role: 'user', text: chip.label, isOptionChip: true });
 
         renderAiMessages();
@@ -4121,7 +4164,19 @@
           return;
         }
 
-        if (chip.kind === 'deepen') {
+        if (followsFreeQuestion) {
+          // No toca STATE.ai.deepenProgress (el guion general de 7 puntos):
+          // es una ampliación puntual de la última pregunta libre, no
+          // consume ni adelanta ese guion, así que "profundiza más" sigue
+          // funcionando con normalidad si luego se vuelve a usar sin haber
+          // preguntado nada suelto antes.
+          queueAiMessage({
+            poi,
+            kind: 'deepenFollowup',
+            optionId: null,
+            userText: `Sigue profundizando en lo último que pregunté ("${priorUserTurn.text}"): dame más detalle y datos concretos nuevos que no hayas mencionado todavía, sin repetirte.`
+          });
+        } else if (chip.kind === 'deepen') {
           queueAiMessage({ poi, kind: 'deepen', optionId: 'deepen:' + (topic || 'general'), userText: chip.label });
         } else {
           if (!STATE.ai.explored[poi.id]) STATE.ai.explored[poi.id] = new Set();
@@ -5243,6 +5298,11 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     if (centerMap && map) map.flyTo([poi.coords[0] - 0.0015, poi.coords[1]], 16.5, { duration: 0.7 });
     // El audio del resumen se autorreproduce cuando llega (ver queueAiMessage),
     // no aquí, para no arrancar dos veces la narración con el texto de relleno.
+    // Guarda ya qué POI quedó abierto: si el sistema mata la app en segundo
+    // plano (p.ej. al volver de "Cómo llegar" en Google Maps) antes de que
+    // cualquier otro saveState() se dispare, resumeSavedSession puede
+    // reabrir esta misma ficha con su chat al volver a abrir la app.
+    saveState();
   };
 
   const openSheet = () => {
@@ -5266,6 +5326,10 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     stopAudio();
     clearSelectedMarker();
     closeLightbox();
+    // Para que un cierre deliberado de la ficha no la reabra sola en la
+    // próxima sesión (ver resumeSavedSession) — mismo motivo que el
+    // saveState() añadido en selectPoi.
+    saveState();
   };
 
   // Últimos src/alt pedidos, para que el botón de reintentar (fijo en el
@@ -6095,6 +6159,13 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
             STATE.audio.playing = false;
             updateAudioUi();
             if (!silent) showToast('No se pudo cargar el audio. Comprueba tu conexión.', 3200);
+            // Sin esto, si esta narración traía un onSegmentEnd pendiente
+            // (ver queueDeepenWithFillers), su promesa se queda colgada para
+            // siempre en cuanto falla la carga del audio en la nube — y con
+            // ella STATE.ai.deepenBusy nunca vuelve a false, dejando
+            // "Profundiza más" bloqueado sin que nada lo desbloquee (bug
+            // reportado en pruebas de usuario, 2026-09-04).
+            notifySegmentEnd();
           }
         });
         return;
@@ -6714,21 +6785,53 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     }
   };
 
-  // Muestra la pantalla principal de siempre (elegir ciudad y modo), una
-  // vez superada la comprobación de licencia (ver LICENSE más arriba).
-  // Idempotente a propósito: tras un bloqueo a media sesión (ver lockApp)
-  // la app ya estaba revelada de antes, así que volver a pasar la
-  // comprobación no debe re-enganchar los mismos listeners por segunda vez.
+  const showOnboardingScreen = () => {
+    const ob = $('#onboarding');
+    if (ob) { ob.hidden = false; ob.setAttribute('aria-hidden', 'false'); }
+  };
+
+  // Retoma una visita ya en marcha (ciudad ya elegida en una sesión
+  // anterior) sin pasar por la pantalla de elegir ciudad: carga la ciudad
+  // igual que finishOnboarding, arranca la app y, si había una ficha de POI
+  // abierta cuando se guardó el estado (ver selectPoi/closeSheet), la
+  // reabre con su chat tal como estaba — así una vuelta de Google Maps (o
+  // que el sistema mate la app en segundo plano mientras tanto) no se
+  // siente como "se perdió la conversación". Si algo falla (sin red para
+  // cargar los POIs de la ciudad, etc.) se propaga el error para que
+  // revealApp caiga al picker de siempre.
+  const resumeSavedSession = async (cityId) => {
+    const poiIdToReopen = pendingResumePoiId;
+    pendingResumePoiId = null;
+    await selectCity(cityId);
+    startApp();
+    if (poiIdToReopen && POIS.some((p) => p.id === poiIdToReopen)) {
+      selectPoi(poiIdToReopen);
+    }
+  };
+
+  // Muestra la pantalla principal (elegir ciudad y modo), una vez superada
+  // la comprobación de licencia (ver LICENSE más arriba) — o, si ya había
+  // una ciudad elegida de antes, retoma esa visita directamente (ver
+  // resumeSavedSession). Idempotente a propósito: tras un bloqueo a media
+  // sesión (ver lockApp) la app ya estaba revelada de antes, así que volver
+  // a pasar la comprobación no debe re-enganchar los mismos listeners por
+  // segunda vez.
   let appRevealed = false;
   const revealApp = () => {
     if (appRevealed) return;
     appRevealed = true;
-    // Al abrir el enlace siempre se muestra la pantalla principal (elegir
-    // ciudad y modo), aunque ya se hubiera elegido una ciudad antes.
-    const ob = $('#onboarding');
-    if (ob) { ob.hidden = false; ob.setAttribute('aria-hidden', 'false'); }
     wireOnboarding();
     wireScanLogModal();
+
+    const savedCityId = STATE.cityId;
+    if (savedCityId && CITIES[savedCityId]) {
+      resumeSavedSession(savedCityId).catch((e) => {
+        console.warn('[OMOT] No se pudo retomar la sesión guardada:', e);
+        showOnboardingScreen();
+      });
+      return;
+    }
+    showOnboardingScreen();
   };
 
   const setLicenseGateError = (msg) => {
