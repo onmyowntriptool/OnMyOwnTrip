@@ -6661,7 +6661,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       México: { es: 'México', en: 'Mexico' },
       Alemania: { es: 'Alemania', en: 'Germany' },
       Italia: { es: 'Italia', en: 'Italy' },
-      Vaticano: { es: 'Vaticano', en: 'Vatican' }
+      Vaticano: { es: 'Vaticano', en: 'Vatican' },
+      Turquía: { es: 'Turquía', en: 'Turkey' }
     };
     const geoLabel = (value) => (GEO_LABELS[value] ? GEO_LABELS[value][STATE.lang] || value : value);
 

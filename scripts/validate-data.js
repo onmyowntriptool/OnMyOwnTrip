@@ -47,8 +47,19 @@ const warn = (msg) => warnings.push(msg);
 // Un valor {adult, kids} se considera completo si ambas claves tienen
 // texto no vacío. `required` = false permite que falte del todo (algunos
 // campos son opcionales), pero si existe, tiene que estar completo.
-const hasDual = (obj) => !!obj && typeof obj.adult === 'string' && obj.adult.trim() &&
+const dualComplete = (obj) => !!obj && typeof obj.adult === 'string' && obj.adult.trim() &&
   typeof obj.kids === 'string' && obj.kids.trim();
+
+// Algunas ciudades (desde Vaticano, ver data/cities/vaticano.js) envuelven
+// sus campos en { es: {adult,kids}, en: {adult,kids} } en vez del formato
+// antiguo {adult,kids} directo. Si el campo trae ese envoltorio, exigimos
+// que AMBOS idiomas estén completos; si no, se valida tal cual (formato
+// antiguo, tratado como español-only).
+const hasDual = (obj) => {
+  if (!obj) return false;
+  if (obj.es || obj.en) return dualComplete(obj.es) && dualComplete(obj.en);
+  return dualComplete(obj);
+};
 
 const inBounds = (coords, bounds) => {
   if (!Array.isArray(coords) || coords.length !== 2) return false;
@@ -123,14 +134,24 @@ function validateCity(cityId, city) {
     }
 
     if (poi.quiz) {
-      Object.entries(poi.quiz).forEach(([topicId, q]) => {
-        const qLabel = `${poiLabel} quiz.${topicId}`;
+      const validateQuizShape = (q, qLabel) => {
         if (!q.question || !q.question.trim()) err(`${qLabel}: sin question`);
         if (!Array.isArray(q.options) || q.options.length < 2) err(`${qLabel}: options debe tener al menos 2 opciones`);
         if (typeof q.correct !== 'number' || q.correct < 0 || q.correct >= (q.options || []).length) {
           err(`${qLabel}: correct (${q.correct}) no es un índice válido de options`);
         }
         if (!q.reveal || !q.reveal.trim()) err(`${qLabel}: sin reveal`);
+      };
+      Object.entries(poi.quiz).forEach(([topicId, q]) => {
+        const qLabel = `${poiLabel} quiz.${topicId}`;
+        // Igual que name/subtitle/tabs: puede venir envuelto en {es,en} (ver
+        // data/cities/vaticano.js) o directo (formato antiguo).
+        if (q.es || q.en) {
+          if (q.es) validateQuizShape(q.es, `${qLabel}.es`); else err(`${qLabel}: falta es`);
+          if (q.en) validateQuizShape(q.en, `${qLabel}.en`); else err(`${qLabel}: falta en`);
+        } else {
+          validateQuizShape(q, qLabel);
+        }
       });
     }
   });

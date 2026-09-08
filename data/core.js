@@ -454,6 +454,119 @@ const CITIES = {
         }
       }
     ]
+  },
+
+  estambul: {
+    id: 'estambul',
+    name: 'Estambul',
+    country: 'Turquía',
+    continent: 'Europa',
+    subtitle: {
+      es: { adult: 'Donde Europa y Asia se dan la mano', kids: '¡La Única Ciudad en Dos Continentes! 🌍' },
+      en: { adult: 'Where Europe and Asia shake hands', kids: 'The Only City on Two Continents! 🌍' }
+    },
+    // ~50% del máximo real de Estambul (59 POIs con quiz × 10 = 590 posibles).
+    badgeThreshold: 295,
+    badgeImg: 'assets/badges/estambul.png',
+    center: [41.015, 28.978],
+    zoom: 12.6,
+    minZoom: 11,
+    // Cubre la península histórica, Gálata/Beyoğlu, ambas orillas del
+    // Bósforo (fortalezas de Rumeli/Anadolu al norte) y un núcleo del lado
+    // asiático (Üsküdar, Beylerbeyi, Çamlıca, Kadıköy/Moda).
+    bounds: [[40.985, 28.915], [41.100, 29.080]],
+    routes: [
+      {
+        id: 'main',
+        name: {
+          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+        },
+        color: '#F59E0B',
+        intro: {
+          es: {
+            adult: 'La ruta imprescindible de Estambul reúne los grandes símbolos de la única ciudad del mundo repartida entre dos continentes. Empezarás frente a frente entre Santa Sofía, catedral bizantina convertida en mezquita otomana y de nuevo en mezquita, y la Mezquita Azul, con sus seis minaretes y miles de azulejos de Iznik. Bajarás a la Cisterna Basílica, un bosque de columnas bizantinas bajo tierra, y te perderás entre las callejuelas cubiertas del Gran Bazar y el aromático Bazar de las Especias. Subirás hasta la Mezquita de Süleymaniye, obra maestra del arquitecto Sinan, cruzarás el Cuerno de Oro hasta la Torre de Gálata, y terminarás en la orilla del Bósforo, frente al Palacio de Dolmabahçe y la Mezquita de Ortaköy, con el puente que une Europa y Asia de fondo. Al acabar habrás visto por qué Estambul fue, sucesivamente, capital de dos imperios milenarios. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Prepárate para la aventura más grande de todas: una ciudad repartida entre dos continentes! 🌍 Vas a entrar en una iglesia gigante que se convirtió en mezquita, luego en museo, ¡y ahora vuelve a ser mezquita! Justo enfrente verás otra mezquita con seis torres puntiagudas y miles de azulejos azules. Bajarás a una cisterna secreta bajo tierra, llena de columnas y hasta dos cabezas de piedra con forma de Medusa. Te perderás en un mercado gigantesco con miles de tiendas y en otro lleno de especias de colores. Subirás a una torre genovesa altísima y terminarás junto al Bósforo, frente a un palacio con una lámpara de cristal enorme y una mezquita pegadita al agua. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "The unmissable route through Istanbul brings together the great symbols of the only city in the world split between two continents. You'll start face to face between Hagia Sophia, a Byzantine cathedral turned Ottoman mosque, then museum, then mosque again, and the Blue Mosque, with its six minarets and thousands of İznik tiles. You'll descend into the Basilica Cistern, an underground forest of Byzantine columns, and lose yourself in the covered alleys of the Grand Bazaar and the fragrant Spice Bazaar. You'll climb up to the Süleymaniye Mosque, a masterpiece by the architect Sinan, cross the Golden Horn to the Galata Tower, and finish on the Bosphorus shore, facing Dolmabahçe Palace and the Ortaköy Mosque, with the bridge linking Europe and Asia in the background. By the end you'll have seen why Istanbul was, in succession, the capital of two thousand-year empires. Tap each stop on the map to see specific information about that spot.",
+            kids: "Get ready for the biggest adventure of all: a city split between two whole continents! 🌍 You'll step inside a giant church that became a mosque, then a museum, and now it's a mosque again! Right across from it you'll see another mosque with six pointy towers and thousands of blue tiles. You'll go down into a secret underground cistern full of columns, including two stone heads shaped like Medusa. You'll get lost in a giant market with thousands of shops, and another one full of colorful spices. You'll climb a tall Genoese tower and finish by the Bosphorus, facing a palace with a huge crystal chandelier and a mosque sitting right on the water. Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'peninsula',
+        name: {
+          es: { adult: 'Sultanahmet y la Península Histórica', kids: '¡El Estambul Más Antiguo! 🏛️' },
+          en: { adult: 'Sultanahmet and the Historic Peninsula', kids: 'The Oldest Istanbul! 🏛️' }
+        },
+        color: '#B8411E',
+        intro: {
+          es: {
+            adult: 'Esta ruta profundiza en la península histórica más allá de los grandes iconos, siguiendo casi 1.600 años de historia romana, bizantina y otomana. Empezarás en el antiguo Hipódromo de Constantinopla, con sus tres monumentos originales todavía en pie, visitarás los Museos Arqueológicos y el Museo de Artes Turcas e Islámicas, y descubrirás la Cisterna de Binbirdirek, la "hermana pequeña" de la Basílica. Seguirás hasta la Mezquita Nueva y la escondida Mezquita de Rüstem Bajá, forrada por dentro de azulejos de Iznik, pasarás bajo el Acueducto de Valente, construido por los romanos en el siglo IV, y terminarás en la Iglesia de Cora, con algunos de los mosaicos bizantinos mejor conservados del mundo, y en las murallas de Teodosio, que protegieron la ciudad durante más de mil años. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva por la parte más antigua de Estambul! 🏛️ Vas a ver un antiguo hipódromo romano con un obelisco egipcio de verdad, entrar en museos con tesoros de hace miles de años, y bajar a otra cisterna secreta bajo tierra. Descubrirás una mezquita pequeñita escondida entre tiendas, ¡pero cubierta por dentro de azulejos preciosos! Pasarás bajo un acueducto romano gigante que todavía sigue en pie, y terminarás en una iglesia con mosaicos dorados que tienen casi 700 años, y junto a una muralla que protegió la ciudad durante más de mil años seguidos. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route digs deeper into the historic peninsula beyond the headline icons, following almost 1,600 years of Roman, Byzantine and Ottoman history. You'll start at the ancient Hippodrome of Constantinople, with its three original monuments still standing, visit the Archaeology Museums and the Museum of Turkish and Islamic Arts, and discover the Cistern of Binbirdirek, the \"little sister\" of the Basilica Cistern. You'll continue to the New Mosque and the hidden Rüstem Pasha Mosque, lined inside with İznik tiles, pass beneath the Valens Aqueduct, built by the Romans in the 4th century, and finish at the Chora Church, home to some of the best-preserved Byzantine mosaics in the world, and at the Theodosian Walls, which protected the city for over a thousand years. Tap each stop on the map to see specific information about that spot.",
+            kids: "This route takes you through the oldest part of Istanbul! 🏛️ You'll see an ancient Roman hippodrome with a real Egyptian obelisk, step into museums full of treasures thousands of years old, and go down into another secret underground cistern. You'll discover a tiny mosque hidden among shops, but covered inside with gorgeous tiles! You'll walk under a giant Roman aqueduct still standing today, and finish at a church with golden mosaics almost 700 years old, next to a wall that protected the city for over a thousand years straight. Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'galata',
+        name: {
+          es: { adult: 'Gálata, Beyoğlu y el Cuerno de Oro', kids: '¡El Barrio Internacional! 🎭' },
+          en: { adult: 'Galata, Beyoğlu and the Golden Horn', kids: 'The International Quarter! 🎭' }
+        },
+        color: '#7C3AED',
+        intro: {
+          es: {
+            adult: 'Esta ruta cruza al lado europeo "moderno" de Estambul, el antiguo barrio genovés de Gálata y el cosmopolita Beyoğlu. Empezarás en el monasterio de los derviches giróvagos de Gálata, seguirás por la Avenida Istiklal y su tranvía histórico, y te asomarás al Pasaje de las Flores y al Mercado de Pescado. Visitarás el Hotel Pera Palace, construido para los pasajeros del Orient Express, y el Museo Pera, con su famoso cuadro del domador de tortugas, cruzarás la Plaza de Taksim y descubrirás el antiguo Banco Otomano en Karaköy, antes de terminar en la Mezquita de Kılıç Ali Bajá, obra tardía del arquitecto Sinan. Al acabar habrás visto el Estambul europeo, cosmopolita y de embajadas que convivió, calle con calle, con el Estambul otomano de la península. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva al barrio más internacional de Estambul! 🎭 Vas a visitar un antiguo monasterio donde unos monjes especiales bailaban dando vueltas y vueltas, caminar por una avenida larguísima con un tranvía rojo de hace más de 100 años, y curiosear en un mercado de pescado con mucho ambiente. Entrarás en un hotel donde paraban los pasajeros de un tren muy famoso, verás un cuadro gigante de un hombre entrenando tortugas, y cruzarás una plaza enorme. Terminarás en un antiguo banco convertido en museo y en una mezquita construida por un almirante. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route crosses over to Istanbul's \"modern\" European side, the old Genoese neighborhood of Galata and cosmopolitan Beyoğlu. You'll start at the whirling dervish lodge of Galata, continue along İstiklal Avenue and its historic tram, and step into the Flower Passage and the Fish Market. You'll visit the Pera Palace Hotel, built for Orient Express passengers, and the Pera Museum, home to the famous painting of the tortoise trainer, cross Taksim Square and discover the old Ottoman Bank in Karaköy, before finishing at the Kılıç Ali Pasha Mosque, a late work by the architect Sinan. By the end you'll have seen the cosmopolitan, embassy-filled European Istanbul that lived, street by street, alongside the Ottoman Istanbul of the peninsula. Tap each stop on the map to see specific information about that spot.",
+            kids: "This route takes you to Istanbul's most international neighborhood! 🎭 You'll visit an old lodge where special monks used to dance by spinning round and round, walk along a very long avenue with a red tram from over 100 years ago, and browse a lively fish market. You'll step into a hotel where passengers from a very famous train used to stay, see a giant painting of a man training tortoises, and cross a huge square. You'll finish at an old bank turned into a museum and at a mosque built by an admiral. Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'bosforo',
+        name: {
+          es: { adult: 'El Bósforo: Palacios y Fortalezas', kids: '¡La Ruta del Estrecho! 🚢' },
+          en: { adult: 'The Bosphorus: Palaces and Fortresses', kids: 'The Strait Route! 🚢' }
+        },
+        color: '#0EA5E9',
+        intro: {
+          es: {
+            adult: 'Una ruta que navega la orilla europea del Bósforo, del último gran palacio otomano a la fortaleza que hizo posible la conquista de Constantinopla. Empezarás junto al Palacio de Dolmabahçe y su torre del reloj, seguirás hasta el Palacio de Çırağan, hoy convertido en hotel de lujo, y el tranquilo barrio de Bebek. Terminarás en la Fortaleza de Rumeli, construida en apenas cuatro o cinco meses en 1452 para preparar el asedio otomano de 1453, y en su fortaleza gemela, Anadolu Hisarı, ya en la orilla asiática. Muchos tramos de esta ruta se recorren mejor en ferry: un crucero por el Bósforo desde Eminönü te permite ver, del tirón, palacios, fortalezas y pueblos pesqueros por los que ninguna carretera pasa directamente. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta navega por el Bósforo, el estrecho que separa Europa de Asia! 🚢 Vas a ver un reloj gigante junto a un palacio, y otro palacio junto al mar que ahora es un hotel de lujo. Pasarás por un barrio tranquilo con vistas al otro continente, y terminarás en una fortaleza que se construyó ¡en solo cuatro meses! para ayudar a conquistar la ciudad hace más de 500 años, con su fortaleza gemela justo enfrente, en la otra orilla. Para ver bien esta ruta, ¡lo mejor es subirse a un ferry! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "A route that sails along the Bosphorus's European shore, from the last great Ottoman palace to the fortress that made the conquest of Constantinople possible. You'll start beside Dolmabahçe Palace and its clock tower, continue to Çırağan Palace, today a luxury hotel, and the quiet neighborhood of Bebek. You'll finish at Rumeli Fortress, built in just four or five months in 1452 to prepare the Ottoman siege of 1453, and its twin fortress, Anadolu Hisarı, on the Asian shore. Many stretches of this route are best covered by ferry: a Bosphorus cruise from Eminönü lets you see, in one go, palaces, fortresses and fishing villages that no road passes directly. Tap each stop on the map to see specific information about that spot.",
+            kids: "This route sails along the Bosphorus, the strait that separates Europe from Asia! 🚢 You'll see a giant clock next to a palace, and another palace by the sea that's now a luxury hotel. You'll pass through a quiet neighborhood with views of the other continent, and finish at a fortress that was built in just four months to help conquer the city over 500 years ago, with its twin fortress right across the water. The best way to see this route is to hop on a ferry! Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'asia',
+        name: {
+          es: { adult: 'Estambul de Asia', kids: '¡El Otro Continente! 🌏' },
+          en: { adult: 'Asian Istanbul', kids: 'The Other Continent! 🌏' }
+        },
+        color: '#16A34A',
+        intro: {
+          es: {
+            adult: 'La única ruta de toda la app que cruza a otro continente. Un ferry desde el lado europeo te deja en Üsküdar, con su mezquita construida por la hija de Solimán el Magnífico, y en la diminuta Torre de la Doncella, sobre un islote a la entrada del Bósforo. Seguirás hasta el Palacio de Beylerbeyi, donde un sultán depuesto pasó sus últimos años, subirás a Çamlıca, el punto más alto de Estambul, y bajarás hasta Kadıköy, el barrio con más ambiente de la orilla asiática, asentado sobre la antigua ciudad griega de Calcedonia. Al terminar podrás decir que has estado, en el mismo día, en Europa y en Asia, algo que solo es posible en esta ciudad. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta es la única ruta de toda la app donde cambias de continente! 🌏 Un ferry te lleva hasta Asia, donde verás una mezquita construida por la hija de un sultán muy famoso, y una torre diminuta en mitad del mar con leyendas de princesas y dragones. Subirás a la colina más alta de toda Estambul, con vistas increíbles, y terminarás en un barrio lleno de mercados y ambiente. Al acabar podrás contar que en un mismo día ¡has estado en dos continentes distintos! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "The only route in the whole app that crosses into another continent. A ferry from the European side drops you in Üsküdar, with its mosque built by the daughter of Suleiman the Magnificent, and at the tiny Maiden's Tower, on an islet at the mouth of the Bosphorus. You'll continue to Beylerbeyi Palace, where a deposed sultan spent his final years, climb up to Çamlıca, Istanbul's highest point, and head down to Kadıköy, the liveliest neighborhood on the Asian shore, built over the ancient Greek city of Chalcedon. By the end you'll be able to say you've stood, on the same day, in both Europe and Asia — something only possible in this city. Tap each stop on the map to see specific information about that spot.",
+            kids: "This is the only route in the whole app where you switch continents! 🌏 A ferry takes you to Asia, where you'll see a mosque built by a famous sultan's daughter, and a tiny tower in the middle of the sea with legends about princesses and dragons. You'll climb Istanbul's highest hill, with incredible views, and finish in a lively neighborhood full of markets. By the end you'll be able to say that in a single day, you've stood on two different continents! Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      }
+    ]
   }
 };
 

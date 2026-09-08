@@ -38,8 +38,8 @@ const CONTENT_CACHE = 'omot-content-v1';
 const SHELL_URLS = [
   './',
   './index.html',
-  './app.js?v=193',
-  './data/core.js?v=25',
+  './app.js?v=194',
+  './data/core.js?v=26',
   './styles.css?v=60',
   './manifest.json?v=1',
   './privacidad.html',

@@ -74,3 +74,10 @@ _TRaeSandbox/
 
 # ---- Configuración local de IA (API keys) — NUNCA se sube ----
 llm-config.js
+
+# ---- Contenido de ciudades (V26, gate detrás del Worker): el contenido real
+#      de cada ciudad (pois[]) ya no vive en git, solo en la KV CITY_CONTENT
+#      de Cloudflare y en el backup local. Esta carpeta se recrea localmente
+#      solo para poder correr scripts/validate-data.js y
+#      scripts/build-city-content.js — ver scratchpad/deploy-steps-content-gating.md ----
+data/cities/
