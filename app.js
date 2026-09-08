@@ -243,6 +243,7 @@
         'NOMBRE: <nombre corto>',
         'RESUMEN: <una frase breve>',
         'INFO: <2-3 frases con datos concretos y contrastables: qué es, época o autor, algo destacable>',
+        'GUARDARRAÍL ANTI-INVENCIÓN para el campo INFO: no rellenes con color histórico genérico que no venga a cuento (marcas de cantero, asimetrías ópticas deliberadas, leyendas medievales...) si el lugar es evidentemente un espacio o edificio moderno o comercial (una plaza reciente, un centro comercial, un local con cartelería de marca, arquitectura contemporánea). En esos casos, describe con naturalidad lo que de verdad se ve — para qué se usa el lugar, qué hay alrededor, cualquier dato reconocible — sin inventar antigüedad ni artesanía que ese sitio no tiene. Si no tienes datos concretos y fiables que dar, es preferible una INFO breve y honesta a una inventada que suene convincente.',
         '3) Si no puedes identificarlo con una confianza razonable: DESCONOCIDO',
         'No uses nunca palabrotas, insultos ni lenguaje obsceno en ninguna parte de la respuesta.',
         STATE.lang === 'en' ? 'Write the NAME/SUMMARY/INFO content in English (keep the labels MATCH/NOMBRE/RESUMEN/INFO/DESCONOCIDO exactly as given, only the content after them goes in English).' : ''
@@ -250,7 +251,15 @@
       const usrText = candidates.length
         ? `Foto tomada cerca de ${cityName}. Candidatos cercanos:\n${list}\n\n¿Cuál coincide (MATCH:<id>)? Si no coincide ninguno, identifica igualmente el lugar si puedes (formato NOMBRE/RESUMEN/INFO), o responde DESCONOCIDO.`
         : `Foto tomada cerca de ${cityName}, sin candidatos cercanos conocidos. Identifica qué edificio, monumento o lugar es (formato NOMBRE/RESUMEN/INFO), o responde DESCONOCIDO si no puedes.`;
-      const raw = await fetchOpenAIVision(sys, usrText, imageDataUrl, 400);
+      // 400 se quedaba corto de verdad: un caso real truncó el campo INFO a
+      // mitad de frase ("...orilla del río Sp") y, al concatenarse sin más
+      // con el aviso fijo de "Si quieres profundizar...", se leía como
+      // "orilla del Si quieres profundizar..." (bug reportado en pruebas de
+      // usuario, 2026-09-07). Con modelos "razonadores" (ver comentario de
+      // fetchOpenAIVision más arriba) la respuesta MATCH+NOMBRE+RESUMEN+INFO
+      // completa necesita más margen que un simple id corto — 900 iguala el
+      // límite ya usado para las respuestas "concise" del chat normal.
+      const raw = await fetchOpenAIVision(sys, usrText, imageDataUrl, 900);
       const trimmed = raw.trim();
       if (/^DESCONOCIDO/i.test(trimmed)) return { supported: true, type: 'none' };
       const matchTag = trimmed.match(/^MATCH:\s*(.+)/i);
@@ -3961,11 +3970,25 @@
   // app se presentara dos veces seguidas. En modo Niños sigue en true: ahí
   // esta es la ÚNICA llamada (no hay chip de Introducción separado), así
   // que la frase de bienvenida tiene que decirse en algún punto.
+  // Evita que dos fragmentos se lean pegados como si fueran la misma frase
+  // si el anterior no termina en un signo de puntuación — p.ej. una
+  // respuesta de IA truncada a mitad de frase (ver identifyPoi/max_tokens):
+  // bug real reportado en pruebas de usuario, 2026-09-07 ("...orilla del Si
+  // quieres profundizar..."). El contenido curado a mano de las ciudades ya
+  // termina siempre en punto, así que esto no cambia nada ahí — es solo una
+  // red de seguridad para texto inesperado (fichas efímeras de "¿qué estoy
+  // viendo?", o cualquier futura fuente de contenido no curada a mano).
+  const ensureSentenceEnd = (text) => {
+    const trimmed = (text || '').trimEnd();
+    if (!trimmed) return trimmed;
+    return /[.!?…"'”)]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+  };
+
   const buildIntroText = (poi, mode, includeOpener = true) => {
     const isEn = STATE.lang === 'en';
-    const historyFull = pickDual(poi.tabs.history) || '';
-    const legends = poi.tabs.legends ? pickDual(poi.tabs.legends) : '';
-    const architecture = poi.tabs.architecture ? pickDual(poi.tabs.architecture) : '';
+    const historyFull = ensureSentenceEnd(pickDual(poi.tabs.history) || '');
+    const legends = poi.tabs.legends ? ensureSentenceEnd(pickDual(poi.tabs.legends)) : '';
+    const architecture = poi.tabs.architecture ? ensureSentenceEnd(pickDual(poi.tabs.architecture)) : '';
 
     const opener = includeOpener ? buildPreviewText(poi, mode) : '';
     const legendBridge = legends
@@ -4187,6 +4210,19 @@
       });
       box.appendChild(b);
     });
+
+    // La fila ya se desplazaba en horizontal (overflow-x: auto), pero sin
+    // ninguna pista visual: en pantallas estrechas el último chip quedaba
+    // cortado en seco justo en el borde ("Histo…"), y parecía un fallo de
+    // maquetación en vez de una fila deslizable (bug reportado en pruebas de
+    // usuario, 2026-09-07). updateFadeHint añade un difuminado a la derecha
+    // (ver .ai-suggestions.-scrollable en styles.css) solo cuando de verdad
+    // sobra contenido, y se reevalúa al desplazar por si se llega al final.
+    const updateFadeHint = () => {
+      box.classList.toggle('-scrollable', box.scrollWidth - box.clientWidth - box.scrollLeft > 4);
+    };
+    updateFadeHint();
+    box.onscroll = updateFadeHint;
   };
 
   // Pregunta de gamificación tras el audio (modo niño): elige el primer tema

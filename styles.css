@@ -2071,6 +2071,14 @@ html[data-mode="kids"] .bottom-sheet {
   scrollbar-width: none;
 }
 .ai-suggestions::-webkit-scrollbar { display: none; }
+/* Difuminado a la derecha cuando de verdad sobra contenido por desplazar
+   (clase añadida/quitada por updateFadeHint en renderAiSuggestions, app.js):
+   sin esto el último chip se veía cortado en seco en el borde de pantallas
+   estrechas y parecía un fallo, no una fila deslizable. */
+.ai-suggestions.-scrollable {
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, black calc(100% - 28px), transparent);
+}
 .suggest-chip {
   flex-shrink: 0;
   white-space: nowrap;
