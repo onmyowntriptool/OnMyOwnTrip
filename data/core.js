@@ -64,7 +64,7 @@ const CITIES = {
     // "subtitle" (etiqueta breve) ni con tabs.history de cada POI.
     welcomeIntro: {
       adult: 'Bienvenido a Toledo, la Ciudad de las Tres Culturas. Aquí vivieron juntos musulmanes, cristianos y judíos, y todavía se nota en cada calle. En este paseo verás su Alcázar, su Catedral y rincones que apenas han cambiado en siglos. Toledo te espera: ven a descubrirla.',
-      kids: '¡Bienvenido a Toledo, la ciudad construida sobre una roca gigante! 🏰 Aquí vivieron juntos musulmanes, cristianos y judíos hace cientos de años. Vas a ver un castillo enorme, una catedral preciosa y calles que parecen de cuento. ¡Prepárate para la aventura!'
+      kids: '¡Bienvenido a Toledo, la ciudad construida sobre una roca gigante! Aquí vivieron juntos musulmanes, cristianos y judíos hace cientos de años. Vas a ver un castillo enorme, una catedral preciosa y calles que parecen de cuento. ¡Prepárate para la aventura!'
     },
     // Insignia de ciudad (modo niño, ver STATE.game.cityBadges en app.js):
     // se gana al llegar a esta cantidad de estrellas SOLO con quizzes de
@@ -121,7 +121,7 @@ const CITIES = {
     subtitle: { adult: 'La Villa y Corte', kids: '¡La Ciudad del Oso y el Madroño! 🐻' },
     welcomeIntro: {
       adult: 'Bienvenido a Madrid, capital de España desde hace más de 450 años. Aquí encontrarás palacios, museos con arte de todo el mundo y calles llenas de vida a cualquier hora. En este paseo descubrirás sus rincones más especiales. ¡Empecemos!',
-      kids: '¡Bienvenido a Madrid, la ciudad del oso y el madroño! 🐻 Es la capital de España desde hace más de 450 años. Vas a ver un palacio enorme, museos llenos de tesoros y plazas donde siempre pasa algo divertido. ¡Prepárate para descubrir Madrid!'
+      kids: '¡Bienvenido a Madrid, la ciudad del oso y el madroño! Es la capital de España desde hace más de 450 años. Vas a ver un palacio enorme, museos llenos de tesoros y plazas donde siempre pasa algo divertido. ¡Prepárate para descubrir Madrid!'
     },
     // ~50% del máximo real de Madrid (81 POIs con quiz × 10 = 2430 posibles).
     badgeThreshold: 1200,
@@ -187,7 +187,7 @@ const CITIES = {
     subtitle: { adult: 'Cuna de Cervantes, Patrimonio de la Humanidad', kids: '¡La Ciudad Donde Nació Don Quijote... o Casi! 🖋️' },
     welcomeIntro: {
       adult: 'Bienvenido a Alcalá de Henares, la ciudad donde nació Cervantes. Su universidad, de más de 500 años, la convirtió en un lugar clave para las letras en toda Europa. En este paseo caminarás por sus calles históricas. ¡Vamos a descubrirla!',
-      kids: '¡Bienvenido a Alcalá de Henares, la ciudad donde nació el escritor más famoso de España! ✍️ Su universidad tiene más de 500 años. Vas a caminar por una calle con soportales enorme y descubrir dónde nació Cervantes. ¡Prepárate para la aventura!'
+      kids: '¡Bienvenido a Alcalá de Henares, la ciudad donde nació el escritor más famoso de España! Su universidad tiene más de 500 años. Vas a caminar por una calle con soportales enorme y descubrir dónde nació Cervantes. ¡Prepárate para la aventura!'
     },
     // ~50% del máximo real de Alcalá de Henares (16 POIs con quiz × 30 = 480 posibles).
     badgeThreshold: 240,
@@ -231,7 +231,7 @@ const CITIES = {
     subtitle: { adult: 'El pueblo amurallado de la Sierra Norte', kids: '¡El Pueblo con Muralla de Verdad! 🏰' },
     welcomeIntro: {
       adult: 'Bienvenido a Buitrago del Lozoya, un pueblo con muralla en la Sierra Norte de Madrid. Tiene casi mil años de historia y hasta un museo con obras de Picasso. Se recorre en poco más de una hora. ¡Ven a descubrir un lugar único!',
-      kids: '¡Bienvenido a Buitrago del Lozoya, un pueblo con una muralla de verdad! 🏰 Tiene casi 1.000 años y todavía puedes caminar junto a ella. ¡Hasta hay un museo con cuadros de Picasso! Prepárate para descubrir un pueblo mágico.'
+      kids: '¡Bienvenido a Buitrago del Lozoya, un pueblo con una muralla de verdad! Tiene casi 1.000 años y todavía puedes caminar junto a ella. ¡Hasta hay un museo con cuadros de Picasso! Prepárate para descubrir un pueblo mágico.'
     },
     // ~50% del máximo real de Buitrago del Lozoya (7 POIs con quiz × 30 = 210 posibles).
     badgeThreshold: 105,
@@ -263,7 +263,7 @@ const CITIES = {
     subtitle: { adult: 'La Ciudad en el Mar', kids: '¡El Castillo sobre las Olas! 🌊' },
     welcomeIntro: {
       adult: 'Bienvenido a Peñíscola, la Ciudad en el Mar. Sobre sus rocas se alza el Castillo del Papa Luna, frente al Mediterráneo. En este paseo recorrerás murallas, playas y vistas que no olvidarás. ¡Ven a descubrirla!',
-      kids: '¡Bienvenido a Peñíscola, el pueblo con un castillo sobre el mar! 🌊🏰 Hace muchos años casi era una isla de verdad. Vas a caminar junto a murallas y subir hasta un castillo con vistas increíbles. ¡Prepárate para la aventura!'
+      kids: '¡Bienvenido a Peñíscola, el pueblo con un castillo sobre el mar! Hace muchos años casi era una isla de verdad. Vas a caminar junto a murallas y subir hasta un castillo con vistas increíbles. ¡Prepárate para la aventura!'
     },
     // ~50% del máximo real de Peñíscola (6 POIs con quiz × 10 = 180 posibles).
     badgeThreshold: 90,
@@ -293,7 +293,7 @@ const CITIES = {
     subtitle: { adult: 'Capital azteca y virreinal', kids: '¡La Ciudad de las Águilas y las Pirámides! 🦅' },
     welcomeIntro: {
       adult: 'Bienvenido a la Ciudad de México, construida sobre Tenochtitlan, la antigua capital azteca. Aquí conviven una pirámide, palacios y barrios como Coyoacán, donde vivió Frida Kahlo. En este paseo descubrirás mucha historia en pocos pasos. ¡Vamos a explorarla!',
-      kids: '¡Bienvenido a la Ciudad de México, una ciudad construida encima de otra! 🦅 Hace 500 años aquí estaba Tenochtitlan, la capital de los aztecas. Vas a ver una pirámide escondida, un palacio con pinturas gigantes y el barrio de una pintora muy famosa. ¡Prepárate para descubrir sus secretos!'
+      kids: '¡Bienvenido a la Ciudad de México, una ciudad construida encima de otra! Hace 500 años aquí estaba Tenochtitlan, la capital de los aztecas. Vas a ver una pirámide escondida, un palacio con pinturas gigantes y el barrio de una pintora muy famosa. ¡Prepárate para descubrir sus secretos!'
     },
     // ~50% del máximo real de CDMX (19 POIs con quiz × 10 = 570 posibles).
     badgeThreshold: 290,
@@ -350,7 +350,7 @@ const CITIES = {
     subtitle: { adult: 'Historia, muros y memoria', kids: '¡La Ciudad del Oso y el Muro! 🐻' },
     welcomeIntro: {
       adult: 'Bienvenido a Berlín, una ciudad marcada por la historia: una guerra, un muro que la dividió durante casi 30 años y una libertad recuperada. En este paseo verás la Puerta de Brandeburgo, restos del Muro y su famosa Isla de los Museos. ¡Descubre esta ciudad!',
-      kids: '¡Bienvenido a Berlín, la ciudad del oso, igual que Madrid! 🐻 Aquí hubo un muro gigante que dividió la ciudad en dos durante casi 30 años. Vas a ver una puerta enorme, trozos del muro pintados de colores y una isla llena de museos. ¡Prepárate para la aventura!'
+      kids: '¡Bienvenido a Berlín, la ciudad del oso, igual que Madrid! Aquí hubo un muro gigante que dividió la ciudad en dos durante casi 30 años. Vas a ver una puerta enorme, trozos del muro pintados de colores y una isla llena de museos. ¡Prepárate para la aventura!'
     },
     // ~50% del máximo real de Berlín (30 POIs con quiz × 10 = 890 posibles).
     badgeThreshold: 450,
@@ -405,7 +405,7 @@ const CITIES = {
     subtitle: { adult: 'La Ciudad Eterna', kids: '¡La Ciudad de los Gladiadores! ⚔️' },
     welcomeIntro: {
       adult: 'Bienvenido a Roma, la Ciudad Eterna, con casi tres mil años de historia en sus calles. En este paseo entrarás en el Coliseo, caminarás por el Foro Romano y lanzarás una moneda a la Fontana di Trevi. ¡Prepárate para una de las ciudades más fascinantes del mundo!',
-      kids: '¡Bienvenido a Roma, la ciudad de los gladiadores! ⚔️ Tiene casi 3.000 años de historia, y todavía se puede visitar el anfiteatro gigante donde luchaban. Vas a caminar por las ruinas de un imperio enorme y lanzar una moneda a una fuente preciosa. ¡Prepárate para la aventura más grande!'
+      kids: '¡Bienvenido a Roma, la ciudad de los gladiadores! Tiene casi 3.000 años de historia, y todavía se puede visitar el anfiteatro gigante donde luchaban. Vas a caminar por las ruinas de un imperio enorme y lanzar una moneda a una fuente preciosa. ¡Prepárate para la aventura más grande!'
     },
     // ~50% del máximo real de Roma (39 POIs con quiz × 30 = 1170 posibles).
     badgeThreshold: 585,
@@ -461,11 +461,11 @@ const CITIES = {
     welcomeIntro: {
       es: {
         adult: 'Bienvenido al Vaticano, el país más pequeño del mundo. En este paseo entrarás en la Basílica de San Pedro, la iglesia más grande del mundo, y en la Capilla Sixtina, pintada por Miguel Ángel. ¡Descubre un país dentro de una ciudad!',
-        kids: '¡Bienvenido al país más pequeño del mundo entero! 🕊️ Vas a entrar en la iglesia más grande del planeta y ver un techo pintado a mano que tardó años en terminarse. ¡Prepárate para descubrir tesoros increíbles en muy poquito espacio!'
+        kids: '¡Bienvenido al país más pequeño del mundo entero! Vas a entrar en la iglesia más grande del planeta y ver un techo pintado a mano que tardó años en terminarse. ¡Prepárate para descubrir tesoros increíbles en muy poquito espacio!'
       },
       en: {
         adult: "Welcome to Vatican City, the smallest country in the world. On this walk you'll step inside St. Peter's Basilica, the largest church in the world, and the Sistine Chapel, painted by Michelangelo. Discover a country within a city!",
-        kids: "Welcome to the smallest country in the whole world! 🕊️ You're going to step inside the biggest church on the planet and see a hand-painted ceiling that took years to finish. Get ready to discover incredible treasures packed into a tiny space!"
+        kids: "Welcome to the smallest country in the whole world! You're going to step inside the biggest church on the planet and see a hand-painted ceiling that took years to finish. Get ready to discover incredible treasures packed into a tiny space!"
       }
     },
     // ~50% del máximo real del Vaticano (3 POIs con quiz × 30 = 90 posibles).
@@ -513,11 +513,11 @@ const CITIES = {
     welcomeIntro: {
       es: {
         adult: 'Bienvenido a Estambul, la única ciudad del mundo repartida entre dos continentes. En este paseo cruzarás entre Santa Sofía y la Mezquita Azul, te perderás en el Gran Bazar y hasta podrás cruzar en barco hasta Asia. ¡Prepárate para una ciudad única!',
-        kids: '¡Bienvenido a Estambul, la única ciudad del mundo repartida en dos continentes! 🌍 Vas a ver una catedral que se convirtió en mezquita, perderte en un mercado con miles de tiendas, ¡y hasta cruzar en barco hasta Asia! Prepárate para la aventura más grande de todas.'
+        kids: '¡Bienvenido a Estambul, la única ciudad del mundo repartida en dos continentes! Vas a ver una catedral que se convirtió en mezquita, perderte en un mercado con miles de tiendas, ¡y hasta cruzar en barco hasta Asia! Prepárate para la aventura más grande de todas.'
       },
       en: {
         adult: "Welcome to Istanbul, the only city in the world split across two continents. On this walk you'll cross between Hagia Sophia and the Blue Mosque, get lost in the Grand Bazaar, and even take a boat across to Asia. Get ready for a one-of-a-kind city!",
-        kids: "Welcome to Istanbul, the only city in the world split between two continents! 🌍 You'll see a cathedral that became a mosque, get lost in a market with thousands of shops, and even cross by boat to Asia! Get ready for the biggest adventure of all."
+        kids: "Welcome to Istanbul, the only city in the world split between two continents! You'll see a cathedral that became a mosque, get lost in a market with thousands of shops, and even cross by boat to Asia! Get ready for the biggest adventure of all."
       }
     },
     // ~50% del máximo real de Estambul (59 POIs con quiz × 10 = 590 posibles).
@@ -636,11 +636,11 @@ const CITIES = {
     welcomeIntro: {
       es: {
         adult: 'Bienvenido a Segovia, la ciudad de un acueducto romano que lleva casi dos mil años en pie. En este paseo subirás al Alcázar, el castillo de cuento donde se proclamó reina a Isabel la Católica. ¡Ven a descubrir una ciudad Patrimonio de la Humanidad!',
-        kids: '¡Bienvenido a Segovia, la ciudad del acueducto mágico! 🏰 Tiene casi 2.000 años y se sostiene sin pegamento ni cemento. Vas a subir a un castillo que parece de cuento de hadas y descubrir calles llenas de historia. ¡Prepárate para la aventura!'
+        kids: '¡Bienvenido a Segovia, la ciudad del acueducto mágico! Tiene casi 2.000 años y se sostiene sin pegamento ni cemento. Vas a subir a un castillo que parece de cuento de hadas y descubrir calles llenas de historia. ¡Prepárate para la aventura!'
       },
       en: {
         adult: "Welcome to Segovia, home to a Roman aqueduct that has stood for almost two thousand years. On this walk you'll climb up to the Alcázar, the fairy-tale castle where Isabella of Castile was crowned queen. Come discover a UNESCO World Heritage city!",
-        kids: "Welcome to Segovia, the city of the magic aqueduct! 🏰 It's almost 2,000 years old and stands without any glue or cement. You'll climb up to a castle straight out of a fairy tale and discover streets full of history. Get ready for the adventure!"
+        kids: "Welcome to Segovia, the city of the magic aqueduct! It's almost 2,000 years old and stands without any glue or cement. You'll climb up to a castle straight out of a fairy tale and discover streets full of history. Get ready for the adventure!"
       }
     },
     // ~50% del máximo real de Segovia (39 POIs con quiz × 10 = 390 posibles).
