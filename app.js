@@ -3862,6 +3862,22 @@
     }
   };
 
+  // La síntesis de voz en la nube (Google Cloud TTS) lee los emoji en voz
+  // alta letra por letra de su nombre Unicode (p.ej. 🌍 se escucha como
+  // "globo terráqueo Europa-África") en vez de ignorarlos — a diferencia de
+  // Web Speech, que ya se limpia sola dentro de SPEECH (ver
+  // stripEmojiForSpeech más abajo en el archivo). Se limpia aquí también,
+  // solo de cara al audio: el texto mostrado en la tarjeta conserva sus
+  // emoji tal cual (ver maybeShowCityIntro).
+  const stripEmojiForCityIntroSpeech = (text) => Array.from(text || '').filter((ch) => {
+    const cp = ch.codePointAt(0);
+    if (cp === 0xFE0F || cp === 0x200D || cp === 0x20E3) return false;
+    if (cp >= 0x1F000 && cp <= 0x1FFFF) return false;
+    if (cp >= 0x2600 && cp <= 0x27BF) return false;
+    if (cp >= 0x2B00 && cp <= 0x2BFF) return false;
+    return true;
+  }).join('').replace(/\s+/g, ' ').trim();
+
   const speakCityIntroViaLocalSpeech = (text) => {
     if (!SPEECH.isSupported() || !text) return;
     STATE.audio.overrideText = text;
@@ -3886,20 +3902,22 @@
     if (!text) return;
     cityIntroActiveText = text;
     if (STATE.audio.playing) stopAudio();
-    const cachedUrl = CLOUD_TTS.getReadyUrl(text);
-    if (cachedUrl) { playCityIntroCloudUrl(cachedUrl, text); return; }
+    const speechText = stripEmojiForCityIntroSpeech(text);
+    if (!speechText) return;
+    const cachedUrl = CLOUD_TTS.getReadyUrl(speechText);
+    if (cachedUrl) { playCityIntroCloudUrl(cachedUrl, speechText); return; }
     if (CLOUD_TTS.isConfigured()) {
-      CLOUD_TTS.fetchAndCache(text).then((url) => {
+      CLOUD_TTS.fetchAndCache(speechText).then((url) => {
         // Si para cuando llega el audio el usuario ya cerró la bienvenida
         // (skip/empezar), no hay nada que reproducir encima de lo que sea
         // que esté haciendo ahora.
         if (!cityIntroModal || !cityIntroModal.classList.contains('-open')) return;
-        if (url) playCityIntroCloudUrl(url, text);
-        else speakCityIntroViaLocalSpeech(text);
+        if (url) playCityIntroCloudUrl(url, speechText);
+        else speakCityIntroViaLocalSpeech(speechText);
       });
       return;
     }
-    speakCityIntroViaLocalSpeech(text);
+    speakCityIntroViaLocalSpeech(speechText);
   };
 
   // Reintento manual: se llama tanto al tocar el icono como, de forma
