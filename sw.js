@@ -39,7 +39,7 @@ const SHELL_URLS = [
   './',
   './index.html',
   './app.js?v=194',
-  './data/core.js?v=26',
+  './data/core.js?v=27',
   './styles.css?v=60',
   './manifest.json?v=1',
   './privacidad.html',

@@ -567,6 +567,100 @@ const CITIES = {
         }
       }
     ]
+  },
+
+  segovia: {
+    id: 'segovia',
+    name: 'Segovia',
+    country: 'España',
+    continent: 'Europa',
+    subtitle: {
+      es: { adult: 'La ciudad del acueducto y los cuentos de hadas', kids: '¡La Ciudad del Acueducto Mágico! 🏰' },
+      en: { adult: 'The city of the aqueduct and fairy tales', kids: 'The City of the Magic Aqueduct! 🏰' }
+    },
+    // ~50% del máximo real de Segovia (39 POIs con quiz × 10 = 390 posibles).
+    badgeThreshold: 195,
+    badgeImg: 'assets/badges/segovia.png',
+    center: [40.9505, -4.1200],
+    zoom: 15.4,
+    minZoom: 13.5,
+    // Cubre todo el casco histórico amurallado, el Alcázar y el valle del
+    // Eresma (Vera Cruz, El Parral, la Pradera de San Marcos) al oeste.
+    bounds: [[40.944, -4.140], [40.960, -4.106]],
+    routes: [
+      {
+        id: 'main',
+        name: {
+          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+        },
+        color: '#F59E0B',
+        intro: {
+          es: {
+            adult: 'La ruta imprescindible de Segovia reúne los grandes símbolos de esta ciudad amurallada sobre una roca entre dos ríos. Empezarás bajo el Acueducto Romano, que sigue en pie sin una gota de mortero desde hace casi dos mil años, subirás hasta el Alcázar, el castillo de cuento que vio proclamarse reina a Isabel la Católica, y visitarás la Catedral, la última gran catedral gótica construida en España. Cruzarás la Plaza Mayor, verás la fachada cubierta de picos de piedra de la Casa de los Picos, y terminarás en la antigua Sinagoga Mayor, hoy convertida en iglesia, y en las calles de la Judería. Al acabar habrás visto por qué Segovia entera es Patrimonio de la Humanidad. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Prepárate para la ruta más top de Segovia! 🏰 Vas a pasar bajo un acueducto romano gigante que se sostiene sin pegamento ni cemento desde hace casi 2.000 años, subir a un castillo que parece sacado de un cuento de hadas, y entrar en una catedral altísima. Cruzarás una plaza mayor preciosa, verás una casa cubierta de piedras con forma de pirámide, y terminarás en una antigua sinagoga convertida en iglesia. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "The unmissable route through Segovia brings together the great symbols of this walled city perched on a rock between two rivers. You'll start beneath the Roman Aqueduct, still standing without a single drop of mortar after almost two thousand years, climb up to the Alcázar, the fairy-tale castle where Isabella of Castile was proclaimed queen, and visit the Cathedral, the last great Gothic cathedral built in Spain. You'll cross Plaza Mayor, see the stone-studded facade of the Casa de los Picos, and finish at the old Main Synagogue, today a church, and the streets of the Jewish Quarter. By the end you'll have seen why the whole of Segovia is a UNESCO World Heritage Site. Tap each stop on the map to see specific information about that spot.",
+            kids: "Get ready for Segovia's top route! 🏰 You'll walk under a giant Roman aqueduct that has stood without any glue or cement for almost 2,000 years, climb up to a castle that looks straight out of a fairy tale, and step inside a very tall cathedral. You'll cross a beautiful main square, see a house covered in pyramid-shaped stones, and finish at an old synagogue turned into a church. Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'juderia',
+        name: {
+          es: { adult: 'Judería y Murallas', kids: '¡El Segovia Amurallado! 🕍' },
+          en: { adult: 'Jewish Quarter and City Walls', kids: 'Walled Segovia! 🕍' }
+        },
+        color: '#8B5CF6',
+        intro: {
+          es: {
+            adult: 'Esta ruta recorre la Segovia amurallada y judía, menos fotografiada que los grandes monumentos pero igual de fascinante. Caminarás junto a la muralla medieval que rodea toda la ciudad vieja, cruzarás las puertas de San Andrés y de Santiago, y te adentrarás en las calles estrechas de la antigua Judería, donde vivió una de las comunidades judías más importantes de Castilla hasta la expulsión de 1492. Visitarás el Torreón de Lozoya y la Plaza de San Martín, y descubrirás un cementerio judío en la ladera de El Pinarillo. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva por el Segovia amurallado y judío! 🕍 Vas a caminar junto a una muralla que rodea toda la ciudad, cruzar puertas de piedra con casi 1.000 años, y perderte por callejuelas estrechitas donde vivió una comunidad judía muy importante hace siglos. Visitarás una torre-casa medieval y una plaza preciosa, y descubrirás un cementerio muy antiguo en una colina. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route explores walled, Jewish Segovia, less photographed than the great monuments but just as fascinating. You'll walk alongside the medieval wall that encircles the whole old town, pass through the San Andrés and Santiago gates, and wander the narrow streets of the old Jewish Quarter, home to one of Castile's most important Jewish communities until the 1492 expulsion. You'll visit the Torreón de Lozoya and Plaza de San Martín, and discover a Jewish cemetery on the El Pinarillo hillside. Tap each stop on the map to see specific information about that spot.",
+            kids: "This route takes you through walled, Jewish Segovia! 🕍 You'll walk alongside a wall that circles the whole city, pass through stone gates almost 1,000 years old, and get lost in narrow little streets where a very important Jewish community lived centuries ago. You'll visit a medieval tower-house and a beautiful square, and discover a very old cemetery on a hillside. Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'valle',
+        name: {
+          es: { adult: 'Valle del Eresma', kids: '¡El Valle del Río! 🌳' },
+          en: { adult: 'Eresma Valley', kids: 'The River Valley! 🌳' }
+        },
+        color: '#10B981',
+        intro: {
+          es: {
+            adult: 'Esta ruta baja desde la ciudad amurallada hasta el valle del río Eresma, donde Segovia esconde algunos de sus rincones más tranquilos. Visitarás la Iglesia de la Vera Cruz, un templo románico de doce lados vinculado a los templarios, y el Monasterio de El Parral, fundado en el siglo XV junto al río. Cruzarás un puente de piedra con vistas al Alcázar desde abajo, y terminarás en la Pradera de San Marcos, el mirador clásico de las postales de Segovia. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta baja hasta el valle del río, justo debajo del castillo! 🌳 Vas a ver una iglesia con doce lados, muy rara, relacionada con caballeros templarios, y un monasterio junto al río de hace más de 500 años. Cruzarás un puente de piedra con una vista alucinante del castillo desde abajo, y terminarás en un prado donde se hacen las fotos más bonitas de Segovia. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route drops down from the walled city to the valley of the Eresma river, where Segovia hides some of its quietest corners. You'll visit the Iglesia de la Vera Cruz, a twelve-sided Romanesque church linked to the Knights Templar, and the Monasterio de El Parral, founded in the 15th century beside the river. You'll cross a stone bridge with views up at the Alcázar from below, and finish at the Pradera de San Marcos, the classic postcard viewpoint of Segovia. Tap each stop on the map to see specific information about that spot.",
+            kids: "This route goes down into the river valley, right below the castle! 🌳 You'll see a very unusual twelve-sided church linked to Templar knights, and a monastery by the river that's over 500 years old. You'll cross a stone bridge with an amazing view of the castle from below, and finish in a meadow where Segovia's most beautiful postcard photos are taken. Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'romanico',
+        name: {
+          es: { adult: 'Segovia Románica', kids: '¡Las Iglesias Antiguas! ⛪' },
+          en: { adult: 'Romanesque Segovia', kids: 'The Ancient Churches! ⛪' }
+        },
+        color: '#B8411E',
+        intro: {
+          es: {
+            adult: 'Segovia tiene casi veinte iglesias románicas, una concentración enorme para una ciudad de su tamaño, y esta ruta recorre las más destacadas. Verás la torre de San Esteban, considerada una de las más bellas de España, el pórtico casi completo de San Martín, las pinturas murales medievales de San Justo, y la antigua iglesia de San Quirce, hoy reconvertida en sala de exposiciones. Al acabar habrás entendido por qué Segovia es, junto a su acueducto y su alcázar, también una capital del románico. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Segovia tiene casi veinte iglesias de hace 800 años, muchísimas para una ciudad tan pequeña! ⛪ Vas a ver una torre altísima considerada una de las más bonitas de España, un pórtico casi completo con columnas talladas, unas pinturas antiguas escondidas dentro de una iglesia, y otra iglesia que ya no se usa para rezar, ¡sino para exposiciones! Al final sabrás que Segovia no solo tiene un acueducto y un castillo, sino también un montón de iglesias antiquísimas. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "Segovia has nearly twenty Romanesque churches, an extraordinary concentration for a city its size, and this route covers the most notable ones. You'll see the tower of San Esteban, considered one of the most beautiful in Spain, the almost-complete portico of San Martín, the medieval murals of San Justo, and the former church of San Quirce, today converted into an exhibition space. By the end you'll understand why Segovia is, alongside its aqueduct and its Alcázar, also a capital of Romanesque architecture. Tap each stop on the map to see specific information about that spot.",
+            kids: "Segovia has almost twenty churches that are 800 years old, an incredible number for such a small city! ⛪ You'll see a super tall tower considered one of the most beautiful in Spain, an almost-complete porch with carved columns, old paintings hidden inside a church, and another church that isn't used for prayer anymore, but for exhibitions! By the end you'll know that Segovia has not just an aqueduct and a castle, but also a whole bunch of ancient churches. Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      }
+    ]
   }
 };
 
