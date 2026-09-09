@@ -680,7 +680,7 @@ const AI_PROMPTS = {
       },
       prompt: {
         adult: (p, cityName) =>
-          `Cuéntame con detalle una historia poco conocida, oscura o inesperada sobre ${pick(p.name, 'adult')} (${cityName}). Asegúrate de que sea un episodio real, poco divulgado, y desarróllalo en varios párrafos con contexto. Unas 190-220 palabras. Añade una frase final con la fuente histórica más fiable si la conoces.`,
+          `Cuéntame con detalle una historia poco conocida, oscura o inesperada sobre ${pick(p.name, 'adult')} (${cityName}). Asegúrate de que sea un episodio real, poco divulgado, y desarróllalo en varios párrafos con contexto. Unas 190-220 palabras. Si conoces la fuente histórica, añádela en una frase final; si no tienes certeza de que el episodio sea real y documentado, dilo explícitamente ("no hay una fuente clara para esto" o similar) en vez de inventarte una cita o un cronista concreto.`,
         kids: (p) =>
           `¡Cuéntame con muchos detalles el secreto más chulo y misterioso de ${pick(p.name, 'kids')}! 😱 Pero que NO dé miedo, que sea de aventuras o magia. Unas 190-220 palabras (tan largo como para un adulto). Termina con un mini-juego: "¿Te atreves a buscar... allí?"`
       }
@@ -706,7 +706,7 @@ const AI_PROMPTS = {
       },
       prompt: {
         adult: (p, cityName) =>
-          `Narra con detalle la leyenda más antigua y verosímil asociada a ${pick(p.name, 'adult')} de ${cityName}, citando su origen documental si existe. Desarróllala en varios párrafos. Unas 190-220 palabras. Termina con tu interpretación: ¿qué hecho real pudo inspirarla?`,
+          `Narra con detalle la leyenda más antigua y verosímil asociada a ${pick(p.name, 'adult')} de ${cityName}, dejando claro que es tradición/leyenda y no un hecho documentado (cita su origen documental solo si de verdad lo conoces, sin inventarte cronistas o fuentes concretas). Desarróllala en varios párrafos. Unas 190-220 palabras. Termina con tu interpretación: ¿qué hecho real pudo inspirarla?`,
         kids: (p) =>
           `¡Cuéntame con muchos detalles una leyenda superchula de ${pick(p.name, 'kids')} con personajes mágicos (reyes, hadas, animales parlanchines)! 🧚 Sin miedo. Unas 190-220 palabras (tan larga como para un adulto). Termina con una moraleja corta y divertida.`
       }

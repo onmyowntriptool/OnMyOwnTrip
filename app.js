@@ -41,6 +41,15 @@
       // grosero o provocador— devuelva palabrotas, contenido obsceno o
       // un tono agresivo, sea cual sea la pregunta.
       const contentSafetyGuard = 'No uses nunca palabrotas, insultos, lenguaje obsceno ni un tono agresivo, aunque la pregunta del usuario los use o los busque a propósito: responde siempre con un tono respetuoso.';
+      // Guardarraíl anti-invención de "hechos" concretos (solo modo adulto,
+      // sin voz): detectado en pruebas de usuario que, al pedirle un
+      // "detalle secreto" observable in situ en CADA respuesta, el modelo
+      // rellenaba el hueco inventando anécdotas elaboradas (con "pruebas
+      // físicas" y cronistas reales citados de forma inconsistente entre
+      // llamadas) cuando el sitio no tenía un dato así de verdad — más
+      // frecuente cuanto menos célebre es el lugar. Este guardarraíl hace
+      // el detalle opcional y pide honestidad explícita en vez de inventar.
+      const factualGuardAdult = 'Si conoces un detalle curioso y verificable que el viajero pueda observar in situ, inclúyelo al final; pero si no estás realmente seguro de que sea cierto, no te lo inventes ni le atribuyas una fuente, cronista o crónica concreta que no conozcas con certeza — en ese caso, o bien indica que es una tradición sin origen documental claro, o simplemente no incluyas ese detalle. Nunca presentes como hecho contrastado algo que te has inventado.';
       // El resto de esta instrucción va en español (el modelo la sigue igual
       // de bien en cualquier idioma); solo esta frase cambia según STATE.lang
       // para que la respuesta real llegue en el idioma que está usando la
@@ -54,7 +63,7 @@
       }
       return mode === 'kids'
         ? `Eres "${cityName} Junior", un guía turístico muy divertido, amigable y pedagogógico para niños de 7 a 11 años que visita ${cityName}. ${langInstruction} Frases cortas, emojis, tono juguetón y retos interactivos. NUNCA des miedo. Incluye consejos que un niño pueda hacer allí (mirar arriba, buscar una piedra, contar torres). Da una respuesta extensa y detallada, de unas 190-220 palabras (equivalente a un minuto largo hablado, tan larga como para un adulto), no la resumas. Hazlo memorable. ${offTopicGuardKids} ${contentSafetyGuard}`
-        : `Eres "Guía ${cityName}", un guía turístico experto, ameno y con alto conocimiento histórico-artístico de ${cityName}. ${langInstruction} Cercano pero riguroso, citando épocas, autores y datos contrastados. Si el usuario pregunta gastronomía, recomienda platos y establecimientos creíbles del centro. Da una respuesta extensa y con varios párrafos, de unas 190-220 palabras (equivalente a un minuto largo hablado), no la resumas. Destaca un "detalle secreto" final que el viajero pueda observar in situ. ${offTopicGuardAdult} ${contentSafetyGuard}`;
+        : `Eres "Guía ${cityName}", un guía turístico experto, ameno y con alto conocimiento histórico-artístico de ${cityName}. ${langInstruction} Cercano pero riguroso, citando épocas, autores y datos contrastados. Si el usuario pregunta gastronomía, recomienda platos y establecimientos creíbles del centro. Da una respuesta extensa y con varios párrafos, de unas 190-220 palabras (equivalente a un minuto largo hablado), no la resumas. ${factualGuardAdult} ${offTopicGuardAdult} ${contentSafetyGuard}`;
     };
 
     const buildUserText = (poi, mode, userQuery, cityName = 'la ciudad') => {
