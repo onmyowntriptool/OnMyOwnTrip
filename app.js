@@ -3834,13 +3834,13 @@
 
   const showCityIntroTapHint = () => {
     const icon = cityIntroIconEl(), hint = cityIntroHintEl();
-    if (icon) { icon.textContent = '🔊'; icon.classList.add('-tap'); }
+    if (icon) icon.classList.add('-tap');
     if (hint) hint.hidden = false;
   };
 
   const hideCityIntroTapHint = () => {
     const icon = cityIntroIconEl(), hint = cityIntroHintEl();
-    if (icon) { icon.textContent = '🧭'; icon.classList.remove('-tap'); }
+    if (icon) icon.classList.remove('-tap');
     if (hint) hint.hidden = true;
   };
 

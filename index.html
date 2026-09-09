@@ -44,7 +44,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-  <link rel="stylesheet" href="styles.css?v=62" />
+  <link rel="stylesheet" href="styles.css?v=63" />
 </head>
 <body>
   <!-- PANTALLA DE ACCESO: se muestra ANTES que la de bienvenida cuando no
@@ -151,7 +151,7 @@
       </div>
     </div>
 
-    <span class="onboarding-version" id="appVersion">Beta V33</span>
+    <span class="onboarding-version" id="appVersion">Beta V34</span>
     <button type="button" class="onboarding-reset" id="obResetBtn">Reiniciar app</button>
     <a class="onboarding-legal" href="privacidad.html" id="obPrivacyLink">Privacidad y créditos</a>
   </div>
@@ -250,7 +250,9 @@
   <div class="city-intro-modal" id="cityIntroModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Bienvenida a la ciudad">
     <div class="city-intro-card">
       <button type="button" class="city-intro-skip" id="cityIntroSkip">Saltar intro ✕</button>
-      <button type="button" class="city-intro-icon" id="cityIntroIcon" aria-label="Reproducir bienvenida">🧭</button>
+      <button type="button" class="city-intro-icon" id="cityIntroIcon" aria-label="Reproducir bienvenida">
+        <img src="assets/icons/icon-192.png?v=1" alt="" aria-hidden="true">
+      </button>
       <p class="city-intro-hint" id="cityIntroHint" hidden>🔊 Toca el icono para escuchar</p>
       <p class="city-intro-text" id="cityIntroText"></p>
       <button type="button" class="city-intro-start" id="cityIntroStart">Empezar a explorar</button>
@@ -612,8 +614,8 @@
   <!-- El "?v=N" de data.js/app.js/styles.css evita que el móvil se quede con
        una versión vieja en caché: sube este número en cada cambio a esos
        archivos para forzar que se vuelvan a descargar. -->
-  <script src="data/core.js?v=29"></script>
-  <script src="app.js?v=199"></script>
+  <script src="data/core.js?v=30"></script>
+  <script src="app.js?v=200"></script>
   <!-- Service Worker: cachea el shell de la app y las imágenes de POIs ya
        vistas, para que la audioguía siga funcionando con conexión
        intermitente (típico caminando por cascos históricos). Ruta relativa
