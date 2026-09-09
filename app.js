@@ -3801,10 +3801,68 @@
 
   const cityIntroModal = $('#cityIntroModal');
 
+  // La narración de esta bienvenida NO puede reutilizar el <audio>
+  // compartido de la ficha de POI (cloudAudioEl/startAudio, ver más abajo):
+  // ese camino exige STATE.activePoiId, y esto se dispara ANTES de elegir
+  // ningún POI. Se le da su propio <audio> independiente, pero con la
+  // misma cadena de prioridad que el audioguía de cada sitio: audio ya
+  // cacheado en la nube (CLOUD_TTS) > pedirlo ahora mismo si hay Worker
+  // configurado > síntesis de voz local (Web Speech). Esta última no
+  // existe en el WebView de Android empaquetado (no hay
+  // window.speechSynthesis ahí, ver comentario en startAudio), pero sí en
+  // navegador de escritorio/iOS, así que se deja como último recurso en
+  // vez de dejar la bienvenida muda del todo en esos entornos.
+  let cityIntroAudioEl = null;
+
+  const stopCityIntroSpeech = () => {
+    SPEECH.cancel();
+    STATE.audio.overrideText = null;
+    if (cityIntroAudioEl) {
+      cityIntroAudioEl.onended = null;
+      cityIntroAudioEl.onerror = null;
+      cityIntroAudioEl.pause();
+    }
+  };
+
+  const speakCityIntroViaLocalSpeech = (text) => {
+    if (!SPEECH.isSupported() || !text) return;
+    STATE.audio.overrideText = text;
+    SPEECH.speak(() => { STATE.audio.overrideText = null; });
+  };
+
+  const playCityIntroCloudUrl = (url, text) => {
+    if (!cityIntroAudioEl) cityIntroAudioEl = new Audio();
+    cityIntroAudioEl.onerror = () => speakCityIntroViaLocalSpeech(text);
+    cityIntroAudioEl.src = url;
+    cityIntroAudioEl.currentTime = 0;
+    const p = cityIntroAudioEl.play();
+    if (p && p.catch) p.catch(() => speakCityIntroViaLocalSpeech(text));
+  };
+
+  const speakCityIntro = (text) => {
+    if (!text) return;
+    if (STATE.audio.playing) stopAudio();
+    const cachedUrl = CLOUD_TTS.getReadyUrl(text);
+    if (cachedUrl) { playCityIntroCloudUrl(cachedUrl, text); return; }
+    if (CLOUD_TTS.isConfigured()) {
+      CLOUD_TTS.fetchAndCache(text).then((url) => {
+        // Si para cuando llega el audio el usuario ya cerró la bienvenida
+        // (skip/empezar), no hay nada que reproducir encima de lo que sea
+        // que esté haciendo ahora.
+        if (!cityIntroModal || !cityIntroModal.classList.contains('-open')) return;
+        if (url) playCityIntroCloudUrl(url, text);
+        else speakCityIntroViaLocalSpeech(text);
+      });
+      return;
+    }
+    speakCityIntroViaLocalSpeech(text);
+  };
+
   const closeCityIntro = (markSeen = true) => {
     if (!cityIntroModal) return;
     cityIntroModal.classList.remove('-open');
     cityIntroModal.setAttribute('aria-hidden', 'true');
+    stopCityIntroSpeech();
     if (markSeen && CURRENT_CITY) markCityIntroSeen(CURRENT_CITY.id);
   };
 
@@ -3829,6 +3887,7 @@
     if (startBtn) startBtn.textContent = t('cityIntroStart');
     cityIntroModal.classList.add('-open');
     cityIntroModal.setAttribute('aria-hidden', 'false');
+    speakCityIntro(text);
   };
 
   const wireCityIntro = () => {
