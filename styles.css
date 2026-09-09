@@ -385,6 +385,68 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
 .directions-confirm-ok:active,
 .directions-confirm-cancel:active { transform: scale(0.97); }
 
+/* Mismo patrón visual que .directions-confirm-*, pero para la bienvenida
+   corta a cada ciudad (una vez por ciudad, la primera vez que se entra).
+   Card algo más ancha/alta que la de Maps porque el texto es un párrafo
+   entero, no una frase. */
+.city-intro-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 6100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(5, 7, 13, 0.92);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease;
+}
+.city-intro-modal.-open {
+  opacity: 1;
+  visibility: visible;
+}
+.city-intro-card {
+  width: min(92vw, 400px);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  padding: 16px 22px 22px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.city-intro-skip {
+  display: block;
+  margin: 0 0 4px auto;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-soft);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 0;
+}
+.city-intro-icon { font-size: 34px; line-height: 1; margin-bottom: 10px; }
+.city-intro-text {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-text);
+  margin: 0 0 20px;
+  text-align: left;
+}
+.city-intro-start {
+  width: 100%;
+  height: 46px;
+  border-radius: var(--radius-pill);
+  border: 0;
+  background: #F5B942;
+  color: #1a1300;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+}
+.city-intro-start:active { transform: scale(0.97); }
+
 /* Registro (oculto) de fotos escaneadas sin match curado: se abre tocando
    varias veces seguidas la etiqueta "Beta VXX" de la portada (ver
    wireScanLogTrigger en app.js). Pensado solo para el propio desarrollador,

@@ -44,7 +44,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-  <link rel="stylesheet" href="styles.css?v=60" />
+  <link rel="stylesheet" href="styles.css?v=61" />
 </head>
 <body>
   <!-- PANTALLA DE ACCESO: se muestra ANTES que la de bienvenida cuando no
@@ -151,7 +151,7 @@
       </div>
     </div>
 
-    <span class="onboarding-version" id="appVersion">Beta V29</span>
+    <span class="onboarding-version" id="appVersion">Beta V30</span>
     <button type="button" class="onboarding-reset" id="obResetBtn">Reiniciar app</button>
     <a class="onboarding-legal" href="privacidad.html" id="obPrivacyLink">Privacidad y créditos</a>
   </div>
@@ -239,6 +239,20 @@
         <div class="tutorial-dots" id="tutorialDots"></div>
         <button type="button" class="tutorial-next" id="tutorialNext">Siguiente</button>
       </div>
+    </div>
+  </div>
+
+  <!-- BIENVENIDA DE CIUDAD (una vez por ciudad, la primera vez que se
+       entra en ella): tarjeta corta con una introducción emotiva al lugar,
+       antes de que el usuario empiece a explorar (ver maybeShowCityIntro /
+       CITY_INTRO_SEEN_KEY en app.js). No es el tutorial de la app (ese va
+       sobre cómo se usa OnMyOwnTrip); esto va sobre la propia ciudad. -->
+  <div class="city-intro-modal" id="cityIntroModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Bienvenida a la ciudad">
+    <div class="city-intro-card">
+      <button type="button" class="city-intro-skip" id="cityIntroSkip">Saltar intro ✕</button>
+      <div class="city-intro-icon" aria-hidden="true">🧭</div>
+      <p class="city-intro-text" id="cityIntroText"></p>
+      <button type="button" class="city-intro-start" id="cityIntroStart">Empezar a explorar</button>
     </div>
   </div>
 
@@ -597,8 +611,8 @@
   <!-- El "?v=N" de data.js/app.js/styles.css evita que el móvil se quede con
        una versión vieja en caché: sube este número en cada cambio a esos
        archivos para forzar que se vuelvan a descargar. -->
-  <script src="data/core.js?v=28"></script>
-  <script src="app.js?v=195"></script>
+  <script src="data/core.js?v=29"></script>
+  <script src="app.js?v=196"></script>
   <!-- Service Worker: cachea el shell de la app y las imágenes de POIs ya
        vistas, para que la audioguía siga funcionando con conexión
        intermitente (típico caminando por cascos históricos). Ruta relativa

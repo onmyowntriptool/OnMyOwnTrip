@@ -1304,6 +1304,8 @@
     tutorialNext: { es: { adult: 'Siguiente', kids: 'Siguiente' }, en: { adult: 'Next', kids: 'Next' } },
     tutorialGo: { es: { adult: 'Entendido', kids: '¡Vamos allá! 🚀' }, en: { adult: 'Got it', kids: "Let's go! 🚀" } },
     tutorialSkip: { es: { adult: 'Saltar tutorial ✕', kids: 'Saltar tutorial ✕' }, en: { adult: 'Skip tutorial ✕', kids: 'Skip tutorial ✕' } },
+    cityIntroSkip: { es: { adult: 'Saltar intro ✕', kids: 'Saltar intro ✕' }, en: { adult: 'Skip intro ✕', kids: 'Skip intro ✕' } },
+    cityIntroStart: { es: { adult: 'Empezar a explorar', kids: '¡Vamos a explorarla! 🚀' }, en: { adult: 'Start exploring', kids: "Let's explore it! 🚀" } },
     tutorialBack: { es: { adult: '‹ Atrás', kids: '‹ Atrás' }, en: { adult: '‹ Back', kids: '‹ Back' } },
     tutorialBackAria: { es: { adult: 'Paso anterior', kids: 'Paso anterior' }, en: { adult: 'Previous step', kids: 'Previous step' } },
     demoBadge: { es: { adult: 'Museos · Ilustrativo', kids: 'Museos · Ilustrativo' }, en: { adult: 'Museums · Illustrative', kids: 'Museums · Illustrative' } },
@@ -3721,6 +3723,12 @@
       window.removeEventListener('resize', tutorialResizeHandler);
       tutorialResizeHandler = null;
     }
+    // Encadena la bienvenida a la ciudad justo después de cerrar el
+    // tutorial general (ver maybeShowCityIntro más abajo): así, la
+    // primerísima vez que se abre la app, el usuario ve primero cómo
+    // funciona OnMyOwnTrip y justo después una bienvenida a la ciudad
+    // concreta que eligió, nunca los dos overlays a la vez.
+    maybeShowCityIntro();
   };
 
   const startTutorial = () => {
@@ -3769,6 +3777,63 @@
     $('#brandIcon')?.addEventListener('click', () => {
       if (STATE.mode === 'adult') startTutorial();
     });
+  };
+
+  /* =========================================================
+   * BIENVENIDA DE CIUDAD (una vez por ciudad — ver comentario en index.html
+   * junto a #cityIntroModal). Distinta del tutorial de arriba: el tutorial
+   * explica cómo se usa la app (una sola vez, por modo); esto presenta la
+   * propia ciudad (una vez por ciudad, la primera vez que se entra en
+   * ella), usando CITIES.<id>.welcomeIntro escrito a mano por ciudad.
+   * =======================================================*/
+  const CITY_INTRO_SEEN_KEY = 'omot_city_intro_seen_v1';
+
+  const getCityIntroSeen = () => {
+    try { return new Set(JSON.parse(localStorage.getItem(CITY_INTRO_SEEN_KEY) || '[]')); }
+    catch (_) { return new Set(); }
+  };
+
+  const markCityIntroSeen = (cityId) => {
+    const seen = getCityIntroSeen();
+    seen.add(cityId);
+    try { localStorage.setItem(CITY_INTRO_SEEN_KEY, JSON.stringify([...seen])); } catch (_) {}
+  };
+
+  const cityIntroModal = $('#cityIntroModal');
+
+  const closeCityIntro = (markSeen = true) => {
+    if (!cityIntroModal) return;
+    cityIntroModal.classList.remove('-open');
+    cityIntroModal.setAttribute('aria-hidden', 'true');
+    if (markSeen && CURRENT_CITY) markCityIntroSeen(CURRENT_CITY.id);
+  };
+
+  // Se llama tras cargar una ciudad (ver startApp) y también desde
+  // closeTutorial: en la primerísima vez que se abre la app, si el
+  // tutorial general va a arrancar, esta función se queda quieta (para no
+  // tapar un overlay con otro) y es closeTutorial quien vuelve a llamarla
+  // en cuanto el tutorial se cierra — así el orden siempre es "tutorial de
+  // la app" → "bienvenida a la ciudad", nunca al revés ni solapados.
+  const maybeShowCityIntro = () => {
+    if (!cityIntroModal || !CURRENT_CITY || !CURRENT_CITY.welcomeIntro) return;
+    const tutorialOverlay = $('#tutorialOverlay');
+    if (tutorialOverlay && !tutorialOverlay.hidden) return;
+    if (getCityIntroSeen().has(CURRENT_CITY.id)) return;
+    const text = pickDual(CURRENT_CITY.welcomeIntro);
+    if (!text) return;
+    const textEl = $('#cityIntroText');
+    const skipBtn = $('#cityIntroSkip');
+    const startBtn = $('#cityIntroStart');
+    if (textEl) textEl.textContent = text;
+    if (skipBtn) skipBtn.textContent = t('cityIntroSkip');
+    if (startBtn) startBtn.textContent = t('cityIntroStart');
+    cityIntroModal.classList.add('-open');
+    cityIntroModal.setAttribute('aria-hidden', 'false');
+  };
+
+  const wireCityIntro = () => {
+    $('#cityIntroSkip')?.addEventListener('click', () => closeCityIntro(true));
+    $('#cityIntroStart')?.addEventListener('click', () => closeCityIntro(true));
   };
 
   const setStateMode = (mode) => {
@@ -6807,6 +6872,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     wireMicInput();
     wireAiCallModal();
     wireTutorial();
+    wireCityIntro();
 
     setStateMode(STATE.mode);
     updatePills();
@@ -6828,6 +6894,10 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       setTimeout(() => {
         showToast(t('welcomeBack').replace('{city}', CURRENT_CITY.name));
       }, 600);
+      // Sin tutorial de por medio (ya visto antes), la bienvenida a la
+      // ciudad no tiene que esperar a que nada se cierre: se muestra
+      // directamente si esta ciudad concreta es nueva para el usuario.
+      setTimeout(() => maybeShowCityIntro(), 650);
     }
   };
 
