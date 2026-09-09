@@ -1242,6 +1242,11 @@
   let CURRENT_CITY = null;
   let fountainsLayer = null, fountainsVisible = false;
   let restroomsLayer = null, restroomsVisible = false;
+  // EXPERIMENTO (rama experimento-vista-satelite): capa base alternativa de
+  // imagen satelital en vez del mapa de calles de siempre. A diferencia de
+  // fuentes/aseos (capas aditivas por encima del mapa), esta es una capa
+  // BASE: se intercambia con streetLayer, nunca convive con ella a la vez.
+  let streetLayer = null, satelliteLayer = null, satelliteVisible = false;
 
   /* =========================================================
    * HELPERS
@@ -1713,10 +1718,26 @@
     // Los tiles estándar de OpenStreetMap son gratuitos sin clave, pero su
     // política de uso exige atribución visible: de ahí attributionControl
     // pasando a true arriba, en vez de estar desactivado del todo.
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19, minZoom: cityMinZoom, subdomains: 'abc',
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(map);
+    });
+    // EXPERIMENTO (rama experimento-vista-satelite): imagen satelital de
+    // Esri (gratuita, sin clave de API) + una capa de etiquetas encima
+    // (nombres de calles/lugares) para que siga siendo legible — la
+    // imagen sola no trae ningún texto. Ambas teselas van en un mismo
+    // layerGroup para tratarse como una sola "capa base" al intercambiar
+    // con streetLayer (ver toggleSatellite).
+    satelliteLayer = L.layerGroup([
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19, minZoom: cityMinZoom,
+        attribution: 'Tiles &copy; Esri'
+      }),
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19, minZoom: cityMinZoom
+      })
+    ]);
+    (satelliteVisible ? satelliteLayer : streetLayer).addTo(map);
     markersLayer = L.layerGroup().addTo(map);
     // Agrupa pines en modo "explorar libremente" (fuera de una ruta): con
     // ciudades como Madrid (59 POIs) el mapa alejado es ilegible sin esto.
@@ -2588,6 +2609,24 @@
       if (!map.hasLayer(restroomsLayer)) restroomsLayer.addTo(map);
     } else if (map.hasLayer(restroomsLayer)) {
       map.removeLayer(restroomsLayer);
+    }
+  };
+
+  // EXPERIMENTO (rama experimento-vista-satelite): a diferencia de
+  // toggleFountains/toggleRestrooms (capas aditivas), aquí se INTERCAMBIA
+  // la capa base — streetLayer y satelliteLayer nunca están las dos a la
+  // vez, para no pintar calles encima de la foto o viceversa.
+  const toggleSatellite = () => {
+    satelliteVisible = !satelliteVisible;
+    const btn = $('#satelliteBtn');
+    btn?.classList.toggle('-active', satelliteVisible);
+    if (!map || !streetLayer || !satelliteLayer) return;
+    if (satelliteVisible) {
+      if (map.hasLayer(streetLayer)) map.removeLayer(streetLayer);
+      satelliteLayer.addTo(map);
+    } else {
+      if (map.hasLayer(satelliteLayer)) map.removeLayer(satelliteLayer);
+      streetLayer.addTo(map);
     }
   };
 
@@ -6554,6 +6593,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
 
     $('#fountainsBtn')?.addEventListener('click', () => toggleFountains());
     $('#restroomsBtn')?.addEventListener('click', () => toggleRestrooms());
+    $('#satelliteBtn')?.addEventListener('click', () => toggleSatellite());
 
     $('#scanBtn')?.addEventListener('click', () => {
       const menu = $('#scanMenu'), btn = $('#scanBtn');
