@@ -1997,6 +1997,21 @@
     }
   };
 
+  // El mapa tiene un maxBounds (ver initMap) que "engancha" cualquier
+  // flyTo/panTo hacia el punto válido más cercano si las coordenadas
+  // pedidas caen fuera de él — así que centrar en una posición real que
+  // no está dentro de la ciudad no falla ni se nota como error: el mapa
+  // simplemente aterriza en el borde más próximo, un punto sin ningún
+  // significado (bug real reportado, 2026-09: al abrir Berlín estando
+  // lejos de la ciudad, el auto-centrado silencioso —ver startApp— llevaba
+  // a "un punto random" en vez de quedarse en el centro). Se usa el mismo
+  // pad(0.25) que maxBounds para que el criterio de "cerca" coincida
+  // exactamente con la zona por la que el mapa deja moverse de verdad.
+  const isNearCurrentCity = (lat, lng) => {
+    if (!CURRENT_CITY || !CURRENT_CITY.bounds) return true;
+    return L.latLngBounds(CURRENT_CITY.bounds[0], CURRENT_CITY.bounds[1]).pad(0.25).contains([lat, lng]);
+  };
+
   const requestLocation = (centerOnResult = true, silent = false) => {
     startHeadingWatch();
     const btn = $('#locateBtn');
@@ -2007,7 +2022,8 @@
     // Si el seguimiento continuo ya está activo y tenemos una posición
     // reciente, no hace falta pedir una nueva: solo recentra el mapa.
     if (locationWatchId !== null && STATE.userLocation) {
-      if (centerOnResult && map) map.flyTo([STATE.userLocation.lat, STATE.userLocation.lng], 16, { duration: 0.7 });
+      const shouldCenter = centerOnResult && (!silent || isNearCurrentCity(STATE.userLocation.lat, STATE.userLocation.lng));
+      if (shouldCenter && map) map.flyTo([STATE.userLocation.lat, STATE.userLocation.lng], 16, { duration: 0.7 });
       return;
     }
     btn?.classList.add('-locating');
@@ -2017,7 +2033,15 @@
         btn?.classList.remove('-locating');
         btn?.classList.add('-active');
         updateUserMarker();
-        if (centerOnResult && map) map.flyTo([STATE.userLocation.lat, STATE.userLocation.lng], 16, { duration: 0.7 });
+        // En el intento silencioso al abrir la app (ver startApp), solo se
+        // recentra si de verdad estás cerca de la ciudad que estás viendo
+        // — si no, se deja el centro de la ciudad tal cual, en vez de
+        // arrastrar el mapa a un punto sin sentido en el borde (ver
+        // isNearCurrentCity arriba). El botón manual de "localizarme"
+        // sigue centrando siempre, esté cerca o no: ahí sí es información
+        // útil (confirma que no estás en la zona).
+        const shouldCenter = centerOnResult && (!silent || isNearCurrentCity(STATE.userLocation.lat, STATE.userLocation.lng));
+        if (shouldCenter && map) map.flyTo([STATE.userLocation.lat, STATE.userLocation.lng], 16, { duration: 0.7 });
         if (STATE.activePoiId) updateSheetDistance(STATE.activePoiId);
         startLocationWatch();
       },
