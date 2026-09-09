@@ -2776,6 +2776,25 @@ html[data-mode="kids"] .ai-input-wrap {
   transition: top 0.35s ease, left 0.35s ease, width 0.35s ease, height 0.35s ease, border-radius 0.35s ease;
   pointer-events: none;
 }
+/* Anillo pulsante alrededor del propio agujero iluminado: sin esto, en
+   pruebas de usuario varias personas leían el texto del tooltip (siempre
+   anclado abajo) y pasaban a "Siguiente" sin que su vista llegara a subir
+   hasta el elemento iluminado, que podía estar lejos en la pantalla — el
+   oscurecido del fondo por sí solo no atraía la mirada lo bastante rápido.
+   Solo se activa con la clase "-highlighting" (ver positionTutorialSpotlight
+   en app.js): el paso informativo sin objetivo real (spotlight de 0x0) no
+   la lleva, para no pulsar un anillo alrededor de la nada. */
+.tutorial-spotlight.-highlighting {
+  animation: tutorialPulse 1.4s ease-out infinite;
+}
+@keyframes tutorialPulse {
+  0% { box-shadow: 0 0 0 9999px rgba(5, 7, 13, 0.8), 0 0 0 0 color-mix(in srgb, var(--color-primary) 70%, transparent); }
+  70% { box-shadow: 0 0 0 9999px rgba(5, 7, 13, 0.8), 0 0 0 14px color-mix(in srgb, var(--color-primary) 0%, transparent); }
+  100% { box-shadow: 0 0 0 9999px rgba(5, 7, 13, 0.8), 0 0 0 0 color-mix(in srgb, var(--color-primary) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-spotlight.-highlighting { animation: none; }
+}
 .tutorial-tooltip {
   position: fixed;
   left: 50%;

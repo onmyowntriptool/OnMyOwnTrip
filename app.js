@@ -1976,11 +1976,11 @@
     }
   };
 
-  const requestLocation = (centerOnResult = true) => {
+  const requestLocation = (centerOnResult = true, silent = false) => {
     startHeadingWatch();
     const btn = $('#locateBtn');
     if (!navigator.geolocation) {
-      showToast(t('locationUnsupported'));
+      if (!silent) showToast(t('locationUnsupported'));
       return;
     }
     // Si el seguimiento continuo ya está activo y tenemos una posición
@@ -2002,6 +2002,7 @@
       },
       (err) => {
         btn?.classList.remove('-locating');
+        if (silent) return;
         const denied = err && err.code === 1;
         showToast(denied ? t('locationDenied') : t('locationFailed'), 3200);
       },
@@ -3627,11 +3628,13 @@
       spotlight.style.width = '0px';
       spotlight.style.height = '0px';
       spotlight.style.borderRadius = '0px';
+      spotlight.classList.remove('-highlighting');
       tooltip?.classList.remove('-top');
       return;
     }
     const target = step.target === TUTORIAL_MAP_PIN_TARGET ? pickTutorialMapPin() : $(step.target);
-    if (!target) { spotlight.style.opacity = '0'; return; }
+    if (!target) { spotlight.style.opacity = '0'; spotlight.classList.remove('-highlighting'); return; }
+    spotlight.classList.add('-highlighting');
     // Las pastillas de filtro pueden estar fuera de la vista (la barra
     // hace scroll horizontal): tráela al centro antes de medir su rect.
     if (target.closest('#filters')) target.scrollIntoView({ inline: 'center', block: 'nearest' });
@@ -7019,6 +7022,13 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
 
     setStateMode(STATE.mode);
     updatePills();
+
+    // Auto-centra en la ubicación real del usuario al abrir, en vez de
+    // esperar a que toque el botón de "localizarme" (petición real de
+    // testers, 2026-09-04: "no sé dónde estoy en el mapa"). Silencioso si
+    // falla o se deniega el permiso — ese aviso solo tiene sentido cuando
+    // el usuario toca el botón a propósito, no en cada apertura de la app.
+    setTimeout(() => requestLocation(true, true), 800);
 
     // El tutorial (primera vez en cada modo, niño o adultos) y el toast de
     // bienvenida compiten por la atención en el mismo instante: si va a
