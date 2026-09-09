@@ -1642,11 +1642,18 @@
    * =======================================================*/
   const makePinIcon = (poi, dimmed = false) => {
     const color = dimmed ? '#94A3B8' : getCategoryPinColor(poi.category);
-    const icon = getCategoryPinIconSvg(poi.category);
-    const cls = 'custom-pin' + (dimmed ? ' -dimmed' : '');
+    // EXPERIMENTO (rama experimento-diseno-editorial): pin como retrato/foto
+    // real del POI en vez del icono genérico de categoría, con un anillo de
+    // color a modo de borde -- inspirado en apps de historia con mapa tipo
+    // "avatares" en vez de pines planos. Si el POI no tiene imagen (raro,
+    // pero pasa en algún dato suelto), cae al icono de siempre.
+    const hasPhoto = !!poi.image;
+    const icon = hasPhoto ? '' : getCategoryPinIconSvg(poi.category);
+    const bgStyle = hasPhoto ? ` background-image:url('${poi.image}');` : '';
+    const cls = 'custom-pin' + (hasPhoto ? ' -avatar' : '') + (dimmed ? ' -dimmed' : '');
     return L.divIcon({
       className: 'custom-pin-wrap',
-      html: `<div class="${cls}" data-id="${poi.id}" style="--pin-color:${color}">${icon}</div>`,
+      html: `<div class="${cls}" data-id="${poi.id}" style="--pin-color:${color};${bgStyle}">${icon}</div>`,
       iconSize: [38, 38], iconAnchor: [19, 19], popupAnchor: [0, -19]
     });
   };
@@ -5797,6 +5804,22 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     const poi = POIS.find((p) => p.id === id);
     if (!poi) return;
     const meta = CATEGORY_META[poi.category];
+
+    // EXPERIMENTO (rama experimento-diseno-editorial): tiñe la cabecera de
+    // la ficha con el color de la categoría (ver .sheet-head en el CSS).
+    // meta.accent ya existía en CATEGORY_META desde antes pero no se usaba
+    // en ningún sitio -- se reaprovecha aquí en vez de inventar un color
+    // nuevo por categoría.
+    const sheetHead = $('.sheet-head', els.sheet);
+    if (sheetHead) {
+      if (meta.accent) {
+        sheetHead.style.setProperty('--sheet-accent-raw', meta.accent);
+        sheetHead.setAttribute('data-tinted', 'true');
+      } else {
+        sheetHead.style.removeProperty('--sheet-accent-raw');
+        sheetHead.removeAttribute('data-tinted');
+      }
+    }
 
     setSheetThumbImage(poi.image, pickDual(poi.name));
     $('.sheet-cat-badge', els.sheet).textContent = pickDual(meta.label)

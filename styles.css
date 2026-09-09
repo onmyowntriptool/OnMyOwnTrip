@@ -1587,6 +1587,20 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
 }
 .custom-pin.-cluster:hover { transform: scale(calc(var(--pin-scale, 1) * 1.08)); }
 
+/* EXPERIMENTO (rama experimento-diseno-editorial): pin de retrato/foto en
+   vez del icono plano de categoría -- ver makePinIcon en app.js. El anillo
+   de color (en vez del borde neutro del pin normal) es lo que sigue
+   comunicando la categoría a simple vista, ahora que el icono ya no está. */
+.custom-pin.-avatar {
+  background-size: cover;
+  background-position: center top;
+  background-color: var(--pin-color, var(--color-primary));
+  border: 3px solid var(--pin-color, var(--color-primary));
+}
+.custom-pin.-avatar.-selected {
+  border-color: #fff;
+}
+
 /* ---------- DISTANCIA ENTRE PARADAS DE LA RUTA ---------- */
 .route-distance-wrap { pointer-events: none; }
 .route-distance {
@@ -1680,8 +1694,29 @@ html[data-mode="kids"] .bottom-sheet {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 0 16px 12px;
+  padding: 16px 16px 14px;
   flex-shrink: 0;
+  /* EXPERIMENTO (rama experimento-diseno-editorial): cabecera teñida con el
+     color de la categoría (ver --sheet-accent-raw, puesto por
+     populateSheetContent en app.js), en vez de blanco liso -- inspirado en
+     tarjetas de apps de historia con fondo de color por categoría. Se
+     mezcla con blanco (45%) para quedar en un tono medio legible, no el
+     acento saturado entero. Sin --sheet-accent-raw (fichas sin categoría
+     conocida) cae a transparente, o sea el fondo blanco de siempre.
+     border-top-radius igualado al de .bottom-sheet para que la esquina
+     coincida al ras. */
+  background: color-mix(in srgb, var(--sheet-accent-raw, transparent) 45%, white);
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+}
+.sheet-head[data-tinted="true"] .sheet-cat-badge,
+.sheet-head[data-tinted="true"] .sheet-title,
+.sheet-head[data-tinted="true"] .sheet-sub,
+.sheet-head[data-tinted="true"] .sheet-distance {
+  color: #241C10;
+}
+.sheet-head[data-tinted="true"] .sheet-close {
+  color: #241C10;
 }
 .sheet-thumb-wrap {
   position: relative;
