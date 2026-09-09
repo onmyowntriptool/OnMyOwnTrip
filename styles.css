@@ -426,7 +426,28 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   cursor: pointer;
   padding: 2px 0;
 }
-.city-intro-icon { font-size: 34px; line-height: 1; margin-bottom: 10px; }
+.city-intro-icon {
+  display: block;
+  margin: 0 auto 10px;
+  border: 0;
+  background: transparent;
+  font-size: 34px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+}
+.city-intro-icon.-tap { animation: cityIntroTapPulse 1.1s ease-in-out infinite; }
+@keyframes cityIntroTapPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.14); }
+}
+.city-intro-hint {
+  font-size: 12px;
+  font-weight: 600;
+  color: #F5B942;
+  text-align: center;
+  margin: -4px 0 12px;
+}
 .city-intro-text {
   font-size: 14px;
   line-height: 1.55;

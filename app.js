@@ -3813,13 +3813,51 @@
   // navegador de escritorio/iOS, así que se deja como último recurso en
   // vez de dejar la bienvenida muda del todo en esos entornos.
   let cityIntroAudioEl = null;
+  // Texto de la bienvenida actualmente mostrada (para poder reintentar la
+  // reproducción manualmente, ver cityIntroIcon más abajo) y si ya llegó a
+  // sonar de verdad. Muchos navegadores (Safari/Chrome fuera de la app
+  // empaquetada, a diferencia del WebView de Capacitor en Android) bloquean
+  // el autoplay con sonido cuando la llamada a .play() no ocurre de forma
+  // síncrona dentro de un gesto del usuario — y aquí siempre hay un salto
+  // asíncrono de por medio (pedir el audio a CLOUD_TTS antes de poder
+  // reproducirlo). Si el intento automático de abajo no llega a sonar, se
+  // deja el propio icono de la tarjeta como botón de "toca para escuchar":
+  // un toque real SÍ es un gesto directo y esa reproducción nunca la bloquea
+  // el navegador (y para entonces el audio ya suele estar cacheado, así que
+  // ni siquiera hay que esperar a la red otra vez).
+  let cityIntroActiveText = null;
+  let cityIntroPlaybackStarted = false;
+  let cityIntroTapHintTimer = null;
+
+  const cityIntroIconEl = () => $('#cityIntroIcon');
+  const cityIntroHintEl = () => $('#cityIntroHint');
+
+  const showCityIntroTapHint = () => {
+    const icon = cityIntroIconEl(), hint = cityIntroHintEl();
+    if (icon) { icon.textContent = '🔊'; icon.classList.add('-tap'); }
+    if (hint) hint.hidden = false;
+  };
+
+  const hideCityIntroTapHint = () => {
+    const icon = cityIntroIconEl(), hint = cityIntroHintEl();
+    if (icon) { icon.textContent = '🧭'; icon.classList.remove('-tap'); }
+    if (hint) hint.hidden = true;
+  };
+
+  const markCityIntroPlaybackStarted = () => {
+    cityIntroPlaybackStarted = true;
+    clearTimeout(cityIntroTapHintTimer);
+    hideCityIntroTapHint();
+  };
 
   const stopCityIntroSpeech = () => {
+    clearTimeout(cityIntroTapHintTimer);
     SPEECH.cancel();
     STATE.audio.overrideText = null;
     if (cityIntroAudioEl) {
       cityIntroAudioEl.onended = null;
       cityIntroAudioEl.onerror = null;
+      cityIntroAudioEl.onplaying = null;
       cityIntroAudioEl.pause();
     }
   };
@@ -3828,11 +3866,16 @@
     if (!SPEECH.isSupported() || !text) return;
     STATE.audio.overrideText = text;
     SPEECH.speak(() => { STATE.audio.overrideText = null; });
+    // Web Speech no avisa de forma fiable si de verdad llegó a sonar (mismo
+    // problema de gesto que el <audio>, ver arriba), así que se comprueba a
+    // los pocos ms: si el motor está hablando de verdad, se da por bueno.
+    setTimeout(() => { if (SPEECH.isSpeaking()) markCityIntroPlaybackStarted(); }, 150);
   };
 
   const playCityIntroCloudUrl = (url, text) => {
     if (!cityIntroAudioEl) cityIntroAudioEl = new Audio();
     cityIntroAudioEl.onerror = () => speakCityIntroViaLocalSpeech(text);
+    cityIntroAudioEl.onplaying = () => markCityIntroPlaybackStarted();
     cityIntroAudioEl.src = url;
     cityIntroAudioEl.currentTime = 0;
     const p = cityIntroAudioEl.play();
@@ -3841,6 +3884,7 @@
 
   const speakCityIntro = (text) => {
     if (!text) return;
+    cityIntroActiveText = text;
     if (STATE.audio.playing) stopAudio();
     const cachedUrl = CLOUD_TTS.getReadyUrl(text);
     if (cachedUrl) { playCityIntroCloudUrl(cachedUrl, text); return; }
@@ -3858,11 +3902,22 @@
     speakCityIntroViaLocalSpeech(text);
   };
 
+  // Reintento manual: se llama tanto al tocar el icono como, de forma
+  // automática, si tras un momento el audio automático no llegó a sonar
+  // (ver el setTimeout en maybeShowCityIntro). Al ser un toque real, esta
+  // llamada a .play()/speak() nunca la bloquea el navegador.
+  const retryCityIntroPlayback = () => {
+    if (!cityIntroActiveText) return;
+    hideCityIntroTapHint();
+    speakCityIntro(cityIntroActiveText);
+  };
+
   const closeCityIntro = (markSeen = true) => {
     if (!cityIntroModal) return;
     cityIntroModal.classList.remove('-open');
     cityIntroModal.setAttribute('aria-hidden', 'true');
     stopCityIntroSpeech();
+    cityIntroActiveText = null;
     if (markSeen && CURRENT_CITY) markCityIntroSeen(CURRENT_CITY.id);
   };
 
@@ -3885,14 +3940,25 @@
     if (textEl) textEl.textContent = text;
     if (skipBtn) skipBtn.textContent = t('cityIntroSkip');
     if (startBtn) startBtn.textContent = t('cityIntroStart');
+    cityIntroPlaybackStarted = false;
+    hideCityIntroTapHint();
     cityIntroModal.classList.add('-open');
     cityIntroModal.setAttribute('aria-hidden', 'false');
     speakCityIntro(text);
+    // Si en 1.5s el audio automático no ha llegado a sonar de verdad (caso
+    // típico: navegador bloqueando el autoplay fuera de la app empaquetada),
+    // se muestra el icono como botón de "toca para escuchar" en vez de dejar
+    // la bienvenida muda sin que el usuario sepa por qué.
+    clearTimeout(cityIntroTapHintTimer);
+    cityIntroTapHintTimer = setTimeout(() => {
+      if (!cityIntroPlaybackStarted && cityIntroModal.classList.contains('-open')) showCityIntroTapHint();
+    }, 1500);
   };
 
   const wireCityIntro = () => {
     $('#cityIntroSkip')?.addEventListener('click', () => closeCityIntro(true));
     $('#cityIntroStart')?.addEventListener('click', () => closeCityIntro(true));
+    $('#cityIntroIcon')?.addEventListener('click', () => retryCityIntroPlayback());
   };
 
   const setStateMode = (mode) => {
