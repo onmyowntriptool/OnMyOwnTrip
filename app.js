@@ -3945,14 +3945,14 @@
     cityIntroModal.classList.add('-open');
     cityIntroModal.setAttribute('aria-hidden', 'false');
     speakCityIntro(text);
-    // Si en 1.5s el audio automático no ha llegado a sonar de verdad (caso
+    // Si en 3s el audio automático no ha llegado a sonar de verdad (caso
     // típico: navegador bloqueando el autoplay fuera de la app empaquetada),
     // se muestra el icono como botón de "toca para escuchar" en vez de dejar
     // la bienvenida muda sin que el usuario sepa por qué.
     clearTimeout(cityIntroTapHintTimer);
     cityIntroTapHintTimer = setTimeout(() => {
       if (!cityIntroPlaybackStarted && cityIntroModal.classList.contains('-open')) showCityIntroTapHint();
-    }, 1500);
+    }, 3000);
   };
 
   const wireCityIntro = () => {
