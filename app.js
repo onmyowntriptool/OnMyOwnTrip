@@ -1584,7 +1584,12 @@
 
   const getCategoryPinColor = (cat) => {
     if (cat === CATEGORIES.HISTORY) return '#3B82F6'; // monumentos y museos: azul
-    if (cat === CATEGORIES.GASTRONOMY) return '#EAB308'; // restauración: amarillo
+    // EXPERIMENTO (rama experimento-diseno-editorial): el amarillo puro
+    // (#EAB308) de restauración quedaba demasiado "llamativo" tanto en el
+    // pin como en la ficha (que ahora hereda este mismo color, ver
+    // populateSheetContent) -- un mostaza/ocre más apagado sigue
+    // leyéndose como "amarillo" a simple vista pero sin chillar.
+    if (cat === CATEGORIES.GASTRONOMY) return '#B8860B'; // restauración: mostaza/ocre
     if (cat === CATEGORIES.HIDDEN) return '#22C55E'; // puntos de interés: verde
     return '#3B82F6';
   };
