@@ -2143,7 +2143,12 @@ html[data-mode="kids"] .bottom-sheet {
   line-height: 1.3;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  /* EXPERIMENTO (rama experimento-diseno-editorial, ya en main): con el
+     botón "Llévame" ahora también en la cabecera (ver .sheet-directions-btn),
+     el título tiene menos ancho disponible que antes -- 2 líneas se
+     quedaban cortas para nombres largos ("Ermita de la Virgen de la
+     Ermitana" se veía cortado a media palabra). 3 líneas da más margen. */
+  -webkit-line-clamp: 3;
   overflow: hidden;
 }
 .sheet-sub {
