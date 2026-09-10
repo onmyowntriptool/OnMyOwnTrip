@@ -6750,8 +6750,45 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
    * =======================================================*/
   const wireEvents = () => {
     $('.sheet-close', els.sheet).addEventListener('click', closeSheet);
-    $('.sheet-handle', els.sheet).addEventListener('click', closeSheet);
     els.backdrop.addEventListener('click', closeSheet);
+
+    // FIX (reportado en producción, iPhone): el tirador de arriba solo tenía
+    // un listener de "click", que no llegaba a dispararse si el dedo se
+    // movía nada -- un swipe real hacia abajo lo clasifica el navegador
+    // como gesto de arrastre, no como tap, así que "bajar la pestaña" no
+    // hacía nada. Ahora sigue el dedo 1:1 con Pointer Events: si se suelta
+    // habiendo arrastrado más de DRAG_CLOSE_THRESHOLD, cierra la ficha; si
+    // apenas se movió (un tap de verdad), también cierra, igual que antes;
+    // si se soltó a medio camino, vuelve a su sitio con la misma
+    // transición que ya usa el CSS para abrir/cerrar.
+    const sheetHandleEl = $('.sheet-handle', els.sheet);
+    if (sheetHandleEl) {
+      const DRAG_CLOSE_THRESHOLD = 90;
+      let dragStartY = null;
+      let dragDelta = 0;
+      const onSheetHandleMove = (e) => {
+        if (dragStartY === null) return;
+        dragDelta = Math.max(0, e.clientY - dragStartY);
+        els.sheet.style.transform = `translateY(${dragDelta}px)`;
+      };
+      const onSheetHandleUp = () => {
+        if (dragStartY === null) return;
+        dragStartY = null;
+        els.sheet.style.transition = '';
+        els.sheet.style.transform = '';
+        if (dragDelta > DRAG_CLOSE_THRESHOLD || dragDelta < 6) closeSheet();
+        dragDelta = 0;
+      };
+      sheetHandleEl.addEventListener('pointerdown', (e) => {
+        dragStartY = e.clientY;
+        dragDelta = 0;
+        els.sheet.style.transition = 'none';
+        try { sheetHandleEl.setPointerCapture(e.pointerId); } catch (_) {}
+      });
+      sheetHandleEl.addEventListener('pointermove', onSheetHandleMove);
+      sheetHandleEl.addEventListener('pointerup', onSheetHandleUp);
+      sheetHandleEl.addEventListener('pointercancel', onSheetHandleUp);
+    }
 
     $('#locateBtn')?.addEventListener('click', () => requestLocation(true));
 

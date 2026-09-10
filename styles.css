@@ -1777,8 +1777,12 @@ html[data-mode="kids"] .bottom-sheet {
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  padding: 10px 0 4px;
+  padding: 14px 0 10px;
   cursor: pointer;
+  /* FIX: sin esto, el navegador intenta hacer scroll/pan de la página
+     mientras se arrastra el tirador (ver el pointermove en wireEvents,
+     app.js), compitiendo con el gesto de cerrar. */
+  touch-action: none;
 }
 .sheet-handle-bar {
   width: 40px;
