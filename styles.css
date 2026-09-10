@@ -1624,15 +1624,15 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   line-height: 1;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   /* EXPERIMENTO (rama experimento-diseno-editorial): naranja (V46), gris
-     pizarra (V47), gris metálico (V48) y vidrio esmerilado plano (V49) --
-     quinto intento, burbuja de cristal 3D: un brillo radial arriba-
-     izquierda simula el reflejo de una esfera, el inset oscuro abajo le da
-     volumen, y el fondo semitransparente + blur deja intuir el mapa
-     debajo en vez de taparlo del todo. */
+     pizarra (V47), gris metálico (V48), vidrio esmerilado gris (V49-V51) --
+     el gris no convencía. Ahora coral y bastante más transparente (30% en
+     vez de 62%) para que el mapa se note de verdad detrás; el brillo
+     radial arriba-izquierda + las sombras interiores mantienen el aspecto
+     de burbuja de cristal 3D. */
   background:
-    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.18) 28%, rgba(255, 255, 255, 0.04) 55%, rgba(0, 0, 0, 0.1) 100%),
-    color-mix(in srgb, var(--color-surface) 62%, transparent);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.18) 28%, rgba(255, 255, 255, 0.04) 55%, rgba(0, 0, 0, 0.06) 100%),
+    color-mix(in srgb, #FF7F5C 30%, transparent);
+  border: 1px solid color-mix(in srgb, #FF7F5C 55%, transparent);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   box-shadow:
