@@ -1620,25 +1620,29 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   font-family: inherit;
   font-size: 15px;
   font-weight: 600;
-  color: #fff;
+  color: #000;
   line-height: 1;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  /* Número en negro (a diferencia de las versiones anteriores, todas con
+     número blanco): con un fondo tan transparente hace falta un halo claro
+     en vez de la sombra oscura de antes para que se siga leyendo tanto
+     sobre calles claras como sobre zonas verdes/oscuras del mapa. */
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85), 0 0 4px rgba(255, 255, 255, 0.5);
   /* EXPERIMENTO (rama experimento-diseno-editorial): naranja (V46), gris
      pizarra (V47), gris metálico (V48), vidrio esmerilado gris (V49-V51),
-     coral al 30% (V52) -- seguía sin dejar ver el mapa lo suficiente. Baja
-     a 14% de color sólido (casi todo blur + brillo), y el borde/sombras
-     también más ligeros para que pese menos visualmente; el brillo radial
-     + las sombras interiores mantienen el aspecto de burbuja de cristal. */
+     coral (V52-V53) -- de vuelta al gris metálico de V48 pero al 15% de
+     opacidad (85% de transparencia) en vez de sólido, y con el número en
+     negro en vez de blanco. El brillo radial + las sombras interiores
+     siguen dando el aspecto de burbuja de cristal. */
   background:
     radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.16) 28%, rgba(255, 255, 255, 0.03) 55%, rgba(0, 0, 0, 0.04) 100%),
-    color-mix(in srgb, #FF7F5C 14%, transparent);
-  border: 1px solid color-mix(in srgb, #FF7F5C 40%, transparent);
+    linear-gradient(145deg, rgba(168, 175, 185, 0.15), rgba(107, 114, 128, 0.15));
+  border: 1px solid rgba(148, 155, 165, 0.35);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   box-shadow:
     inset 0 2px 3px rgba(255, 255, 255, 0.45),
-    inset 0 -5px 7px rgba(0, 0, 0, 0.22),
-    0 6px 14px rgba(0, 0, 0, 0.3);
+    inset 0 -5px 7px rgba(0, 0, 0, 0.18),
+    0 6px 14px rgba(0, 0, 0, 0.25);
 }
 .custom-pin.-cluster:hover { transform: scale(calc(var(--pin-scale, 1) * 1.08)); }
 
