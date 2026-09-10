@@ -4798,12 +4798,27 @@
     directionsModal.classList.remove('-open');
     directionsModal.setAttribute('aria-hidden', 'true');
     directionsPoi = null;
+    SPEECH.cancel();
+    STATE.audio.overrideText = null;
   };
   const openDirectionsConfirm = (poi) => {
     if (!directionsModal || !poi || !poi.coords) return;
     directionsPoi = poi;
     directionsModal.classList.add('-open');
     directionsModal.setAttribute('aria-hidden', 'false');
+    // EXPERIMENTO (rama experimento-diseno-editorial): el aviso de que se
+    // va a abrir Google Maps también se dice en voz, no solo en el texto
+    // del modal -- para quien va mirando el mapa o llevando el móvil en el
+    // bolsillo, no leyendo la ficha. Reutiliza el mismo texto que ya se
+    // muestra (directionsConfirmTitle/Text) en vez de inventar otro
+    // mensaje, y el mecanismo de "texto puntual" (overrideText) ya probado
+    // en speakCityIntroViaLocalSpeech: no hace falta duplicar el mensaje
+    // en el chat, solo se oye.
+    if (SPEECH.isSupported()) {
+      pauseAudio();
+      STATE.audio.overrideText = `${t('directionsConfirmTitle')}. ${t('directionsConfirmText')}`;
+      SPEECH.speak(() => { STATE.audio.overrideText = null; });
+    }
   };
 
   // Registro en memoria (a propósito NO va dentro de STATE: no tiene
