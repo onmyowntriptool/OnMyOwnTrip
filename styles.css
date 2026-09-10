@@ -1558,6 +1558,7 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
 
 /* ---------- CUSTOM PIN ---------- */
 .custom-pin {
+  position: relative;
   width: 38px;
   height: 38px;
   border-radius: 50%;
@@ -1573,6 +1574,26 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   width: 19px;
   height: 19px;
   overflow: visible;
+}
+/* EXPERIMENTO (rama experimento-diseno-editorial): mismo lenguaje de
+   "burbuja de cristal" que las burbujas de cluster (ver .-cluster más
+   abajo) pero como capa aparte (::after) en vez de fondo -- así funciona
+   igual sobre un color plano (pin de categoría) que sobre una foto (pin
+   -avatar, cuyo background-image va inline y pisaría cualquier gradiente
+   puesto en el propio background). Se excluye .-cluster porque ese ya
+   tiene su propio tratamiento de cristal más marcado. */
+.custom-pin:not(.-cluster)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle at 32% 26%,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.14) 32%,
+    rgba(255, 255, 255, 0.02) 55%,
+    rgba(0, 0, 0, 0.22) 100%);
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.4), inset 0 -4px 6px rgba(0, 0, 0, 0.32);
 }
 .custom-pin.-selected {
   transform: scale(calc(var(--pin-scale, 1) * 1.2));
@@ -1609,9 +1630,9 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
      volumen, y el fondo semitransparente + blur deja intuir el mapa
      debajo en vez de taparlo del todo. */
   background:
-    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.28) 28%, rgba(255, 255, 255, 0.08) 55%, rgba(255, 255, 255, 0.02) 100%),
-    color-mix(in srgb, var(--color-surface) 38%, transparent);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.18) 28%, rgba(255, 255, 255, 0.04) 55%, rgba(0, 0, 0, 0.1) 100%),
+    color-mix(in srgb, var(--color-surface) 62%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   box-shadow:
