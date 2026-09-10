@@ -4053,17 +4053,20 @@
     if (skipBtn) skipBtn.textContent = t('cityIntroSkip');
     if (startBtn) startBtn.textContent = t('cityIntroStart');
     // EXPERIMENTO (rama experimento-diseno-editorial): fondo del modal con
-    // una foto real de la ciudad en vez del negro liso de siempre -- se usa
-    // la foto del primer punto de la ruta "main" (el más representativo,
-    // ver essential.order) y si no hay ruta "main" o ningún POI con foto,
-    // cae al primer POI con imagen que encuentre; si de verdad no hay
-    // ninguna, se queda sin --city-intro-photo y el CSS usa su color de
-    // respaldo (ver .city-intro-modal).
-    const heroPoi = POIS.filter((p) => p.essential && p.essential.route === 'main' && p.image)
-      .sort((a, b) => a.essential.order - b.essential.order)[0]
-      || POIS.find((p) => p.image);
-    if (heroPoi) {
-      cityIntroModal.style.setProperty('--city-intro-photo', `url('${heroPoi.image}')`);
+    // una foto real de la ciudad en vez del negro liso de siempre. Prioriza
+    // CURRENT_CITY.heroImage, curada a mano por ciudad (el primer punto de
+    // la ruta por "order" no siempre es el más fotogénico ni representativo
+    // -- en Peñíscola era la playa en vez del castillo). Si una ciudad no
+    // trae heroImage (dato suelto sin curar todavía), cae al primer POI con
+    // foto de su ruta "main"; si de verdad no hay ninguna, se queda sin
+    // --city-intro-photo y el CSS usa su color de respaldo (ver
+    // .city-intro-modal).
+    const heroImage = CURRENT_CITY.heroImage
+      || (POIS.filter((p) => p.essential && p.essential.route === 'main' && p.image)
+        .sort((a, b) => a.essential.order - b.essential.order)[0] || {}).image
+      || (POIS.find((p) => p.image) || {}).image;
+    if (heroImage) {
+      cityIntroModal.style.setProperty('--city-intro-photo', `url('${heroImage}')`);
     } else {
       cityIntroModal.style.removeProperty('--city-intro-photo');
     }

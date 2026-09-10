@@ -79,6 +79,12 @@ const CITIES = {
     // fondo sin exigir el 100%.
     badgeThreshold: 720,
     badgeImg: 'assets/badges/toledo.png',
+    // EXPERIMENTO (rama experimento-diseno-editorial): foto de fondo del
+    // modal de bienvenida (ver maybeShowCityIntro en app.js) -- curada a
+    // mano por ciudad (el punto de la ruta con menor "order" no siempre es
+    // el más fotogénico ni representativo, ver Peñíscola/Playa Norte vs.
+    // su castillo). Reutiliza la imagen de un POI ya existente.
+    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/FP_Toledo_Alcazar_2025_-_Views.jpg/330px-FP_Toledo_Alcazar_2025_-_Views.jpg',
     center: [39.8628, -4.0273],
     zoom: 15.2,
     minZoom: 13,
@@ -165,6 +171,7 @@ const CITIES = {
     // ~50% del máximo real de Madrid (81 POIs con quiz × 10 = 2430 posibles).
     badgeThreshold: 1200,
     badgeImg: 'assets/badges/madrid.png',
+    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Palacio_Real_de_Madrid_Julio_2016_%28cropped%29.jpg/330px-Palacio_Real_de_Madrid_Julio_2016_%28cropped%29.jpg',
     center: [40.4169, -3.7095],
     zoom: 15.3,
     minZoom: 13,
@@ -273,6 +280,7 @@ const CITIES = {
     // ~50% del máximo real de Alcalá de Henares (16 POIs con quiz × 30 = 480 posibles).
     badgeThreshold: 240,
     badgeImg: 'assets/badges/alcala-de-henares.png',
+    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Universidad-Alcala-180819.jpg/330px-Universidad-Alcala-180819.jpg',
     center: [40.4835, -3.3670],
     zoom: 15.5,
     minZoom: 13,
@@ -341,6 +349,7 @@ const CITIES = {
     // ~50% del máximo real de Buitrago del Lozoya (7 POIs con quiz × 30 = 210 posibles).
     badgeThreshold: 105,
     badgeImg: 'assets/badges/buitrago-del-lozoya.png',
+    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Muralla_y_barbacana_de_Buitrago_del_Lozoya.jpg/330px-Muralla_y_barbacana_de_Buitrago_del_Lozoya.jpg',
     center: [40.9945, -3.6345],
     zoom: 16.2,
     minZoom: 14.5,
@@ -388,6 +397,7 @@ const CITIES = {
     // ~50% del máximo real de Peñíscola (6 POIs con quiz × 10 = 180 posibles).
     badgeThreshold: 90,
     badgeImg: 'assets/badges/peniscola.png',
+    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Pe%C3%B1%C3%ADscola._Castillo_del_Papa_Luna_19.jpg/330px-Pe%C3%B1%C3%ADscola._Castillo_del_Papa_Luna_19.jpg',
     center: [40.359, 0.403],
     zoom: 15.4,
     minZoom: 13,
@@ -433,6 +443,7 @@ const CITIES = {
     // ~50% del máximo real de CDMX (19 POIs con quiz × 10 = 570 posibles).
     badgeThreshold: 290,
     badgeImg: 'assets/badges/cdmx.png',
+    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Catedral_Metropolitana_de_la_Ciudad_de_M%C3%A9xico_1.jpg/330px-Catedral_Metropolitana_de_la_Ciudad_de_M%C3%A9xico_1.jpg',
     center: [19.37, -99.15],
     zoom: 11,
     minZoom: 9.5,
@@ -532,6 +543,7 @@ const CITIES = {
     // ~50% del máximo real de Berlín (30 POIs con quiz × 10 = 890 posibles).
     badgeThreshold: 450,
     badgeImg: 'assets/badges/berlin.png',
+    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Brandenburger_Tor%2C_Berlin%2C_Germany.jpg/330px-Brandenburger_Tor%2C_Berlin%2C_Germany.jpg',
     center: [52.5145, 13.3888],
     zoom: 12.3,
     // Ampliados respecto a los originales ([[52.493,13.27],[52.535,13.47]]):
@@ -620,6 +632,7 @@ const CITIES = {
     // ~50% del máximo real de Roma (39 POIs con quiz × 30 = 1170 posibles).
     badgeThreshold: 585,
     badgeImg: 'assets/badges/roma.png',
+    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Colosseo_2020.jpg/330px-Colosseo_2020.jpg',
     center: [41.8986, 12.4768],
     zoom: 14.2,
     minZoom: 12,
@@ -708,6 +721,7 @@ const CITIES = {
     // ~50% del máximo real del Vaticano (3 POIs con quiz × 30 = 90 posibles).
     badgeThreshold: 45,
     badgeImg: 'assets/badges/vaticano.png',
+    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/St_Peter%27s_Square%2C_Vatican_City_-_April_2007.jpg/330px-St_Peter%27s_Square%2C_Vatican_City_-_April_2007.jpg',
     center: [41.9025, 12.4595],
     zoom: 15.6,
     minZoom: 14,
@@ -760,6 +774,7 @@ const CITIES = {
     // ~50% del máximo real de Estambul (59 POIs con quiz × 10 = 590 posibles).
     badgeThreshold: 295,
     badgeImg: 'assets/badges/estambul.png',
+    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Hagia_Sophia_%28228968325%29.jpeg/330px-Hagia_Sophia_%28228968325%29.jpeg',
     center: [41.015, 28.978],
     zoom: 12.6,
     minZoom: 11,
@@ -883,6 +898,7 @@ const CITIES = {
     // ~50% del máximo real de Segovia (39 POIs con quiz × 10 = 390 posibles).
     badgeThreshold: 195,
     badgeImg: 'assets/badges/segovia.png',
+    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Aqueduct_of_Segovia_08.jpg/330px-Aqueduct_of_Segovia_08.jpg',
     center: [40.9505, -4.1200],
     zoom: 15.4,
     minZoom: 13.5,
