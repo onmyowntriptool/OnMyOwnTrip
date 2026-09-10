@@ -1643,6 +1643,14 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   --color-text-soft: #64748B;
   --color-border: #E7E2D4;
   --color-primary-soft: #B45309;
+  /* EXPERIMENTO (rama experimento-diseno-editorial): dentro de la ficha, el
+     color "de marca" para botones/progreso pasa a ser el acento de la
+     categoría del POI (--sheet-accent-raw, fijado por populateSheetContent
+     en app.js) en vez del naranja saturado de siempre -- es un tono más
+     apagado/tierra por categoría, coherente con la cabecera ya teñida y
+     con los anillos de los pines-foto. El respaldo (#8A6F52, sin ficha
+     abierta con categoría) es un tostado neutro, no el naranja de marca. */
+  --color-primary: var(--sheet-accent-raw, #8A6F52);
   position: absolute;
   left: 0;
   right: 0;
@@ -2268,7 +2276,7 @@ html[data-mode="kids"] .bottom-sheet {
   border-radius: 50%;
   border: 0;
   background: var(--color-primary);
-  color: #0B1120;
+  color: #fff;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -2316,7 +2324,7 @@ html[data-mode="kids"] .bottom-sheet {
   border-radius: 50%;
   border: 0;
   background: var(--color-primary);
-  color: #0B1120;
+  color: #fff;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -2509,11 +2517,11 @@ html[data-mode="kids"] .bottom-sheet {
   border-radius: 50%;
   border: 0;
   background: var(--color-primary);
-  color: #0B1120;
+  color: #fff;
   display: grid;
   place-items: center;
   cursor: pointer;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--color-primary) 45%, transparent);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--color-primary) 30%, transparent);
   transition: transform 0.15s ease;
 }
 .play-btn:active { transform: scale(0.92); }

@@ -5805,18 +5805,25 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     if (!poi) return;
     const meta = CATEGORY_META[poi.category];
 
-    // EXPERIMENTO (rama experimento-diseno-editorial): tiñe la cabecera de
-    // la ficha con el color de la categoría (ver .sheet-head en el CSS).
-    // meta.accent ya existía en CATEGORY_META desde antes pero no se usaba
-    // en ningún sitio -- se reaprovecha aquí en vez de inventar un color
-    // nuevo por categoría.
+    // EXPERIMENTO (rama experimento-diseno-editorial): tiñe toda la ficha
+    // (cabecera + audioguía + controles del chat) con el color de la
+    // categoría, en vez del naranja de marca fijo -- meta.accent ya existía
+    // en CATEGORY_META desde antes pero no se usaba en ningún sitio. Se fija
+    // en els.sheet (el .bottom-sheet entero) y no en .sheet-head para que la
+    // custom property herede hacia abajo a los botones de audio/chat
+    // también (una custom property no "sube" desde un hijo).
+    if (els.sheet) {
+      if (meta.accent) {
+        els.sheet.style.setProperty('--sheet-accent-raw', meta.accent);
+      } else {
+        els.sheet.style.removeProperty('--sheet-accent-raw');
+      }
+    }
     const sheetHead = $('.sheet-head', els.sheet);
     if (sheetHead) {
       if (meta.accent) {
-        sheetHead.style.setProperty('--sheet-accent-raw', meta.accent);
         sheetHead.setAttribute('data-tinted', 'true');
       } else {
-        sheetHead.style.removeProperty('--sheet-accent-raw');
         sheetHead.removeAttribute('data-tinted');
       }
     }
