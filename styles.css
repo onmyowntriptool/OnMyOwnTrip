@@ -1598,17 +1598,19 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   height: var(--pin-size, 40px);
   font-family: inherit;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   color: #fff;
   line-height: 1;
-  /* EXPERIMENTO (rama experimento-diseno-editorial): naranja (V46) y luego
-     crema (V47) tampoco convencieron -- tercer intento, gris metálico con
-     un ligero degradado (simula el brillo de una superficie pulida en vez
-     de un color plano) y sin el borde de --color-bg que llevan el resto
-     de pines (ver .custom-pin más arriba), para que se note más flotando
-     sobre el mapa y menos "con marco". */
-  background: linear-gradient(145deg, #A8AFB9, #6B7280);
-  border: none;
+  /* EXPERIMENTO (rama experimento-diseno-editorial): naranja (V46), gris
+     pizarra (V47) y gris metálico (V48) no convencieron -- cuarto intento,
+     vidrio esmerilado oscuro: el MISMO tratamiento que ya usa la barra de
+     filtros (.header-bottom, ver más abajo) en vez de inventar un color
+     nuevo, para que las burbujas se sientan parte del "cromado" propio de
+     la app y no un elemento aparte. */
+  background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 .custom-pin.-cluster:hover { transform: scale(calc(var(--pin-scale, 1) * 1.08)); }
 
