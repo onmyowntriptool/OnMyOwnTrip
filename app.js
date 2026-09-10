@@ -988,7 +988,14 @@
     // "profundiza más" está sonando/esperando a la IA; solo el propio
     // chip de "profundiza más" se bloquea con esto (ver
     // renderAiSuggestions y el click handler de los chips).
-    ai: { perPoiHistory: {}, pending: false, deepenBusy: false, currentTopic: {}, explored: {}, localIntroSpoken: {}, deepenProgress: {} },
+    // historyLang: idioma (STATE.lang) en el que se generó el historial de
+    // cada POI -- FIX (2026-09-10, reportado en modo Inglés): si se abría
+    // un POI en español y más tarde se cambiaba a inglés, el saludo/
+    // resumen ya guardado se quedaba en español para siempre, porque
+    // ensureAiPanelInitialGreet solo mira si el historial está vacío, no en
+    // qué idioma se generó. Se usa para detectar ese desfase y regenerar
+    // (ver ensureAiPanelInitialGreet).
+    ai: { perPoiHistory: {}, pending: false, deepenBusy: false, currentTopic: {}, explored: {}, localIntroSpoken: {}, deepenProgress: {}, historyLang: {} },
     // Gamificación (modo niño): puntos por preguntas acertadas. "answered"
     // guarda qué combinaciones "poiId:topicId" ya se RESPONDIERON (con o sin
     // acierto, ver answerKidsQuiz): decide si "Siguiente" repite la pregunta
@@ -1034,7 +1041,8 @@
           perPoiHistory: STATE.ai.perPoiHistory,
           currentTopic: STATE.ai.currentTopic,
           explored,
-          deepenProgress: STATE.ai.deepenProgress
+          deepenProgress: STATE.ai.deepenProgress,
+          historyLang: STATE.ai.historyLang
         },
         game: STATE.game
       }));
@@ -1065,6 +1073,7 @@
         });
         STATE.ai.explored = explored;
         STATE.ai.deepenProgress = saved.ai.deepenProgress || {};
+        STATE.ai.historyLang = saved.ai.historyLang || {};
       }
       if (saved.game) {
         STATE.game.points = Number(saved.game.points) || 0;
@@ -4271,11 +4280,16 @@
 
   // Lo que se dice de verdad al abrir la ficha en modo Adultos (ver
   // ensureAiPanelInitialGreet): la frase corta de arriba + un empujón hacia
-  // los chips de debajo, para que no haga falta adivinar qué hacen.
+  // el botón de arriba y los chips de debajo, para que no haga falta
+  // adivinar qué hacen.
+  // EXPERIMENTO (rama experimento-diseno-editorial): "Llévame" ya no está
+  // "abajo" -- se mudó a la cabecera (ver .sheet-directions-btn) -- así que
+  // este aviso tenía que dejar de decir que cómo llegar está entre las
+  // opciones de abajo.
   const buildOpeningGreeting = (poi, mode) => {
     const guide = STATE.lang === 'en'
-      ? "\n\nBelow you'll find a few options: how to get here, or if you'd rather, listen to the site's information with the Introduction button."
-      : '\n\nAbajo tienes varias opciones: cómo llegar hasta aquí, o si prefieres, ir escuchando información del sitio en el botón Introducción.';
+      ? "\n\nUp top you'll find the \"Take me\" button to get you here, and below you can listen to the site's full information with the Introduction button."
+      : '\n\nArriba tienes el botón "Llévame" para llegar hasta aquí, y abajo puedes ir escuchando toda la información del sitio en el botón Introducción.';
     return buildPreviewText(poi, mode) + guide;
   };
 
@@ -4357,6 +4371,24 @@
   const ensureAiPanelInitialGreet = (poi) => {
     if (!poi) return;
     const history = aiHistoryFor(poi.id);
+    // FIX (2026-09-10): si este POI ya tiene historial pero se generó en el
+    // OTRO idioma (se abrió en español, luego se cambió a inglés, y se
+    // vuelve a abrir el mismo POI), se descarta -- si no, se quedaba en el
+    // idioma viejo para siempre, porque abajo solo se mira si el historial
+    // está vacío, no en qué idioma quedó guardado.
+    if (history.length > 0 && STATE.ai.historyLang[poi.id] && STATE.ai.historyLang[poi.id] !== STATE.lang) {
+      history.length = 0;
+      STATE.ai.explored[poi.id] = new Set();
+      STATE.ai.currentTopic[poi.id] = null;
+      delete STATE.ai.deepenProgress[poi.id];
+      STATE.ai.localIntroSpoken[poi.id] = false;
+      // populateSheetContent ya llamó a renderAiSuggestions ANTES de este
+      // reset (ver el orden en selectPoi), así que los chips (p.ej.
+      // "Profundiza más" deshabilitado si el guion viejo estaba agotado)
+      // se recalculan aquí también para no dejarlos con el estado del
+      // idioma anterior.
+      if (STATE.activePoiId === poi.id) renderAiSuggestions();
+    }
     if (history.length === 0) {
       // Solo en modo Adultos se dice nada más que la frase corta de
       // bienvenida (ver buildPreviewText) — la intro completa de siempre
@@ -4370,6 +4402,7 @@
       // depender de su posición en el historial (ver buildNarrativeText).
       const openingText = STATE.mode === 'kids' ? buildIntroText(poi, STATE.mode) : buildOpeningGreeting(poi, STATE.mode);
       history.push({ role: 'assistant', text: openingText, isSummary: true });
+      STATE.ai.historyLang[poi.id] = STATE.lang;
       saveState();
       STATE.ai.localIntroSpoken[poi.id] = true;
       // Ya no hace falta ningún "adelanto" hablado aparte mientras se
