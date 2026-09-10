@@ -3922,6 +3922,10 @@
   let cityIntroActiveText = null;
   let cityIntroPlaybackStarted = false;
   let cityIntroTapHintTimer = null;
+  // EXPERIMENTO (rama experimento-diseno-editorial): temporizador del
+  // "beat" de ~2s con solo la foto de la ciudad antes de que aparezca la
+  // tarjeta con el texto (ver maybeShowCityIntro).
+  let cityIntroCardRevealTimer = null;
 
   const cityIntroIconEl = () => $('#cityIntroIcon');
   const cityIntroHintEl = () => $('#cityIntroHint');
@@ -4026,8 +4030,9 @@
 
   const closeCityIntro = (markSeen = true) => {
     if (!cityIntroModal) return;
-    cityIntroModal.classList.remove('-open');
+    cityIntroModal.classList.remove('-open', '-card-visible');
     cityIntroModal.setAttribute('aria-hidden', 'true');
+    clearTimeout(cityIntroCardRevealTimer);
     stopCityIntroSpeech();
     cityIntroActiveText = null;
     if (markSeen && CURRENT_CITY) markCityIntroSeen(CURRENT_CITY.id);
@@ -4072,17 +4077,31 @@
     }
     cityIntroPlaybackStarted = false;
     hideCityIntroTapHint();
+    cityIntroModal.classList.remove('-card-visible');
     cityIntroModal.classList.add('-open');
     cityIntroModal.setAttribute('aria-hidden', 'false');
-    speakCityIntro(text);
-    // Si en 3s el audio automático no ha llegado a sonar de verdad (caso
-    // típico: navegador bloqueando el autoplay fuera de la app empaquetada),
-    // se muestra el icono como botón de "toca para escuchar" en vez de dejar
-    // la bienvenida muda sin que el usuario sepa por qué.
-    clearTimeout(cityIntroTapHintTimer);
-    cityIntroTapHintTimer = setTimeout(() => {
-      if (!cityIntroPlaybackStarted && cityIntroModal.classList.contains('-open')) showCityIntroTapHint();
-    }, 3000);
+    // EXPERIMENTO (rama experimento-diseno-editorial, para todas las
+    // ciudades e idiomas): el modal se abre ya con la foto visible pero la
+    // tarjeta (texto, botones) se queda invisible ~2s (ver .city-intro-card
+    // en el CSS) -- un momento para apreciar la foto de la ciudad antes de
+    // que aparezca la intro encima. La voz y el aviso de "toca para
+    // escuchar" también esperan a este mismo instante, para que no empiecen
+    // a sonar/mostrarse mientras la tarjeta todavía no se ve.
+    clearTimeout(cityIntroCardRevealTimer);
+    cityIntroCardRevealTimer = setTimeout(() => {
+      if (!cityIntroModal.classList.contains('-open')) return;
+      cityIntroModal.classList.add('-card-visible');
+      speakCityIntro(text);
+      // Si en 3s el audio automático no ha llegado a sonar de verdad (caso
+      // típico: navegador bloqueando el autoplay fuera de la app
+      // empaquetada), se muestra el icono como botón de "toca para
+      // escuchar" en vez de dejar la bienvenida muda sin que el usuario
+      // sepa por qué.
+      clearTimeout(cityIntroTapHintTimer);
+      cityIntroTapHintTimer = setTimeout(() => {
+        if (!cityIntroPlaybackStarted && cityIntroModal.classList.contains('-open')) showCityIntroTapHint();
+      }, 3000);
+    }, 2000);
   };
 
   const wireCityIntro = () => {

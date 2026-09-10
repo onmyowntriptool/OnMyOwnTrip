@@ -415,6 +415,12 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   opacity: 1;
   visibility: visible;
 }
+/* EXPERIMENTO (rama experimento-diseno-editorial): la tarjeta (texto +
+   botones) se queda invisible ~2s tras abrirse el modal -- ver el
+   setTimeout en maybeShowCityIntro, app.js -- para dar tiempo a ver la
+   foto de la ciudad sola antes de que aparezca la intro encima.
+   pointer-events:none mientras tanto, para que no se pueda tocar "Saltar
+   intro" ni "Empezar a explorar" antes de que se vean de verdad. */
 .city-intro-card {
   width: min(92vw, 400px);
   background: var(--color-surface-2);
@@ -423,6 +429,15 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   padding: 16px 22px 22px;
   text-align: center;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.city-intro-modal.-card-visible .city-intro-card {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
 }
 .city-intro-skip {
   display: block;
