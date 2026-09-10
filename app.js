@@ -4182,7 +4182,18 @@
         updateEssentialPillLabel();
       } else {
         const meta = CATEGORY_META[cat];
-        if (meta) p.innerHTML = `<span class="pill-icon">${categoryIconSvg(cat)}</span><span>${pickDual(meta.label)}</span>`;
+        if (meta) {
+          // EXPERIMENTO (rama experimento-diseno-editorial): "Puntos de
+          // interés" también en dos líneas dentro de la píldora del
+          // filtro, igual que "Rutas / recomendadas" -- pero el salto de
+          // línea se añade SOLO aquí (innerHTML), no en meta.label: ese
+          // mismo texto se reutiliza tal cual en la ficha (sheet-cat-badge
+          // usa textContent, donde un <br> se vería como texto literal).
+          const pillLabel = cat === CATEGORIES.HIDDEN
+            ? pickDual(meta.label).replace(' de ', '<br>de ')
+            : pickDual(meta.label);
+          p.innerHTML = `<span class="pill-icon">${categoryIconSvg(cat)}</span><span>${pillLabel}</span>`;
+        }
         p.style.setProperty('--pill-color', getCategoryPinColor(cat));
       }
       p.dataset.active = cat === STATE.category ? 'true' : 'false';

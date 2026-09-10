@@ -1339,20 +1339,22 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
 }
 .pill:hover { background: color-mix(in srgb, var(--color-surface) 90%, transparent); }
 .pill:active { transform: scale(0.96); }
-/* EXPERIMENTO (rama experimento-diseno-editorial): la píldora de rutas
-   ("Rutas<br>recomendadas", ver essentialFallback en app.js) es la única
-   con el texto partido en dos líneas -- el <br> ya viene en el propio
-   texto (se inserta con innerHTML), aquí solo se le da sitio: alto
+/* EXPERIMENTO (rama experimento-diseno-editorial): las píldoras con texto
+   partido en dos líneas ("Rutas<br>recomendadas" y "Puntos<br>de interés",
+   ver setStateMode/essentialFallback en app.js) -- el <br> ya viene en el
+   propio texto (se inserta con innerHTML), aquí solo se les da sitio: alto
    automático en vez del fijo de 34px, y algo menos de tamaño de letra
    para que quepan dos líneas cortas sin verse apretadas. */
-.pill[data-category="essential"] {
+.pill[data-category="essential"],
+.pill[data-category="rincones-ocultos"] {
   height: auto;
   min-height: 34px;
   padding-top: 4px;
   padding-bottom: 4px;
   text-align: left;
 }
-.pill[data-category="essential"] span:last-child {
+.pill[data-category="essential"] span:last-child,
+.pill[data-category="rincones-ocultos"] span:last-child {
   font-size: 11px;
   line-height: 1.2;
 }
