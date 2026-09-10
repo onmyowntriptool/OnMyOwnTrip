@@ -1278,6 +1278,12 @@
   // que se resuelve con el propio pickDual: t('claveDelTexto').
   const UI_STRINGS = {
     comeHere: { es: { adult: 'Cómo llegar', kids: 'Cómo llegar' }, en: { adult: 'Directions', kids: 'Directions' } },
+    // EXPERIMENTO (rama experimento-diseno-editorial): etiqueta corta para
+    // el icono de "Cómo llegar" en la cabecera de la ficha (ver
+    // .sheet-directions-btn) -- ahí no cabe el texto completo de comeHere,
+    // así que es un verbo más corto e imperativo en vez de un recorte del
+    // mismo texto.
+    sheetDirectionsLabel: { es: { adult: 'Llévame', kids: 'Llévame' }, en: { adult: 'Take me', kids: 'Take me' } },
     intro: { es: { adult: 'Introducción', kids: 'Introducción' }, en: { adult: 'Introduction', kids: 'Introduction' } },
     ticket: { es: { adult: 'Entrada: horario y precio', kids: 'Entrada: horario y precio' }, en: { adult: 'Tickets: hours & price', kids: 'Tickets: hours & price' } },
     allPill: { es: { adult: 'Todos', kids: 'Todo ✨' }, en: { adult: 'All', kids: 'All ✨' } },
@@ -1403,6 +1409,7 @@
     ariaLocate: { es: { adult: 'Mostrar mi ubicación', kids: 'Mostrar mi ubicación' }, en: { adult: 'Show my location', kids: 'Show my location' } },
     ariaSheet: { es: { adult: 'Información del punto de interés', kids: 'Información del punto de interés' }, en: { adult: 'Point of interest information', kids: 'Point of interest information' } },
     ariaSheetClose: { es: { adult: 'Cerrar ficha', kids: 'Cerrar ficha' }, en: { adult: 'Close card', kids: 'Close card' } },
+    ariaSheetDirections: { es: { adult: 'Cómo llegar', kids: 'Cómo llegar' }, en: { adult: 'Directions', kids: 'Directions' } },
     ariaImageRetry: { es: { adult: 'Reintentar cargar la imagen', kids: 'Reintentar cargar la imagen' }, en: { adult: 'Retry loading the image', kids: 'Retry loading the image' } },
     ariaAudioPlayer: { es: { adult: 'Reproductor de audio', kids: 'Reproductor de audio' }, en: { adult: 'Audio player', kids: 'Audio player' } },
     ariaAudioProgressGroup: { es: { adult: 'Progreso', kids: 'Progreso' }, en: { adult: 'Progress', kids: 'Progress' } },
@@ -4097,6 +4104,8 @@
     if (dirCancelEl) dirCancelEl.textContent = t('directionsConfirmCancel');
     const dirOkEl = $('#directionsConfirmOk');
     if (dirOkEl) dirOkEl.textContent = t('directionsConfirmOk');
+    const sheetDirLabelEl = $('#sheetDirectionsLabel');
+    if (sheetDirLabelEl) sheetDirLabelEl.textContent = t('sheetDirectionsLabel');
     const scanLogTitleEl = $('#scanLogTitle');
     if (scanLogTitleEl) scanLogTitleEl.textContent = t('scanLogTitle');
     const scanLogHintEl = $('#scanLogHint');
@@ -4135,6 +4144,7 @@
       ['#locateBtn', 'aria-label', 'ariaLocate'],
       ['#bottomSheet', 'aria-label', 'ariaSheet'],
       ['#sheetCloseBtn', 'aria-label', 'ariaSheetClose'],
+      ['#sheetDirectionsBtn', 'aria-label', 'ariaSheetDirections'],
       ['.sheet-thumb-retry', 'aria-label', 'ariaImageRetry'],
       ['.audio-player', 'aria-label', 'ariaAudioPlayer'],
       ['.audio-progress', 'aria-label', 'ariaAudioProgressGroup'],
