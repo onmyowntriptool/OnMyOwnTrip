@@ -80,29 +80,56 @@ const CITIES = {
     routes: [
       {
         id: 'main',
-        name: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+        name: {
+          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+        },
         color: '#F59E0B',
         intro: {
-          adult: 'Esta es la ruta imprescindible de Toledo: siete paradas que resumen casi 2.000 años de historia en poco más de dos kilómetros a pie. Entrarás por la monumental Puerta de Bisagra, cruzarás la Plaza de Zocodover, subirás hasta el Alcázar y visitarás la Catedral Primada, la Iglesia de Santo Tomé y la Sinagoga del Tránsito, antes de terminar con las mejores vistas de la ciudad desde el Mirador del Valle. Al acabar entenderás por qué Toledo se llama la Ciudad de las Tres Culturas: aquí conviven, a pocos metros unas de otras, la huella musulmana, cristiana y judía. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Prepárate para la aventura más importante de Toledo! 🏰 Vas a pasar por una puerta gigante de hace más de 1.000 años, un castillo enorme, una catedral con vitrales de colores, una iglesia con un cuadro gigante y una sinagoga con madera traída desde muy lejos. ¡Y terminarás en un mirador con las mejores vistas de toda la ciudad! Al final sabrás por qué a Toledo la llaman la ciudad de las tres culturas. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Esta es la ruta imprescindible de Toledo: siete paradas que resumen casi 2.000 años de historia en poco más de dos kilómetros a pie. Entrarás por la monumental Puerta de Bisagra, cruzarás la Plaza de Zocodover, subirás hasta el Alcázar y visitarás la Catedral Primada, la Iglesia de Santo Tomé y la Sinagoga del Tránsito, antes de terminar con las mejores vistas de la ciudad desde el Mirador del Valle. Al acabar entenderás por qué Toledo se llama la Ciudad de las Tres Culturas: aquí conviven, a pocos metros unas de otras, la huella musulmana, cristiana y judía. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Prepárate para la aventura más importante de Toledo! 🏰 Vas a pasar por una puerta gigante de hace más de 1.000 años, un castillo enorme, una catedral con vitrales de colores, una iglesia con un cuadro gigante y una sinagoga con madera traída desde muy lejos. ¡Y terminarás en un mirador con las mejores vistas de toda la ciudad! Al final sabrás por qué a Toledo la llaman la ciudad de las tres culturas. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This is Toledo's essential route: seven stops that sum up nearly 2,000 years of history in just over two kilometres on foot. You'll enter through the monumental Puerta de Bisagra, cross Plaza de Zocodover, climb up to the Alcázar, and visit the Primate Cathedral, the Church of Santo Tomé, and the Synagogue of El Tránsito, before finishing with the city's best views from the Mirador del Valle. By the end you'll understand why Toledo is called the City of the Three Cultures: within a few metres of each other, the Muslim, Christian, and Jewish legacies still live side by side. Tap each stop on the map to see the specific information for that spot.",
+            kids: "Get ready for Toledo's biggest adventure! 🏰 You'll pass through a giant gate that's over 1,000 years old, a huge castle, a cathedral with colourful stained glass, a church with a giant painting, and a synagogue with wood brought from far away. And you'll finish at a lookout with the best views of the whole city! By the end you'll know why Toledo is called the city of the three cultures. Tap each point on the map to discover everything about that spot!"
+          }
         }
       },
       {
         id: 'juderia',
-        name: { adult: 'Judería y Rincones Ocultos', kids: '¡El Barrio Secreto! 🕵️' },
+        name: {
+          es: { adult: 'Judería y Rincones Ocultos', kids: '¡El Barrio Secreto! 🕵️' },
+          en: { adult: 'Jewish Quarter & Hidden Corners', kids: 'The Secret Neighbourhood! 🕵️' }
+        },
         color: '#8B5CF6',
         intro: {
-          adult: 'Esta ruta te lleva por el antiguo barrio judío de Toledo y algunos de sus rincones más escondidos. Empezarás en la Sinagoga de Santa María la Blanca, seguirás hasta el Palacio de Fuensalida y la Casa-Museo de El Greco, pasarás por el estrecho Callejón del Pozo Amargo —escenario de una leyenda de amor imposible— y terminarás en dos joyas casi secretas: la Mezquita de las Tornerías, escondida en un edificio comercial, y la Mezquita del Cristo de la Luz. Al terminar habrás visto cómo la Toledo medieval dejó su huella en calles que apenas han cambiado en 800 años. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta es un poco secreta! 🕵️ Vas a caminar por el antiguo barrio judío de Toledo, con calles tan estrechas que casi puedes tocar las dos paredes a la vez. Verás una sinagoga preciosa, la casa donde vivió un pintor muy famoso, un callejón con una leyenda de amor triste, ¡y hasta una mezquita escondida dentro de una tienda! Al terminar sabrás encontrar secretos que casi nadie más conoce en Toledo. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Esta ruta te lleva por el antiguo barrio judío de Toledo y algunos de sus rincones más escondidos. Empezarás en la Sinagoga de Santa María la Blanca, seguirás hasta el Palacio de Fuensalida y la Casa-Museo de El Greco, pasarás por el estrecho Callejón del Pozo Amargo —escenario de una leyenda de amor imposible— y terminarás en dos joyas casi secretas: la Mezquita de las Tornerías, escondida en un edificio comercial, y la Mezquita del Cristo de la Luz. Al terminar habrás visto cómo la Toledo medieval dejó su huella en calles que apenas han cambiado en 800 años. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta es un poco secreta! 🕵️ Vas a caminar por el antiguo barrio judío de Toledo, con calles tan estrechas que casi puedes tocar las dos paredes a la vez. Verás una sinagoga preciosa, la casa donde vivió un pintor muy famoso, un callejón con una leyenda de amor triste, ¡y hasta una mezquita escondida dentro de una tienda! Al terminar sabrás encontrar secretos que casi nadie más conoce en Toledo. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route takes you through Toledo's old Jewish quarter and some of its most hidden corners. You'll start at the Synagogue of Santa María la Blanca, continue to the Palacio de Fuensalida and the El Greco House-Museum, pass through the narrow Callejón del Pozo Amargo — the setting for a legend of impossible love — and finish at two almost-secret gems: the Mezquita de las Tornerías, tucked inside a commercial building, and the Mezquita del Cristo de la Luz. By the end you'll have seen how medieval Toledo left its mark on streets that have barely changed in 800 years. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This route is a little bit secret! 🕵️ You'll walk through Toledo's old Jewish quarter, with streets so narrow you can almost touch both walls at once. You'll see a beautiful synagogue, the house where a very famous painter lived, an alley with a sad love legend, and even a mosque hidden inside a shop! By the end you'll know how to find secrets almost nobody else knows about in Toledo. Tap each point on the map to discover everything about that spot!"
+          }
         }
       },
       {
         id: 'conventos',
-        name: { adult: 'Conventos y Monasterios Escondidos', kids: '¡El Barrio de las Monjas y los Frailes! 🙏' },
+        name: {
+          es: { adult: 'Conventos y Monasterios Escondidos', kids: '¡El Barrio de las Monjas y los Frailes! 🙏' },
+          en: { adult: 'Hidden Convents & Monasteries', kids: 'The Nuns & Friars Neighbourhood! 🙏' }
+        },
         color: '#10B981',
         intro: {
-          adult: 'Un recorrido tranquilo por los conventos y monasterios que todavía laten en el corazón de Toledo. Empieza en el imponente Monasterio de San Juan de los Reyes, sigue por el Convento de Santo Domingo el Antiguo y el de San Clemente, pasa por la Iglesia de San Pedro Mártir y el Monasterio de la Madre de Dios, y termina en el Convento de las Comendadoras de Santiago. Al finalizar habrás descubierto que, tras muchos de estos muros silenciosos, todavía viven comunidades religiosas activas desde hace siglos. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta te lleva al barrio más tranquilo de Toledo! 🙏 Vas a ver varios conventos y monasterios, algunos con monjas y frailes que todavía viven dentro, como hace cientos de años. Empezarás en un monasterio enorme con cadenas colgando en su fachada, y terminarás descubriendo rincones que parecen sacados de un cuento. Al acabar sabrás que, detrás de esas paredes tan calladas, la vida sigue igual que hace siglos. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Un recorrido tranquilo por los conventos y monasterios que todavía laten en el corazón de Toledo. Empieza en el imponente Monasterio de San Juan de los Reyes, sigue por el Convento de Santo Domingo el Antiguo y el de San Clemente, pasa por la Iglesia de San Pedro Mártir y el Monasterio de la Madre de Dios, y termina en el Convento de las Comendadoras de Santiago. Al finalizar habrás descubierto que, tras muchos de estos muros silenciosos, todavía viven comunidades religiosas activas desde hace siglos. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva al barrio más tranquilo de Toledo! 🙏 Vas a ver varios conventos y monasterios, algunos con monjas y frailes que todavía viven dentro, como hace cientos de años. Empezarás en un monasterio enorme con cadenas colgando en su fachada, y terminarás descubriendo rincones que parecen sacados de un cuento. Al acabar sabrás que, detrás de esas paredes tan calladas, la vida sigue igual que hace siglos. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "A quiet walk through the convents and monasteries that still beat at the heart of Toledo. It starts at the imposing Monastery of San Juan de los Reyes, continues through the Convent of Santo Domingo el Antiguo and San Clemente, passes the Church of San Pedro Mártir and the Monastery of la Madre de Dios, and finishes at the Convent of the Comendadoras de Santiago. By the end you'll have discovered that, behind many of these silent walls, active religious communities have lived on for centuries. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This route takes you to Toledo's quietest neighbourhood! 🙏 You'll see several convents and monasteries, some with nuns and friars still living inside, just like hundreds of years ago. You'll start at a huge monastery with chains hanging on its front wall, and finish by discovering corners that look straight out of a storybook. By the end you'll know that, behind those quiet walls, life carries on just like it did centuries ago. Tap each point on the map to discover everything about that spot!"
+          }
         }
       }
     ]
@@ -141,38 +168,74 @@ const CITIES = {
     routes: [
       {
         id: 'main',
-        name: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+        name: {
+          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+        },
         color: '#F59E0B',
         intro: {
-          adult: 'La ruta imprescindible de Madrid reúne sus grandes símbolos en un paseo corto y muy caminable. Visitarás el Palacio Real, uno de los más grandes de Europa, probarás el ambiente del Mercado de San Miguel, pisarás el kilómetro cero de España en la Puerta del Sol y cruzarás la Plaza Mayor. Junto a la Catedral de la Almudena verás los restos de muralla árabe más antiguos de la ciudad, y terminarás recorriendo la Gran Vía, entre la Plaza del Callao y el Edificio Telefónica, el primer rascacielos de Europa. Al acabar tendrás una primera fotografía completa de Madrid: la capital de un imperio, convertida siglos después en una ciudad moderna y cosmopolita. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta es la ruta top de Madrid! 🚩 Vas a ver un palacio gigante con más de 3.000 habitaciones, un mercado lleno de comida rica, la plaza donde empiezan todas las carreteras de España y una plaza mayor preciosa. Junto a la catedral verás las piedras más viejas de todo Madrid, ¡de hace más de 1.100 años! Y terminarás en una calle enorme llena de luces y teatros, con el primer rascacielos que hubo en toda Europa. Al final habrás visto lo mejor de Madrid en un solo paseo. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'La ruta imprescindible de Madrid reúne sus grandes símbolos en un paseo corto y muy caminable. Visitarás el Palacio Real, uno de los más grandes de Europa, probarás el ambiente del Mercado de San Miguel, pisarás el kilómetro cero de España en la Puerta del Sol y cruzarás la Plaza Mayor. Junto a la Catedral de la Almudena verás los restos de muralla árabe más antiguos de la ciudad, y terminarás recorriendo la Gran Vía, entre la Plaza del Callao y el Edificio Telefónica, el primer rascacielos de Europa. Al acabar tendrás una primera fotografía completa de Madrid: la capital de un imperio, convertida siglos después en una ciudad moderna y cosmopolita. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta es la ruta top de Madrid! 🚩 Vas a ver un palacio gigante con más de 3.000 habitaciones, un mercado lleno de comida rica, la plaza donde empiezan todas las carreteras de España y una plaza mayor preciosa. Junto a la catedral verás las piedras más viejas de todo Madrid, ¡de hace más de 1.100 años! Y terminarás en una calle enorme llena de luces y teatros, con el primer rascacielos que hubo en toda Europa. Al final habrás visto lo mejor de Madrid en un solo paseo. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "Madrid's essential route brings together its great symbols in a short, very walkable stroll. You'll visit the Royal Palace, one of the largest in Europe, soak up the atmosphere of the Mercado de San Miguel, stand on Spain's kilometre zero at Puerta del Sol, and cross Plaza Mayor. Next to Almudena Cathedral you'll see the city's oldest surviving Arab wall remains, and you'll finish along Gran Vía, between Plaza del Callao and the Edificio Telefónica, Europe's first skyscraper. By the end you'll have a first complete snapshot of Madrid: the capital of an empire, turned centuries later into a modern, cosmopolitan city. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This is Madrid's top route! 🚩 You'll see a giant palace with over 3,000 rooms, a market full of tasty food, the square where every road in Spain begins, and a beautiful main square. Next to the cathedral you'll see the oldest stones in all of Madrid — over 1,100 years old! And you'll finish on a huge street full of lights and theatres, with the very first skyscraper in all of Europe. By the end you'll have seen the best of Madrid in a single walk. Tap each point on the map to discover everything about that spot!"
+          }
         }
       },
       {
         id: 'arte',
-        name: { adult: 'Paseo del Arte', kids: '¡El Paseo de los Museos! 🎨' },
+        name: {
+          es: { adult: 'Paseo del Arte', kids: '¡El Paseo de los Museos! 🎨' },
+          en: { adult: 'Art Walk', kids: 'The Museum Walk! 🎨' }
+        },
         color: '#E11D48',
         intro: {
-          adult: 'El Paseo del Arte es el eje cultural más importante de España: en poco más de un kilómetro se concentran algunos de los museos más visitados del mundo. Empezarás junto a la diosa Cibeles y bajo la Puerta de Alcalá, seguirás por el Museo Thyssen-Bornemisza, el Museo del Prado y el Real Jardín Botánico, te adentrarás en el Retiro hasta el Estanque Grande y el Palacio de Cristal, pasarás por la fachada vegetal del CaixaForum y terminarás en el Museo Reina Sofía, hogar del Guernica de Picasso. Al terminar habrás recorrido ocho siglos de historia del arte, del Románico a la vanguardia del siglo XX, sin salir de un mismo paseo. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta es puro arte! 🎨 Empezarás junto a una diosa de piedra y una puerta gigante, pasarás por tres museos con cuadros y tesoros distintos, un jardín con plantas de todo el mundo, y un lago del Retiro donde hace siglos un rey organizaba batallas navales de mentira. Terminarás en un edificio con una pared cubierta de plantas de verdad. Al final habrás visto pinturas hechas hace cientos de años y otras hechas hace muy poquito tiempo, ¡todo en el mismo paseo! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'El Paseo del Arte es el eje cultural más importante de España: en poco más de un kilómetro se concentran algunos de los museos más visitados del mundo. Empezarás junto a la diosa Cibeles y bajo la Puerta de Alcalá, seguirás por el Museo Thyssen-Bornemisza, el Museo del Prado y el Real Jardín Botánico, te adentrarás en el Retiro hasta el Estanque Grande y el Palacio de Cristal, pasarás por la fachada vegetal del CaixaForum y terminarás en el Museo Reina Sofía, hogar del Guernica de Picasso. Al terminar habrás recorrido ocho siglos de historia del arte, del Románico a la vanguardia del siglo XX, sin salir de un mismo paseo. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta es puro arte! 🎨 Empezarás junto a una diosa de piedra y una puerta gigante, pasarás por tres museos con cuadros y tesoros distintos, un jardín con plantas de todo el mundo, y un lago del Retiro donde hace siglos un rey organizaba batallas navales de mentira. Terminarás en un edificio con una pared cubierta de plantas de verdad. Al final habrás visto pinturas hechas hace cientos de años y otras hechas hace muy poquito tiempo, ¡todo en el mismo paseo! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "The Paseo del Arte is Spain's most important cultural axis: in just over a kilometre it packs in some of the most visited museums in the world. You'll start by the goddess Cibeles and under the Puerta de Alcalá, continue past the Thyssen-Bornemisza Museum, the Prado Museum, and the Royal Botanical Garden, head into the Retiro park to the Estanque Grande and the Palacio de Cristal, pass the living plant wall of CaixaForum, and finish at the Reina Sofía Museum, home to Picasso's Guernica. By the end you'll have covered eight centuries of art history, from Romanesque to 20th-century avant-garde, without leaving a single walk. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This route is pure art! 🎨 You'll start by a stone goddess and a giant gate, pass three museums each full of different paintings and treasures, a garden with plants from all over the world, and a lake in the Retiro park where centuries ago a king staged pretend naval battles. You'll finish at a building with a wall covered in real, living plants. By the end you'll have seen paintings made hundreds of years ago and others made just recently, all on the same walk! Tap each point on the map to discover everything about that spot!"
+          }
         }
       },
       {
         id: 'austrias',
-        name: { adult: 'Madrid de los Austrias', kids: '¡El Madrid Antiguo! 🏰' },
+        name: {
+          es: { adult: 'Madrid de los Austrias', kids: '¡El Madrid Antiguo! 🏰' },
+          en: { adult: 'Habsburg Madrid', kids: 'Old Madrid! 🏰' }
+        },
         color: '#16A34A',
         intro: {
-          adult: 'Esta ruta recorre el Madrid más antiguo, el de los Austrias, con sus calles estrechas y sus plazas escondidas. Pasarás por la Iglesia de San Ginés y el barrio de La Latina, bajarás por la Calle Cuchilleros, llegarás a la Plaza de la Paja y los Jardines de Anglona, visitarás la Colegiata de San Isidro —la catedral de Madrid antes de la Almudena— y la basílica de San Francisco el Grande, subirás al mirador del Parque de las Vistillas y terminarás en el castizo Mercado de la Cebada. Al terminar habrás visto el Madrid medieval y renacentista que sobrevive, casi intacto, a la sombra de la Plaza Mayor. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta te lleva al Madrid más antiguo de todos! 🏰 Vas a caminar por el barrio más castizo de la ciudad, por calles estrechitas y empinadas, como las de un pueblo de hace cientos de años, con plazas escondidas y jardines tranquilos. Visitarás la iglesia que fue catedral de Madrid antes de que existiera la Almudena, subirás a un mirador con vistas preciosas y terminarás en un mercado con mucho ambiente. Al final habrás descubierto un Madrid que casi nadie ve porque está escondido detrás de la Plaza Mayor. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Esta ruta recorre el Madrid más antiguo, el de los Austrias, con sus calles estrechas y sus plazas escondidas. Pasarás por la Iglesia de San Ginés y el barrio de La Latina, bajarás por la Calle Cuchilleros, llegarás a la Plaza de la Paja y los Jardines de Anglona, visitarás la Colegiata de San Isidro —la catedral de Madrid antes de la Almudena— y la basílica de San Francisco el Grande, subirás al mirador del Parque de las Vistillas y terminarás en el castizo Mercado de la Cebada. Al terminar habrás visto el Madrid medieval y renacentista que sobrevive, casi intacto, a la sombra de la Plaza Mayor. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva al Madrid más antiguo de todos! 🏰 Vas a caminar por el barrio más castizo de la ciudad, por calles estrechitas y empinadas, como las de un pueblo de hace cientos de años, con plazas escondidas y jardines tranquilos. Visitarás la iglesia que fue catedral de Madrid antes de que existiera la Almudena, subirás a un mirador con vistas preciosas y terminarás en un mercado con mucho ambiente. Al final habrás descubierto un Madrid que casi nadie ve porque está escondido detrás de la Plaza Mayor. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route runs through Madrid's oldest quarter, the Habsburg-era Madrid de los Austrias, with its narrow streets and hidden squares. You'll pass the Church of San Ginés and the La Latina neighbourhood, walk down Calle Cuchilleros, reach Plaza de la Paja and the Jardines de Anglona, visit the Colegiata de San Isidro — Madrid's cathedral before the Almudena — and the Basilica of San Francisco el Grande, climb up to the viewpoint at Parque de las Vistillas, and finish at the traditional Mercado de la Cebada. By the end you'll have seen the medieval and Renaissance Madrid that survives, almost intact, in the shadow of Plaza Mayor. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This route takes you to the oldest part of Madrid! 🏰 You'll walk through the city's most traditional neighbourhood, along narrow, steep streets just like a village from hundreds of years ago, with hidden squares and quiet gardens. You'll visit the church that was Madrid's cathedral before the Almudena existed, climb to a viewpoint with beautiful views, and finish at a lively market. By the end you'll have discovered a Madrid that almost nobody sees, because it's hidden right behind Plaza Mayor. Tap each point on the map to discover everything about that spot!"
+          }
         }
       },
       {
         id: 'palacio',
-        name: { adult: 'Palacio y Plaza de España', kids: '¡El Barrio del Rey! 👑' },
+        name: {
+          es: { adult: 'Palacio y Plaza de España', kids: '¡El Barrio del Rey! 👑' },
+          en: { adult: 'Palace & Plaza de España', kids: "The King's Neighbourhood! 👑" }
+        },
         color: '#0EA5E9',
         intro: {
-          adult: 'Una ruta por el Madrid más monumental, alrededor del Palacio Real. Empezarás en el Teatro Real, cruzarás la Plaza de Oriente y los Jardines de Sabatini, subirás hasta el Templo de Debod —un templo egipcio real, regalado a España hace más de 2.000 años— y el Monumento al Dos de Mayo de 1808, visitarás el Museo Cerralbo y terminarás en la Plaza de España, el Monasterio de la Encarnación y el Palacio del Senado. Al terminar habrás visto cómo Madrid combina la grandeza de sus palacios con un templo egipcio original, algo que no se ve en ninguna otra capital europea. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta es la del rey! 👑 Vas a pasar por un teatro enorme, unos jardines preciosos, ¡y hasta un templo egipcio de verdad, con miles de años, que le regalaron a España! También verás un monumento a un grupo de valientes que se enfrentaron a un ejército entero. Terminarás en una plaza con Don Quijote y Sancho Panza, un monasterio tranquilo y el edificio donde trabajan los senadores. Al final sabrás que en Madrid hay un pedacito de Egipto, ¡y pocos niños lo saben! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Una ruta por el Madrid más monumental, alrededor del Palacio Real. Empezarás en el Teatro Real, cruzarás la Plaza de Oriente y los Jardines de Sabatini, subirás hasta el Templo de Debod —un templo egipcio real, regalado a España hace más de 2.000 años— y el Monumento al Dos de Mayo de 1808, visitarás el Museo Cerralbo y terminarás en la Plaza de España, el Monasterio de la Encarnación y el Palacio del Senado. Al terminar habrás visto cómo Madrid combina la grandeza de sus palacios con un templo egipcio original, algo que no se ve en ninguna otra capital europea. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta es la del rey! 👑 Vas a pasar por un teatro enorme, unos jardines preciosos, ¡y hasta un templo egipcio de verdad, con miles de años, que le regalaron a España! También verás un monumento a un grupo de valientes que se enfrentaron a un ejército entero. Terminarás en una plaza con Don Quijote y Sancho Panza, un monasterio tranquilo y el edificio donde trabajan los senadores. Al final sabrás que en Madrid hay un pedacito de Egipto, ¡y pocos niños lo saben! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "A route through Madrid's most monumental side, around the Royal Palace. You'll start at the Teatro Real, cross Plaza de Oriente and the Jardines de Sabatini, climb up to the Temple of Debod — a genuine Egyptian temple, gifted to Spain over 2,000 years ago — and the Monument to the Second of May 1808, visit the Cerralbo Museum, and finish at Plaza de España, the Monasterio de la Encarnación, and the Senate Palace. By the end you'll have seen how Madrid combines the grandeur of its palaces with an original Egyptian temple, something no other European capital can offer. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This is the king's route! 👑 You'll pass a huge theatre, beautiful gardens, and even a real Egyptian temple, thousands of years old, that was gifted to Spain! You'll also see a monument to a group of brave people who stood up to an entire army. You'll finish in a square with Don Quixote and Sancho Panza, a quiet monastery, and the building where the senators work. By the end you'll know Madrid has a little piece of Egypt, and hardly any kids know that! Tap each point on the map to discover everything about that spot!"
+          }
         }
       }
     ]
@@ -203,20 +266,38 @@ const CITIES = {
     routes: [
       {
         id: 'main',
-        name: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+        name: {
+          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+        },
         color: '#F59E0B',
         intro: {
-          adult: 'Esta ruta reúne el corazón cervantino y universitario de Alcalá de Henares, Patrimonio de la Humanidad desde 1998. Empezarás en el Colegio de San Ildefonso, la universidad fundada por el cardenal Cisneros en 1499 donde hoy se entrega el Premio Cervantes, seguirás hasta la Catedral Magistral —una de las dos únicas del mundo con ese título—, visitarás la casa donde se conserva la partida de bautismo de Miguel de Cervantes y su plaza, te asomarás al Corral de Comedias, uno de los teatros en activo más antiguos de Europa, y terminarás subiendo a la torre mirador construida sobre las ruinas de la iglesia donde el propio Cervantes fue bautizado en 1547. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta te lleva al Alcalá de Cervantes! 🖋️ Vas a entrar en una universidad de más de 500 años donde cada año se entrega un premio súper importante de libros, visitarás una catedral que solo comparte su título con otra en todo el mundo, entrarás en la casa donde nació el escritor más famoso de España, y subirás a una torre mirador construida sobre una iglesia muy antigua. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Esta ruta reúne el corazón cervantino y universitario de Alcalá de Henares, Patrimonio de la Humanidad desde 1998. Empezarás en el Colegio de San Ildefonso, la universidad fundada por el cardenal Cisneros en 1499 donde hoy se entrega el Premio Cervantes, seguirás hasta la Catedral Magistral —una de las dos únicas del mundo con ese título—, visitarás la casa donde se conserva la partida de bautismo de Miguel de Cervantes y su plaza, te asomarás al Corral de Comedias, uno de los teatros en activo más antiguos de Europa, y terminarás subiendo a la torre mirador construida sobre las ruinas de la iglesia donde el propio Cervantes fue bautizado en 1547. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva al Alcalá de Cervantes! 🖋️ Vas a entrar en una universidad de más de 500 años donde cada año se entrega un premio súper importante de libros, visitarás una catedral que solo comparte su título con otra en todo el mundo, entrarás en la casa donde nació el escritor más famoso de España, y subirás a una torre mirador construida sobre una iglesia muy antigua. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route brings together the Cervantes-and-university heart of Alcalá de Henares, a UNESCO World Heritage Site since 1998. You'll start at the Colegio de San Ildefonso, the university founded by Cardinal Cisneros in 1499 where the Cervantes Prize is awarded today, continue to the Magistral Cathedral — one of only two in the world with that title — visit the house that holds Miguel de Cervantes' baptism record and its square, peek into the Corral de Comedias, one of Europe's oldest working theatres, and finish by climbing the lookout tower built over the ruins of the church where Cervantes himself was baptised in 1547. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This route takes you to Cervantes' Alcalá! 🖋️ You'll go into a university that's over 500 years old, where a super important book prize is given out every year, visit a cathedral that shares its title with only one other in the whole world, go into the house where Spain's most famous writer was born, and climb a lookout tower built over a very old church. Tap each point on the map to discover everything about that spot!"
+          }
         }
       },
       {
         id: 'palacios',
-        name: { adult: 'Palacios y Murallas', kids: '¡El Alcalá de los Palacios! 🏯' },
+        name: {
+          es: { adult: 'Palacios y Murallas', kids: '¡El Alcalá de los Palacios! 🏯' },
+          en: { adult: 'Palaces & Walls', kids: 'Alcalá of the Palaces! 🏯' }
+        },
         color: '#0EA5E9',
         intro: {
-          adult: 'Una ruta por el Alcalá monumental y religioso, menos transitada que el centro cervantino pero igual de sorprendente. Recorrerás la Calle Mayor, la calle soportalada más larga conservada de Europa, cruzarás la Puerta de Madrid y un tramo de la muralla árabe y medieval del siglo XI, visitarás el Palacio Arzobispal —donde Isabel la Católica recibió a Cristóbal Colón en 1486— y el Palacio Laredo, y terminarás junto a la cúpula ovalada más grande de España, en el convento de las Bernardas. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta es la de los palacios y las murallas! 🏯 Vas a caminar por la calle con soportales más larga de toda Europa, cruzar una puerta muy antigua y un trozo de muralla de hace casi 1.000 años, visitar un palacio donde una reina se reunió con el marinero que después cruzó el océano, y otro palacio con decoración árabe. Terminarás junto a la cúpula más grande de España en forma de óvalo. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Una ruta por el Alcalá monumental y religioso, menos transitada que el centro cervantino pero igual de sorprendente. Recorrerás la Calle Mayor, la calle soportalada más larga conservada de Europa, cruzarás la Puerta de Madrid y un tramo de la muralla árabe y medieval del siglo XI, visitarás el Palacio Arzobispal —donde Isabel la Católica recibió a Cristóbal Colón en 1486— y el Palacio Laredo, y terminarás junto a la cúpula ovalada más grande de España, en el convento de las Bernardas. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta es la de los palacios y las murallas! 🏯 Vas a caminar por la calle con soportales más larga de toda Europa, cruzar una puerta muy antigua y un trozo de muralla de hace casi 1.000 años, visitar un palacio donde una reina se reunió con el marinero que después cruzó el océano, y otro palacio con decoración árabe. Terminarás junto a la cúpula más grande de España en forma de óvalo. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "A route through monumental, religious Alcalá, quieter than the Cervantes centre but just as striking. You'll walk along Calle Mayor, Europe's longest surviving arcaded street, cross the Puerta de Madrid and a stretch of the 11th-century Arab and medieval wall, visit the Archbishop's Palace — where Isabel the Catholic received Christopher Columbus in 1486 — and the Palacio Laredo, and finish beside Spain's largest oval dome, at the Convent of the Bernardas. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This is the route of palaces and walls! 🏯 You'll walk along the longest arcaded street in all of Europe, cross a very old gate and a stretch of wall almost 1,000 years old, visit a palace where a queen met the sailor who later crossed the ocean, and another palace with Arab-style decoration. You'll finish beside Spain's biggest oval-shaped dome. Tap each point on the map to discover everything about that spot!"
+          }
         }
       }
     ]
@@ -245,11 +326,20 @@ const CITIES = {
     routes: [
       {
         id: 'main',
-        name: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+        name: {
+          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+        },
         color: '#F59E0B',
         intro: {
-          adult: 'La ruta recorre por completo el recinto amurallado mejor conservado de la Comunidad de Madrid, de origen musulmán del siglo XI. Caminarás junto a la muralla y su barbacana, visitarás el castillo donde se refugió Juana la Beltraneja durante su disputa con Isabel la Católica por el trono de Castilla, entrarás en la iglesia mudéjar de Santa María del Castillo, descubrirás un pequeño museo con obras auténticas de Picasso regaladas a su peluquero y amigo, y cruzarás el puente medieval sobre el río Lozoya. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta rodea un pueblo amurallado como de cuento! 🏰 Vas a caminar junto a una muralla de hace casi 1.000 años, visitar un castillo donde se escondió una princesa, entrar en una iglesia muy antigua, y descubrir un museo pequeñito con cuadros auténticos de Picasso que regaló a su amigo peluquero. Terminarás cruzando un puente de piedra muy viejo sobre un río. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'La ruta recorre por completo el recinto amurallado mejor conservado de la Comunidad de Madrid, de origen musulmán del siglo XI. Caminarás junto a la muralla y su barbacana, visitarás el castillo donde se refugió Juana la Beltraneja durante su disputa con Isabel la Católica por el trono de Castilla, entrarás en la iglesia mudéjar de Santa María del Castillo, descubrirás un pequeño museo con obras auténticas de Picasso regaladas a su peluquero y amigo, y cruzarás el puente medieval sobre el río Lozoya. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta rodea un pueblo amurallado como de cuento! 🏰 Vas a caminar junto a una muralla de hace casi 1.000 años, visitar un castillo donde se escondió una princesa, entrar en una iglesia muy antigua, y descubrir un museo pequeñito con cuadros auténticos de Picasso que regaló a su amigo peluquero. Terminarás cruzando un puente de piedra muy viejo sobre un río. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route covers the entire best-preserved walled enclosure in the Community of Madrid, of 11th-century Muslim origin. You'll walk alongside the wall and its barbican, visit the castle where Juana la Beltraneja took refuge during her dispute with Isabel the Catholic over the throne of Castile, step into the Mudéjar church of Santa María del Castillo, discover a small museum with genuine works by Picasso, gifted to his hairdresser and friend, and cross the medieval bridge over the Lozoya River. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This route circles a storybook walled village! 🏰 You'll walk beside a wall that's almost 1,000 years old, visit a castle where a princess once hid, step into a very old church, and discover a tiny museum with genuine paintings that Picasso gave to his friend the hairdresser. You'll finish crossing a very old stone bridge over a river. Tap each point on the map to discover everything about that spot!"
+          }
         }
       }
     ]
@@ -275,11 +365,20 @@ const CITIES = {
     routes: [
       {
         id: 'main',
-        name: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+        name: {
+          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+        },
         color: '#F59E0B',
         intro: {
-          adult: 'La ruta imprescindible de Peñíscola sigue el camino natural que unió esta antigua isla a tierra firme. Empezarás en Playa Norte, entrarás por las murallas renacentistas, visitarás la Iglesia de Santa María y llegarás hasta el Castillo del Papa Luna, el último bastión de un Papa que nunca se rindió. Terminarás en la Ermita de la Virgen de la Ermitana y en El Bufador, una grieta en la roca que "respira" con el oleaje. Al acabar conocerás la historia de Peñíscola desde el mar hasta lo más alto del peñón. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta te lleva de la playa hasta lo más alto de un castillo sobre el mar! 🏰🌊 Vas a caminar junto a murallas que frenaron a los piratas, entrar en una iglesia con el tesoro de un Papa muy testarudo, y llegar hasta su castillo. Al final escucharás una roca que respira como una ballena. ¡Sabrás por qué Peñíscola casi era una isla de verdad! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'La ruta imprescindible de Peñíscola sigue el camino natural que unió esta antigua isla a tierra firme. Empezarás en Playa Norte, entrarás por las murallas renacentistas, visitarás la Iglesia de Santa María y llegarás hasta el Castillo del Papa Luna, el último bastión de un Papa que nunca se rindió. Terminarás en la Ermita de la Virgen de la Ermitana y en El Bufador, una grieta en la roca que "respira" con el oleaje. Al acabar conocerás la historia de Peñíscola desde el mar hasta lo más alto del peñón. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva de la playa hasta lo más alto de un castillo sobre el mar! 🏰🌊 Vas a caminar junto a murallas que frenaron a los piratas, entrar en una iglesia con el tesoro de un Papa muy testarudo, y llegar hasta su castillo. Al final escucharás una roca que respira como una ballena. ¡Sabrás por qué Peñíscola casi era una isla de verdad! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "Peñíscola's essential route follows the natural path that once joined this old island to the mainland. You'll start at Playa Norte, enter through the Renaissance walls, visit the Church of Santa María, and reach the Castillo del Papa Luna, the last stronghold of a Pope who never surrendered. You'll finish at the Ermita de la Virgen de la Ermitana and El Bufador, a crack in the rock that \"breathes\" with the swell of the waves. By the end you'll know Peñíscola's story from the sea to the very top of the rock. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This route takes you from the beach all the way up to the top of a castle by the sea! 🏰🌊 You'll walk beside walls that once held off pirates, step into a church holding the treasure of a very stubborn Pope, and reach his castle. At the end you'll hear a rock that breathes like a whale. You'll find out why Peñíscola was almost a real island! Tap each point on the map to discover everything about that spot!"
+          }
         }
       }
     ]
@@ -305,38 +404,74 @@ const CITIES = {
     routes: [
       {
         id: 'centro',
-        name: { adult: 'Centro Histórico', kids: 'Centro Histórico 🏛️' },
+        name: {
+          es: { adult: 'Centro Histórico', kids: 'Centro Histórico 🏛️' },
+          en: { adult: 'Historic Centre', kids: 'Historic Centre 🏛️' }
+        },
         color: '#E4002B',
         intro: {
-          adult: 'Esta ruta recorre el corazón de la Ciudad de México, construido literalmente sobre las ruinas de Tenochtitlan. Visitarás la Catedral Metropolitana, la más grande de América, el Palacio Nacional con sus murales de Diego Rivera, el Templo Mayor azteca excavado bajo la propia plaza, subirás a la Torre Latinoamericana —el primer rascacielos antisísmico del mundo—, entrarás en el Palacio de Bellas Artes y terminarás paseando por la Alameda Central, el parque público más antiguo de América. Al acabar habrás visto cómo la capital azteca y la ciudad colonial conviven, literalmente, una encima de la otra. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta te lleva al centro de una ciudad que se construyó encima de otra ciudad! 🏛️🐍 Vas a ver una catedral gigante, un palacio con una campana muy especial y pinturas gigantes, una pirámide azteca escondida bajo tierra durante casi 500 años, subir a una torre altísima que baila en los terremotos, y visitar un palacio de mármol blanco. Al terminar sabrás que, bajo tus pies, todavía está la antigua capital de los aztecas. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Esta ruta recorre el corazón de la Ciudad de México, construido literalmente sobre las ruinas de Tenochtitlan. Visitarás la Catedral Metropolitana, la más grande de América, el Palacio Nacional con sus murales de Diego Rivera, el Templo Mayor azteca excavado bajo la propia plaza, subirás a la Torre Latinoamericana —el primer rascacielos antisísmico del mundo—, entrarás en el Palacio de Bellas Artes y terminarás paseando por la Alameda Central, el parque público más antiguo de América. Al acabar habrás visto cómo la capital azteca y la ciudad colonial conviven, literalmente, una encima de la otra. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva al centro de una ciudad que se construyó encima de otra ciudad! 🏛️🐍 Vas a ver una catedral gigante, un palacio con una campana muy especial y pinturas gigantes, una pirámide azteca escondida bajo tierra durante casi 500 años, subir a una torre altísima que baila en los terremotos, y visitar un palacio de mármol blanco. Al terminar sabrás que, bajo tus pies, todavía está la antigua capital de los aztecas. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route runs through the heart of Mexico City, built literally on top of the ruins of Tenochtitlan. You'll visit the Metropolitan Cathedral, the largest in the Americas, the National Palace with its Diego Rivera murals, the Aztec Templo Mayor excavated right under the square itself, climb the Torre Latinoamericana — the world's first earthquake-resistant skyscraper — go into the Palacio de Bellas Artes, and finish strolling through the Alameda Central, the oldest public park in the Americas. By the end you'll have seen how the Aztec capital and the colonial city coexist, literally, one on top of the other. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This route takes you to the centre of a city built on top of another city! 🏛️🐍 You'll see a giant cathedral, a palace with a very special bell and giant paintings, an Aztec pyramid hidden underground for almost 500 years, climb a super-tall tower that sways in earthquakes, and visit a white marble palace. By the end you'll know that, right under your feet, the ancient Aztec capital is still there. Tap each point on the map to discover everything about that spot!"
+          }
         }
       },
       {
         id: 'sur',
-        name: { adult: 'Coyoacán', kids: 'Coyoacán 🎨' },
+        name: {
+          es: { adult: 'Coyoacán', kids: 'Coyoacán 🎨' },
+          en: { adult: 'Coyoacán', kids: 'Coyoacán 🎨' }
+        },
         color: '#22C55E',
         intro: {
-          adult: 'Un paseo por Coyoacán, el barrio colonial donde vivieron Frida Kahlo, Diego Rivera y León Trotsky. Empezarás en el Jardín Centenario y la Parroquia de San Juan Bautista, seguirás por el animado Mercado de Coyoacán, visitarás la Casa Azul donde nació y murió Frida Kahlo, y terminarás en la casa-fortaleza donde Trotsky pasó sus últimos meses de exilio. Al acabar conocerás el barrio que marcó a algunos de los personajes más importantes del arte y la política del siglo XX. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta te lleva al barrio de una pintora muy famosa! 🎨💙 Vas a pasar por una plaza llena de estatuas de ranas, un mercado con mil sabores, una casa pintada de azul intenso donde vivió Frida Kahlo, y una casa convertida en fortaleza de verdad, con torretas y todo. Al final sabrás por qué este barrio sigue siendo uno de los más queridos de toda la ciudad. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Un paseo por Coyoacán, el barrio colonial donde vivieron Frida Kahlo, Diego Rivera y León Trotsky. Empezarás en el Jardín Centenario y la Parroquia de San Juan Bautista, seguirás por el animado Mercado de Coyoacán, visitarás la Casa Azul donde nació y murió Frida Kahlo, y terminarás en la casa-fortaleza donde Trotsky pasó sus últimos meses de exilio. Al acabar conocerás el barrio que marcó a algunos de los personajes más importantes del arte y la política del siglo XX. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva al barrio de una pintora muy famosa! 🎨💙 Vas a pasar por una plaza llena de estatuas de ranas, un mercado con mil sabores, una casa pintada de azul intenso donde vivió Frida Kahlo, y una casa convertida en fortaleza de verdad, con torretas y todo. Al final sabrás por qué este barrio sigue siendo uno de los más queridos de toda la ciudad. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "A stroll through Coyoacán, the colonial neighbourhood where Frida Kahlo, Diego Rivera, and Leon Trotsky lived. You'll start at the Jardín Centenario and the Parish of San Juan Bautista, continue through the lively Mercado de Coyoacán, visit the Casa Azul where Frida Kahlo was born and died, and finish at the fortress-house where Trotsky spent his final months of exile. By the end you'll know the neighbourhood that shaped some of the most important figures in 20th-century art and politics. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This route takes you to the neighbourhood of a very famous painter! 🎨💙 You'll pass a square full of frog statues, a market with a thousand flavours, a house painted deep blue where Frida Kahlo lived, and a house turned into a real fortress, watchtowers and all. By the end you'll know why this neighbourhood is still one of the most loved in the whole city. Tap each point on the map to discover everything about that spot!"
+          }
         }
       },
       {
         id: 'polanco',
-        name: { adult: 'Polanco · Museos', kids: 'Polanco · Museos 🦉' },
+        name: {
+          es: { adult: 'Polanco · Museos', kids: 'Polanco · Museos 🦉' },
+          en: { adult: 'Polanco · Museums', kids: 'Polanco · Museums 🦉' }
+        },
         color: '#F5A623',
         intro: {
-          adult: 'Esta ruta reúne algunos de los museos más importantes de México, empezando por el único castillo de uso real de toda América: el Castillo de Chapultepec. Seguirás por el Museo Nacional de Antropología, con la Piedra del Sol como pieza estrella, y terminarás frente a frente entre dos museos privados muy distintos: el brillante Museo Soumaya y el sobrio Museo Jumex. Al acabar habrás visto, en un mismo paseo, desde un emperador del siglo XIX hasta el arte contemporáneo más actual. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta está llena de tesoros! 🦉 Vas a subir a un castillo de verdad, donde vivió un emperador, ver la piedra azteca más famosa del mundo, y terminar entre dos museos que parecen del futuro: uno plateado y brillante, y otro blanco y muy recto. Al final habrás visto objetos de hace miles de años y arte hecho hace muy poquito tiempo. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Esta ruta reúne algunos de los museos más importantes de México, empezando por el único castillo de uso real de toda América: el Castillo de Chapultepec. Seguirás por el Museo Nacional de Antropología, con la Piedra del Sol como pieza estrella, y terminarás frente a frente entre dos museos privados muy distintos: el brillante Museo Soumaya y el sobrio Museo Jumex. Al acabar habrás visto, en un mismo paseo, desde un emperador del siglo XIX hasta el arte contemporáneo más actual. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta está llena de tesoros! 🦉 Vas a subir a un castillo de verdad, donde vivió un emperador, ver la piedra azteca más famosa del mundo, y terminar entre dos museos que parecen del futuro: uno plateado y brillante, y otro blanco y muy recto. Al final habrás visto objetos de hace miles de años y arte hecho hace muy poquito tiempo. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route brings together some of Mexico's most important museums, starting with the only castle in all the Americas ever actually used by royalty: Chapultepec Castle. You'll continue to the National Museum of Anthropology, with the Sun Stone as its star piece, and finish facing off between two very different private museums: the gleaming Museo Soumaya and the austere Museo Jumex. By the end you'll have seen, on a single walk, everything from a 19th-century emperor to the very latest contemporary art. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This route is packed with treasures! 🦉 You'll climb up to a real castle where an emperor once lived, see the most famous Aztec stone in the world, and finish between two museums that look like they're from the future: one silver and shiny, the other white and very sharp-edged. By the end you'll have seen objects thousands of years old and art made just recently. Tap each point on the map to discover everything about that spot!"
+          }
         }
       },
       {
         id: 'basilica',
-        name: { adult: 'Basílica', kids: 'Basílica ⛪' },
+        name: {
+          es: { adult: 'Basílica', kids: 'Basílica ⛪' },
+          en: { adult: 'Basilica', kids: 'Basilica ⛪' }
+        },
         color: '#7B2D8E',
         intro: {
-          adult: 'Una ruta breve pero muy especial: el santuario mariano más visitado del mundo. Visitarás la Basílica de Guadalupe, construida junto al cerro donde, según la tradición, se apareció la Virgen a Juan Diego en 1531, recorrerás la Antigua Basílica —el templo original, hoy museo, notablemente inclinado por el hundimiento del terreno— y subirás hasta la Capilla del Cerrito, en el punto más alto y sagrado de todo el conjunto. Al terminar conocerás el lugar que recibe a millones de peregrinos cada año, especialmente cada 12 de diciembre. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta te lleva a uno de los lugares más visitados del mundo! ⛪🌟 Vas a ver una iglesia redonda gigantesca, otra iglesia mucho más vieja que está clarísimamente torcida, y subir hasta la cima de una colina donde, cuenta la leyenda, aparecieron unas rosas mágicas. Al final sabrás por qué millones de personas vienen aquí cada año desde hace casi 500 años. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Una ruta breve pero muy especial: el santuario mariano más visitado del mundo. Visitarás la Basílica de Guadalupe, construida junto al cerro donde, según la tradición, se apareció la Virgen a Juan Diego en 1531, recorrerás la Antigua Basílica —el templo original, hoy museo, notablemente inclinado por el hundimiento del terreno— y subirás hasta la Capilla del Cerrito, en el punto más alto y sagrado de todo el conjunto. Al terminar conocerás el lugar que recibe a millones de peregrinos cada año, especialmente cada 12 de diciembre. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva a uno de los lugares más visitados del mundo! ⛪🌟 Vas a ver una iglesia redonda gigantesca, otra iglesia mucho más vieja que está clarísimamente torcida, y subir hasta la cima de una colina donde, cuenta la leyenda, aparecieron unas rosas mágicas. Al final sabrás por qué millones de personas vienen aquí cada año desde hace casi 500 años. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "A short but very special route: the most visited Marian shrine in the world. You'll visit the Basilica of Guadalupe, built beside the hill where, according to tradition, the Virgin appeared to Juan Diego in 1531, walk through the Old Basilica — the original church, now a museum, noticeably tilted from ground subsidence — and climb up to the Capilla del Cerrito, at the highest and most sacred point of the whole site. By the end you'll know the place that welcomes millions of pilgrims every year, especially every 12th of December. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This route takes you to one of the most visited places in the world! ⛪🌟 You'll see a giant round church, another much older church that's clearly leaning, and climb to the top of a hill where, legend says, magical roses once appeared. By the end you'll know why millions of people have come here every year for almost 500 years. Tap each point on the map to discover everything about that spot!"
+          }
         }
       }
     ]
@@ -369,29 +504,56 @@ const CITIES = {
     routes: [
       {
         id: 'main',
-        name: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+        name: {
+          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+        },
         color: '#F59E0B',
         intro: {
-          adult: 'La ruta imprescindible de Berlín reúne los grandes símbolos de una ciudad marcada por el siglo XX: dictadura, guerra, muro y reunificación. Empezarás en la Puerta de Brandeburgo, subirás a la cúpula de cristal del Reichstag, cruzarás el inquietante Monumento a los Judíos de Europa Asesinados y llegarás hasta Checkpoint Charlie, el paso fronterizo más famoso de la Guerra Fría. Seguirás hasta la Catedral de Berlín y el Museo de Pérgamo, en la Isla de los Museos, y terminarás con las vistas de toda la ciudad desde la Torre de Televisión de Alexanderplatz. Al ser una ruta más extensa que en otras ciudades, algunos tramos te convendrá hacerlos en metro o bus en lugar de a pie. Al acabar entenderás por qué Berlín es, quizás, la capital europea que más abiertamente convive con su propia historia. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Prepárate para conocer una ciudad que tiene un oso como símbolo, igual que Madrid! 🐻 Vas a pasar por una puerta gigante con un carro de oro encima, subir a una cúpula de cristal desde la que se ve todo el Parlamento, cruzar un lugar muy especial que recuerda a millones de personas, y visitar el puesto fronterizo más famoso de cuando la ciudad estaba dividida por un muro. También verás una catedral enorme, un museo con puertas gigantes de hace miles de años y una torre altísima con las mejores vistas de toda la ciudad. Como Berlín es una ciudad grande, ¡en algunos tramos os convendrá coger el metro! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'La ruta imprescindible de Berlín reúne los grandes símbolos de una ciudad marcada por el siglo XX: dictadura, guerra, muro y reunificación. Empezarás en la Puerta de Brandeburgo, subirás a la cúpula de cristal del Reichstag, cruzarás el inquietante Monumento a los Judíos de Europa Asesinados y llegarás hasta Checkpoint Charlie, el paso fronterizo más famoso de la Guerra Fría. Seguirás hasta la Catedral de Berlín y el Museo de Pérgamo, en la Isla de los Museos, y terminarás con las vistas de toda la ciudad desde la Torre de Televisión de Alexanderplatz. Al ser una ruta más extensa que en otras ciudades, algunos tramos te convendrá hacerlos en metro o bus en lugar de a pie. Al acabar entenderás por qué Berlín es, quizás, la capital europea que más abiertamente convive con su propia historia. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Prepárate para conocer una ciudad que tiene un oso como símbolo, igual que Madrid! 🐻 Vas a pasar por una puerta gigante con un carro de oro encima, subir a una cúpula de cristal desde la que se ve todo el Parlamento, cruzar un lugar muy especial que recuerda a millones de personas, y visitar el puesto fronterizo más famoso de cuando la ciudad estaba dividida por un muro. También verás una catedral enorme, un museo con puertas gigantes de hace miles de años y una torre altísima con las mejores vistas de toda la ciudad. Como Berlín es una ciudad grande, ¡en algunos tramos os convendrá coger el metro! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "Berlin's essential route brings together the great symbols of a city shaped by the 20th century: dictatorship, war, a wall, and reunification. You'll start at the Brandenburg Gate, climb up to the Reichstag's glass dome, cross the unsettling Memorial to the Murdered Jews of Europe, and reach Checkpoint Charlie, the most famous Cold War border crossing. You'll continue to Berlin Cathedral and the Pergamon Museum, on Museum Island, and finish with views over the whole city from the Alexanderplatz TV Tower. Since this route is longer than in other cities, some stretches are best covered by metro or bus rather than on foot. By the end you'll understand why Berlin is, perhaps, the European capital that most openly lives alongside its own history. Tap each stop on the map to see the specific information for that spot.",
+            kids: "Get ready to discover a city with a bear as its symbol, just like Madrid! 🐻 You'll pass through a giant gate with a golden chariot on top, climb up into a glass dome you can see the whole Parliament from, cross a very special place that remembers millions of people, and visit the most famous border post from when the city was split by a wall. You'll also see a huge cathedral, a museum with giant gates that are thousands of years old, and a super-tall tower with the best views of the whole city. Since Berlin is a big city, on some stretches you'll want to hop on the metro! Tap each point on the map to discover everything about that spot!"
+          }
         }
       },
       {
         id: 'museos',
-        name: { adult: 'Isla de los Museos y Centro Histórico', kids: '¡La Isla de los Tesoros! 🏛️' },
+        name: {
+          es: { adult: 'Isla de los Museos y Centro Histórico', kids: '¡La Isla de los Tesoros! 🏛️' },
+          en: { adult: 'Museum Island & Historic Centre', kids: 'The Island of Treasures! 🏛️' }
+        },
         color: '#7C3AED',
         intro: {
-          adult: 'Esta ruta recorre el corazón monumental de Berlín, apenas un kilómetro y medio a pie por la Isla de los Museos —Patrimonio de la Humanidad de la UNESCO— y sus alrededores en el barrio de Mitte. Empezarás en Bebelplatz y la Neue Wache, en pleno bulevar Unter den Linden, entrarás en el Humboldt Forum, el antiguo palacio real reconstruido, y recorrerás cuatro de los cinco grandes museos de la isla: el Altes Museum, el Neues Museum (con el busto de Nefertiti), la Alte Nationalgalerie y el Bode Museum. Cruzarás después hasta los pintorescos patios de las Hackesche Höfe y el Nikolaiviertel, el barrio más antiguo de Berlín, pasarás junto al Ayuntamiento Rojo y el DDR Museum, y terminarás en la elegante plaza del Gendarmenmarkt. Al acabar habrás visto ocho siglos de historia y algunas de las colecciones de arte antiguo más importantes del mundo, todo sin salir de un mismo paseo. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta te lleva a una isla llena de museos con tesoros de miles de años! 🏛️ Vas a entrar en un palacio reconstruido, ver momias y bustos egipcios antiquísimos, cuadros gigantes y hasta el mármol de un templo griego entero. Después cruzarás unos patios preciosos escondidos, pasarás por el barrio más viejo de todo Berlín, junto al ayuntamiento con la torre roja, y aprenderás cómo vivía la gente cuando Alemania estaba dividida en dos países. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Esta ruta recorre el corazón monumental de Berlín, apenas un kilómetro y medio a pie por la Isla de los Museos —Patrimonio de la Humanidad de la UNESCO— y sus alrededores en el barrio de Mitte. Empezarás en Bebelplatz y la Neue Wache, en pleno bulevar Unter den Linden, entrarás en el Humboldt Forum, el antiguo palacio real reconstruido, y recorrerás cuatro de los cinco grandes museos de la isla: el Altes Museum, el Neues Museum (con el busto de Nefertiti), la Alte Nationalgalerie y el Bode Museum. Cruzarás después hasta los pintorescos patios de las Hackesche Höfe y el Nikolaiviertel, el barrio más antiguo de Berlín, pasarás junto al Ayuntamiento Rojo y el DDR Museum, y terminarás en la elegante plaza del Gendarmenmarkt. Al acabar habrás visto ocho siglos de historia y algunas de las colecciones de arte antiguo más importantes del mundo, todo sin salir de un mismo paseo. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva a una isla llena de museos con tesoros de miles de años! 🏛️ Vas a entrar en un palacio reconstruido, ver momias y bustos egipcios antiquísimos, cuadros gigantes y hasta el mármol de un templo griego entero. Después cruzarás unos patios preciosos escondidos, pasarás por el barrio más viejo de todo Berlín, junto al ayuntamiento con la torre roja, y aprenderás cómo vivía la gente cuando Alemania estaba dividida en dos países. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route covers Berlin's monumental heart, barely a kilometre and a half on foot through Museum Island — a UNESCO World Heritage Site — and its surroundings in the Mitte district. You'll start at Bebelplatz and the Neue Wache, right on the Unter den Linden boulevard, go into the Humboldt Forum, the rebuilt former royal palace, and take in four of the island's five great museums: the Altes Museum, the Neues Museum (home to the bust of Nefertiti), the Alte Nationalgalerie, and the Bode Museum. You'll then cross over to the picturesque courtyards of the Hackesche Höfe and the Nikolaiviertel, Berlin's oldest neighbourhood, pass the Red City Hall and the DDR Museum, and finish at the elegant Gendarmenmarkt square. By the end you'll have covered eight centuries of history and some of the most important ancient art collections in the world, all without leaving a single walk. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This route takes you to an island full of museums with treasures thousands of years old! 🏛️ You'll go into a rebuilt palace, see ancient Egyptian mummies and busts, giant paintings, and even the marble of an entire Greek temple. Then you'll cross some beautiful hidden courtyards, pass through the oldest neighbourhood in all of Berlin, next to the city hall with the red tower, and learn how people lived when Germany was split into two countries. Tap each point on the map to discover everything about that spot!"
+          }
         }
       },
       {
         id: 'muro',
-        name: { adult: 'Muro y Guerra Fría', kids: '¡La Ruta del Muro! 🧱' },
+        name: {
+          es: { adult: 'Muro y Guerra Fría', kids: '¡La Ruta del Muro! 🧱' },
+          en: { adult: 'The Wall & the Cold War', kids: 'The Wall Route! 🧱' }
+        },
         color: '#DC2626',
         intro: {
-          adult: 'Una ruta por los lugares que mejor explican cómo fue vivir en una ciudad partida en dos durante casi 30 años. Empezarás en la Topografía del Terror, sobre el antiguo cuartel general de la Gestapo y las SS, seguirás hasta la Potsdamer Platz, una plaza que renació de la nada tras pasar cuatro décadas como tierra de nadie junto al Muro. Después te convendrá coger el metro o el bus hasta el Memorial del Muro de Berlín en la calle Bernauer, el lugar que mejor conserva cómo era realmente la frontera, y hasta el cercano Mauerpark, construido literalmente sobre la antigua "franja de la muerte". Terminarás muy al este, en la East Side Gallery y el puente de Oberbaum, junto al Molecule Man, sobre el río Spree. Al acabar habrás recorrido, de punta a punta de la ciudad, la historia de un muro que dividió familias enteras y que hoy es uno de los grandes símbolos de la reunificación europea. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta te cuenta la historia del muro que partió Berlín en dos durante casi 30 años! 🧱 Vas a ver el lugar donde tenía su cuartel la policía secreta más temida, una plaza que estuvo vacía durante 40 años y ahora está llena de rascacielos, y el sitio que mejor conserva cómo era el muro de verdad, con sus torres de vigilancia. Como está lejos, ¡tocará coger el metro! Terminarás junto a un trozo de muro pintado con colores y un puente precioso sobre el río. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Una ruta por los lugares que mejor explican cómo fue vivir en una ciudad partida en dos durante casi 30 años. Empezarás en la Topografía del Terror, sobre el antiguo cuartel general de la Gestapo y las SS, seguirás hasta la Potsdamer Platz, una plaza que renació de la nada tras pasar cuatro décadas como tierra de nadie junto al Muro. Después te convendrá coger el metro o el bus hasta el Memorial del Muro de Berlín en la calle Bernauer, el lugar que mejor conserva cómo era realmente la frontera, y hasta el cercano Mauerpark, construido literalmente sobre la antigua "franja de la muerte". Terminarás muy al este, en la East Side Gallery y el puente de Oberbaum, junto al Molecule Man, sobre el río Spree. Al acabar habrás recorrido, de punta a punta de la ciudad, la historia de un muro que dividió familias enteras y que hoy es uno de los grandes símbolos de la reunificación europea. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te cuenta la historia del muro que partió Berlín en dos durante casi 30 años! 🧱 Vas a ver el lugar donde tenía su cuartel la policía secreta más temida, una plaza que estuvo vacía durante 40 años y ahora está llena de rascacielos, y el sitio que mejor conserva cómo era el muro de verdad, con sus torres de vigilancia. Como está lejos, ¡tocará coger el metro! Terminarás junto a un trozo de muro pintado con colores y un puente precioso sobre el río. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: 'A route through the places that best explain what it was like to live in a city split in two for almost 30 years. You\'ll start at the Topography of Terror, on the site of the former Gestapo and SS headquarters, continue to Potsdamer Platz, a square that rose from nothing after four decades as no-man\'s-land beside the Wall. From there it\'s best to take the metro or bus to the Berlin Wall Memorial on Bernauer Strasse, the place that best preserves what the border really looked like, and on to the nearby Mauerpark, built literally on top of the former "death strip." You\'ll finish far to the east, at the East Side Gallery and the Oberbaum Bridge, next to the Molecule Man, over the Spree river. By the end you\'ll have travelled, from one end of the city to the other, the story of a wall that split whole families apart and is today one of the great symbols of European reunification. Tap each stop on the map to see the specific information for that spot.',
+            kids: "This route tells the story of the wall that split Berlin in two for almost 30 years! 🧱 You'll see where the most feared secret police had their headquarters, a square that stood empty for 40 years and is now full of skyscrapers, and the spot that best preserves what the real wall looked like, watchtowers and all. Since it's far away, you'll need to hop on the metro! You'll finish beside a stretch of wall painted in bright colours and a beautiful bridge over the river. Tap each point on the map to discover everything about that spot!"
+          }
         }
       }
     ]
@@ -421,29 +583,56 @@ const CITIES = {
     routes: [
       {
         id: 'main',
-        name: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+        name: {
+          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+        },
         color: '#F59E0B',
         intro: {
-          adult: 'La ruta imprescindible de Roma reúne los grandes símbolos de casi tres mil años de historia ininterrumpida. Empezarás en el Coliseo, el anfiteatro más famoso del mundo, seguirás por el Foro Romano y el Palatino, el corazón político y el barrio residencial de la Roma antigua, y cruzarás hasta el Panteón, el edificio con cúpula de hormigón sin armar más grande jamás construido. Terminarás lanzando una moneda a la Fontana di Trevi y perdiéndote entre las columnas berninianas de Piazza Navona. Al ser una ruta extensa, algunos tramos te convendrá hacerlos en metro o a buen paso. Al acabar entenderás por qué a Roma se la llama la Ciudad Eterna: pocos lugares del mundo permiten caminar, en una sola mañana, por el Imperio, el Renacimiento y el Barroco sin salir del mismo casco urbano. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Prepárate para la aventura más grande de Roma! ⚔️ Vas a entrar en un anfiteatro gigante donde luchaban los gladiadores, caminar por las ruinas de la plaza más importante del Imperio Romano, y visitar un templo con una cúpula de piedra tan enorme que todavía hoy sorprende a los arquitectos. Después lanzarás una moneda a una fuente preciosa para poder volver algún día, ¡y verás una plaza con fuentes y estatuas por todas partes! Como Roma es una ciudad grande, ¡en algunos tramos os convendrá caminar rápido o coger el metro! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'La ruta imprescindible de Roma reúne los grandes símbolos de casi tres mil años de historia ininterrumpida. Empezarás en el Coliseo, el anfiteatro más famoso del mundo, seguirás por el Foro Romano y el Palatino, el corazón político y el barrio residencial de la Roma antigua, y cruzarás hasta el Panteón, el edificio con cúpula de hormigón sin armar más grande jamás construido. Terminarás lanzando una moneda a la Fontana di Trevi y perdiéndote entre las columnas berninianas de Piazza Navona. Al ser una ruta extensa, algunos tramos te convendrá hacerlos en metro o a buen paso. Al acabar entenderás por qué a Roma se la llama la Ciudad Eterna: pocos lugares del mundo permiten caminar, en una sola mañana, por el Imperio, el Renacimiento y el Barroco sin salir del mismo casco urbano. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Prepárate para la aventura más grande de Roma! ⚔️ Vas a entrar en un anfiteatro gigante donde luchaban los gladiadores, caminar por las ruinas de la plaza más importante del Imperio Romano, y visitar un templo con una cúpula de piedra tan enorme que todavía hoy sorprende a los arquitectos. Después lanzarás una moneda a una fuente preciosa para poder volver algún día, ¡y verás una plaza con fuentes y estatuas por todas partes! Como Roma es una ciudad grande, ¡en algunos tramos os convendrá caminar rápido o coger el metro! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "Rome's essential route brings together the great symbols of almost three thousand years of unbroken history. You'll start at the Colosseum, the most famous amphitheatre in the world, continue through the Roman Forum and the Palatine Hill, the political heart and residential quarter of ancient Rome, and cross over to the Pantheon, the largest unreinforced concrete dome ever built. You'll finish by tossing a coin into the Trevi Fountain and getting lost among the Bernini columns of Piazza Navona. Since this is a long route, some stretches are best covered by metro or at a brisk pace. By the end you'll understand why Rome is called the Eternal City: few places in the world let you walk, in a single morning, through the Empire, the Renaissance, and the Baroque without leaving the same old town. Tap each stop on the map to see the specific information for that spot.",
+            kids: "Get ready for Rome's biggest adventure! ⚔️ You'll go into a giant amphitheatre where gladiators once fought, walk through the ruins of the most important square in the Roman Empire, and visit a temple with a stone dome so huge it still amazes architects today. Then you'll toss a coin into a beautiful fountain so you can come back one day, and see a square with fountains and statues everywhere! Since Rome is a big city, on some stretches you'll want to walk fast or hop on the metro! Tap each point on the map to discover everything about that spot!"
+          }
         }
       },
       {
         id: 'antigua-roma',
-        name: { adult: 'Roma Antigua e Imperial', kids: '¡El Imperio Romano! 🏛️' },
+        name: {
+          es: { adult: 'Roma Antigua e Imperial', kids: '¡El Imperio Romano! 🏛️' },
+          en: { adult: 'Ancient & Imperial Rome', kids: 'The Roman Empire! 🏛️' }
+        },
         color: '#B8411E',
         intro: {
-          adult: 'Esta ruta recorre el corazón del poder de la Roma imperial, del Coliseo al Circo Máximo. Verás el Arco de Constantino, el mayor de los arcos triunfales que se conservan en la ciudad, descenderás al Circo Máximo, el hipódromo que llegó a albergar a 150.000 espectadores, y visitarás la Bocca della Verità, la boca de piedra que, según la leyenda, muerde la mano de quien miente. Terminarás en las Terme di Caracalla, unas termas públicas tan colosales que hoy acogen conciertos de ópera entre sus ruinas. Al acabar habrás recorrido a pie los mismos escenarios que vieron desfilar emperadores, gladiadores y carreras de cuadrigas hace dos mil años. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta te lleva al corazón del Imperio Romano! 🏛️ Vas a ver el arco más grande de todos los que quedan en Roma, bajar hasta un hipódromo gigante donde corrían carreras de carros con caballos delante de 150.000 personas, y meter la mano en una boca de piedra que, según la leyenda, ¡muerde a quien dice mentiras! Terminarás en unas termas romanas tan enormes que hoy hacen conciertos dentro de sus ruinas. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Esta ruta recorre el corazón del poder de la Roma imperial, del Coliseo al Circo Máximo. Verás el Arco de Constantino, el mayor de los arcos triunfales que se conservan en la ciudad, descenderás al Circo Máximo, el hipódromo que llegó a albergar a 150.000 espectadores, y visitarás la Bocca della Verità, la boca de piedra que, según la leyenda, muerde la mano de quien miente. Terminarás en las Terme di Caracalla, unas termas públicas tan colosales que hoy acogen conciertos de ópera entre sus ruinas. Al acabar habrás recorrido a pie los mismos escenarios que vieron desfilar emperadores, gladiadores y carreras de cuadrigas hace dos mil años. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva al corazón del Imperio Romano! 🏛️ Vas a ver el arco más grande de todos los que quedan en Roma, bajar hasta un hipódromo gigante donde corrían carreras de carros con caballos delante de 150.000 personas, y meter la mano en una boca de piedra que, según la leyenda, ¡muerde a quien dice mentiras! Terminarás en unas termas romanas tan enormes que hoy hacen conciertos dentro de sus ruinas. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route covers the heart of imperial Roman power, from the Colosseum to the Circus Maximus. You'll see the Arch of Constantine, the largest surviving triumphal arch in the city, walk down to the Circus Maximus, the hippodrome that once held 150,000 spectators, and visit the Bocca della Verità, the stone mouth that, according to legend, bites the hand of anyone who lies. You'll finish at the Baths of Caracalla, public baths so colossal that opera concerts are held among their ruins today. By the end you'll have walked, on foot, the very grounds that saw emperors, gladiators, and chariot races parade by two thousand years ago. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This route takes you to the heart of the Roman Empire! 🏛️ You'll see the biggest arch still standing in Rome, go down to a giant hippodrome where chariot races once ran in front of 150,000 people, and put your hand inside a stone mouth that, legend says, bites anyone who tells lies! You'll finish at Roman baths so enormous that concerts are held inside their ruins today. Tap each point on the map to discover everything about that spot!"
+          }
         }
       },
       {
         id: 'trastevere',
-        name: { adult: 'Trastevere y la Roma Escondida', kids: '¡El Barrio Secreto del Río! 🌊' },
+        name: {
+          es: { adult: 'Trastevere y la Roma Escondida', kids: '¡El Barrio Secreto del Río! 🌊' },
+          en: { adult: 'Trastevere & Hidden Rome', kids: 'The Secret River Neighbourhood! 🌊' }
+        },
         color: '#10B981',
         intro: {
-          adult: 'Esta ruta cruza al otro lado del Tíber, a Trastevere, el barrio más castizo y menos monumental de Roma, perfecto para perderse sin prisa. Pasarás por la Isola Tiberina, la única isla del río dentro de la ciudad, entrarás en la Basílica de Santa Maria in Trastevere, una de las iglesias más antiguas dedicadas a la Virgen, subirás hasta el Gianicolo, un mirador con las mejores vistas de toda Roma, y terminarás en la Villa Farnesina, la villa renacentista de un banquero decorada por el propio Rafael. Al terminar habrás descubierto que, a solo unos minutos a pie de los grandes monumentos, Roma esconde callejuelas empedradas, plazas con fuentes modestas y una vida de barrio que apenas ha cambiado en siglos. Toca cada parada en el mapa para ver la información específica de ese lugar.',
-          kids: '¡Esta ruta es un poco secreta! 🌊 Vas a cruzar a un barrio con calles estrechas y empedradas, pasar por la única isla que tiene el río de Roma, entrar en una de las iglesias más antiguas dedicadas a la Virgen, subir a una colina con las mejores vistas de toda la ciudad, y terminar en una villa preciosa decorada por el propio Rafael. Al final habrás descubierto un Roma tranquilo que casi ningún turista con prisa llega a ver. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          es: {
+            adult: 'Esta ruta cruza al otro lado del Tíber, a Trastevere, el barrio más castizo y menos monumental de Roma, perfecto para perderse sin prisa. Pasarás por la Isola Tiberina, la única isla del río dentro de la ciudad, entrarás en la Basílica de Santa Maria in Trastevere, una de las iglesias más antiguas dedicadas a la Virgen, subirás hasta el Gianicolo, un mirador con las mejores vistas de toda Roma, y terminarás en la Villa Farnesina, la villa renacentista de un banquero decorada por el propio Rafael. Al terminar habrás descubierto que, a solo unos minutos a pie de los grandes monumentos, Roma esconde callejuelas empedradas, plazas con fuentes modestas y una vida de barrio que apenas ha cambiado en siglos. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta es un poco secreta! 🌊 Vas a cruzar a un barrio con calles estrechas y empedradas, pasar por la única isla que tiene el río de Roma, entrar en una de las iglesias más antiguas dedicadas a la Virgen, subir a una colina con las mejores vistas de toda la ciudad, y terminar en una villa preciosa decorada por el propio Rafael. Al final habrás descubierto un Roma tranquilo que casi ningún turista con prisa llega a ver. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route crosses to the other side of the Tiber, to Trastevere, Rome's most traditional and least monumental neighbourhood, perfect for wandering without a plan. You'll pass by the Isola Tiberina, the river's only island within the city, go into the Basilica of Santa Maria in Trastevere, one of the oldest churches dedicated to the Virgin Mary, climb up to the Gianicolo, a viewpoint with the best views over all of Rome, and finish at the Villa Farnesina, the Renaissance villa of a banker decorated by Raphael himself. By the end you'll have discovered that, just minutes on foot from the great monuments, Rome hides cobbled alleys, squares with modest fountains, and a neighbourhood life that has barely changed in centuries. Tap each stop on the map to see the specific information for that spot.",
+            kids: "This route is a little bit secret! 🌊 You'll cross into a neighbourhood with narrow, cobbled streets, pass by the only island in Rome's river, go into one of the oldest churches dedicated to the Virgin Mary, climb a hill with the best views of the whole city, and finish at a beautiful villa decorated by Raphael himself. By the end you'll have discovered a quiet Rome that hardly any rushed tourist ever gets to see. Tap each point on the map to discover everything about that spot!"
+          }
         }
       }
     ]
