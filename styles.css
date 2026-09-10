@@ -1629,14 +1629,14 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85), 0 0 4px rgba(255, 255, 255, 0.5);
   /* EXPERIMENTO (rama experimento-diseno-editorial): naranja (V46), gris
      pizarra (V47), gris metálico (V48), vidrio esmerilado gris (V49-V51),
-     coral (V52-V53) -- de vuelta al gris metálico de V48 pero al 15% de
-     opacidad (85% de transparencia) en vez de sólido, y con el número en
-     negro en vez de blanco. El brillo radial + las sombras interiores
-     siguen dando el aspecto de burbuja de cristal. */
+     coral (V52-V53), gris metálico al 15% (V54) -- ahora blanco, casi del
+     todo transparente (2% de opacidad / 98%). Con tan poco color, es
+     básicamente el brillo + las sombras interiores (la propia "burbuja de
+     cristal") lo que se ve; el blur de fondo sigue dando cuerpo. */
   background:
     radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.16) 28%, rgba(255, 255, 255, 0.03) 55%, rgba(0, 0, 0, 0.04) 100%),
-    linear-gradient(145deg, rgba(168, 175, 185, 0.15), rgba(107, 114, 128, 0.15));
-  border: 1px solid rgba(148, 155, 165, 0.35);
+    rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   box-shadow:
