@@ -39,7 +39,7 @@ const CATEGORY_META = {
   },
   [CATEGORIES.HIDDEN]: {
     label: {
-      es: { adult: 'Interés', kids: 'Secretos ⭐' },
+      es: { adult: 'Puntos de interés', kids: 'Secretos ⭐' },
       en: { adult: 'Interest', kids: 'Secrets ⭐' }
     },
     pin: 'hidden',

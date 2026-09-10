@@ -1281,7 +1281,7 @@
     intro: { es: { adult: 'Introducción', kids: 'Introducción' }, en: { adult: 'Introduction', kids: 'Introduction' } },
     ticket: { es: { adult: 'Entrada: horario y precio', kids: 'Entrada: horario y precio' }, en: { adult: 'Tickets: hours & price', kids: 'Tickets: hours & price' } },
     allPill: { es: { adult: 'Todos', kids: 'Todo ✨' }, en: { adult: 'All', kids: 'All ✨' } },
-    essentialFallback: { es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' }, en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' } },
+    essentialFallback: { es: { adult: 'Rutas<br>recomendadas', kids: '¡Lo Top! 🚩' }, en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' } },
     askPlaceholder: { es: { adult: 'Escribe tu pregunta…', kids: 'Escribe tu pregunta…' }, en: { adult: 'Type your question…', kids: 'Type your question…' } },
     askAriaLabel: { es: { adult: 'Escribe tu pregunta a la guía IA', kids: 'Escribe tu pregunta a la guía IA' }, en: { adult: 'Type your question to the AI guide', kids: 'Type your question to the AI guide' } },
     backToMenu: { es: { adult: 'Menú principal', kids: 'Menú principal' }, en: { adult: 'Main menu', kids: 'Main menu' } },
@@ -1784,7 +1784,7 @@
   // Rutas imprescindibles de la ciudad activa; las ciudades sin `routes` propio
   // se tratan como una única ruta "main" con el color primario de la app.
   const getCityRoutes = () => (CURRENT_CITY && CURRENT_CITY.routes) || [
-    { id: 'main', name: { es: { adult: 'Recomendaciones', kids: '¡Lo Top!' }, en: { adult: 'Highlights', kids: 'The Top Spots!' } }, color: null }
+    { id: 'main', name: { es: { adult: 'Rutas<br>recomendadas', kids: '¡Lo Top!' }, en: { adult: 'Highlights', kids: 'The Top Spots!' } }, color: null }
   ];
   const isPoiInActiveRoute = (poi) => !!(poi.essential && poi.essential.route === STATE.activeRoute);
 
@@ -5806,26 +5806,21 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     const meta = CATEGORY_META[poi.category];
 
     // EXPERIMENTO (rama experimento-diseno-editorial): tiñe toda la ficha
-    // (cabecera + audioguía + controles del chat) con el color de la
-    // categoría, en vez del naranja de marca fijo -- meta.accent ya existía
-    // en CATEGORY_META desde antes pero no se usaba en ningún sitio. Se fija
-    // en els.sheet (el .bottom-sheet entero) y no en .sheet-head para que la
-    // custom property herede hacia abajo a los botones de audio/chat
-    // también (una custom property no "sube" desde un hijo).
+    // (cabecera + audioguía + controles del chat) con el MISMO color que ya
+    // usa el pin de esa categoría en el mapa (getCategoryPinColor: azul
+    // Museos, amarillo Restauración, verde Interés) -- antes usaba
+    // meta.accent, una paleta distinta (terracota/ocre/teal) que no
+    // coincidía con el color del pin y desentonaba al abrir la ficha. Se
+    // fija en els.sheet (el .bottom-sheet entero) y no en .sheet-head para
+    // que la custom property herede hacia abajo a los botones de
+    // audio/chat también (una custom property no "sube" desde un hijo).
+    const accentColor = getCategoryPinColor(poi.category);
     if (els.sheet) {
-      if (meta.accent) {
-        els.sheet.style.setProperty('--sheet-accent-raw', meta.accent);
-      } else {
-        els.sheet.style.removeProperty('--sheet-accent-raw');
-      }
+      els.sheet.style.setProperty('--sheet-accent-raw', accentColor);
     }
     const sheetHead = $('.sheet-head', els.sheet);
     if (sheetHead) {
-      if (meta.accent) {
-        sheetHead.setAttribute('data-tinted', 'true');
-      } else {
-        sheetHead.removeAttribute('data-tinted');
-      }
+      sheetHead.setAttribute('data-tinted', 'true');
     }
 
     setSheetThumbImage(poi.image, pickDual(poi.name));

@@ -1339,6 +1339,23 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
 }
 .pill:hover { background: color-mix(in srgb, var(--color-surface) 90%, transparent); }
 .pill:active { transform: scale(0.96); }
+/* EXPERIMENTO (rama experimento-diseno-editorial): la píldora de rutas
+   ("Rutas<br>recomendadas", ver essentialFallback en app.js) es la única
+   con el texto partido en dos líneas -- el <br> ya viene en el propio
+   texto (se inserta con innerHTML), aquí solo se le da sitio: alto
+   automático en vez del fijo de 34px, y algo menos de tamaño de letra
+   para que quepan dos líneas cortas sin verse apretadas. */
+.pill[data-category="essential"] {
+  height: auto;
+  min-height: 34px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  text-align: left;
+}
+.pill[data-category="essential"] span:last-child {
+  font-size: 11px;
+  line-height: 1.2;
+}
 .pill[data-active="true"] {
   background: var(--pill-color, var(--color-primary));
   color: #0B1120;
@@ -1644,26 +1661,32 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   --color-border: #E7E2D4;
   --color-primary-soft: #B45309;
   /* EXPERIMENTO (rama experimento-diseno-editorial): dentro de la ficha, el
-     color "de marca" para botones/progreso pasa a ser el acento de la
-     categoría del POI (--sheet-accent-raw, fijado por populateSheetContent
-     en app.js) en vez del naranja saturado de siempre -- es un tono más
-     apagado/tierra por categoría, coherente con la cabecera ya teñida y
-     con los anillos de los pines-foto. El respaldo (#8A6F52, sin ficha
-     abierta con categoría) es un tostado neutro, no el naranja de marca. */
+     color "de marca" para botones/progreso/cabecera pasa a ser el MISMO
+     color que ya tiene el pin de esa categoría en el mapa (--sheet-accent-raw,
+     fijado por populateSheetContent en app.js a partir de
+     getCategoryPinColor) en vez del naranja saturado de siempre -- así la
+     ficha ya no desentona en cuanto se abre. El respaldo (#8A6F52, por si
+     alguna vez se abre sin categoría) es un tostado neutro, no el naranja
+     de marca. */
   --color-primary: var(--sheet-accent-raw, #8A6F52);
+  /* EXPERIMENTO: ficha "flotante" en vez de pegada a los tres bordes de la
+     pantalla -- deja un margen a los lados y abajo (respetando el notch
+     inferior con env(safe-area-inset-bottom), mismo patrón que el resto de
+     botones flotantes del mapa) y redondea las 4 esquinas, no solo las de
+     arriba. overflow:hidden en este mismo elemento ya recorta el fondo de
+     .sheet-head a esas esquinas, así que no hace falta tocarlo aparte. */
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  max-height: 82vh;
-  max-height: 82dvh;
+  left: 10px;
+  right: 10px;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  max-height: 76vh;
+  max-height: 76dvh;
   background: var(--color-surface);
-  border-top-left-radius: var(--radius-xl);
-  border-top-right-radius: var(--radius-xl);
-  border-top: 1px solid var(--color-border);
-  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35), 0 2px 10px rgba(0, 0, 0, 0.25);
   z-index: 2200;
-  transform: translateY(100%);
+  transform: translateY(calc(100% + 24px));
   transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s linear 0.38s;
   display: flex;
   flex-direction: column;
