@@ -1601,7 +1601,13 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   font-weight: 800;
   color: #fff;
   line-height: 1;
-  background: var(--color-primary);
+  /* EXPERIMENTO (rama experimento-diseno-editorial): el naranja de marca
+     (var(--color-primary)) quedaba muy "llamativo" para algo que aparece
+     por todo el mapa constantemente -- y de paso no pega con ninguna
+     categoría en concreto porque agrupa POIs mezclados. Un gris pizarra
+     apagado se nota igual de bien pero sin chillar, y además comunica
+     mejor que es "mixto" y no una categoría más. */
+  background: #475569;
   border-width: 2px;
 }
 .custom-pin.-cluster:hover { transform: scale(calc(var(--pin-scale, 1) * 1.08)); }
