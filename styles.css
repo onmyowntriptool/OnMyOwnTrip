@@ -1601,16 +1601,23 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   font-weight: 600;
   color: #fff;
   line-height: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   /* EXPERIMENTO (rama experimento-diseno-editorial): naranja (V46), gris
-     pizarra (V47) y gris metálico (V48) no convencieron -- cuarto intento,
-     vidrio esmerilado oscuro: el MISMO tratamiento que ya usa la barra de
-     filtros (.header-bottom, ver más abajo) en vez de inventar un color
-     nuevo, para que las burbujas se sientan parte del "cromado" propio de
-     la app y no un elemento aparte. */
-  background: color-mix(in srgb, var(--color-surface) 55%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+     pizarra (V47), gris metálico (V48) y vidrio esmerilado plano (V49) --
+     quinto intento, burbuja de cristal 3D: un brillo radial arriba-
+     izquierda simula el reflejo de una esfera, el inset oscuro abajo le da
+     volumen, y el fondo semitransparente + blur deja intuir el mapa
+     debajo en vez de taparlo del todo. */
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.28) 28%, rgba(255, 255, 255, 0.08) 55%, rgba(255, 255, 255, 0.02) 100%),
+    color-mix(in srgb, var(--color-surface) 38%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.55),
+    inset 0 -5px 7px rgba(0, 0, 0, 0.3),
+    0 6px 14px rgba(0, 0, 0, 0.35);
 }
 .custom-pin.-cluster:hover { transform: scale(calc(var(--pin-scale, 1) * 1.08)); }
 
