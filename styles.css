@@ -1636,7 +1636,7 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   background:
     radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.16) 28%, rgba(255, 255, 255, 0.03) 55%, rgba(0, 0, 0, 0.04) 100%),
     rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1.5px solid rgba(75, 85, 99, 0.6);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   box-shadow:
