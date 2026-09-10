@@ -1599,17 +1599,16 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   font-family: inherit;
   font-size: 15px;
   font-weight: 500;
-  color: #44403C;
+  color: #fff;
   line-height: 1;
-  /* EXPERIMENTO (rama experimento-diseno-editorial): el naranja de marca
-     quedaba muy "llamativo" para algo que aparece por todo el mapa
-     constantemente. El primer intento (gris pizarra #475569 + negrita)
-     seguía leyéndose "fuerte" -- así que pasa a un crema suave, número
-     en su peso normal y texto oscuro en vez de blanco: mismo lenguaje
-     claro/cálido que ya tiene la ficha, y de paso no implica ninguna
-     categoría en concreto (los clusters agrupan POIs mezclados). */
-  background: #EDE6D6;
-  border-width: 2px;
+  /* EXPERIMENTO (rama experimento-diseno-editorial): naranja (V46) y luego
+     crema (V47) tampoco convencieron -- tercer intento, gris metálico con
+     un ligero degradado (simula el brillo de una superficie pulida en vez
+     de un color plano) y sin el borde de --color-bg que llevan el resto
+     de pines (ver .custom-pin más arriba), para que se note más flotando
+     sobre el mapa y menos "con marco". */
+  background: linear-gradient(145deg, #A8AFB9, #6B7280);
+  border: none;
 }
 .custom-pin.-cluster:hover { transform: scale(calc(var(--pin-scale, 1) * 1.08)); }
 
