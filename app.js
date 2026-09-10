@@ -4394,42 +4394,39 @@
     const poiId = STATE.activePoiId;
     const poi = POIS.find((p) => p.id === poiId);
     const topic = STATE.ai.currentTopic[poiId] || null;
-    const exploredSet = STATE.ai.explored[poiId] || new Set();
     // "disabled" (general) bloquea todos los chips EXCEPTO "profundiza
     // más", que tiene su propio candado independiente (deepenBusy): así,
     // mientras un párrafo de "profundiza más" suena o espera a la IA, el
-    // resto de chips (Entrada, temas, pregunta libre) siguen disponibles
-    // — antes se bloqueaban todos por igual, que era justo lo que se
-    // pidió arreglar.
+    // resto de chips (Entrada, pregunta libre) siguen disponibles — antes
+    // se bloqueaban todos por igual, que era justo lo que se pidió arreglar.
     const disabled = STATE.ai.pending;
 
     // El chip de "Entrada" no es una de las opciones de IA: es información
     // práctica fija (horario/precio), solo se muestra si el propio POI la
     // trae (poi.visitInfo) y va siempre primero, antes que "Profundiza más".
+    // EXPERIMENTO (rama experimento-diseno-editorial): "Cómo llegar" ya NO
+    // va aquí -- se mudó a un icono fijo junto al de cerrar la ficha (ver
+    // .sheet-directions-btn / populateSheetContent), así que esta fila
+    // queda con menos chips y todos caben mejor.
     const chips = [];
-    // "Cómo llegar" va siempre el primero de todos: es la acción práctica
-    // más inmediata al abrir la ficha de un sitio, antes incluso que la
-    // información de entradas.
-    if (poi && poi.coords) chips.push({ id: 'directions', kind: 'directions', label: t('comeHere') });
-    // "Introducción" va justo después: es la audioguía completa de siempre,
-    // ahora a un toque en vez de sonar sola al abrir la ficha (ver
+    // "Introducción" va primero: es la audioguía completa de siempre, a un
+    // toque en vez de sonar sola al abrir la ficha (ver
     // ensureAiPanelInitialGreet / showFullIntro).
     chips.push({ id: 'intro', kind: 'intro', label: t('intro') });
     if (poi && poi.visitInfo) chips.push({ id: 'ticket', kind: 'ticket', label: t('ticket') });
-    // "Profundiza más" va siempre el primero de los de IA, incluso antes de
-    // elegir un tema (en ese caso profundiza sobre el resumen inicial, no
-    // sobre un tema concreto); luego, hasta 2 temas sin explorar todavía.
-    // Se deshabilita en cuanto se agotan los 7 puntos programados (ver
-    // queueDeepenWithFillers): a partir de ahí, seguir pulsando no daría
-    // nada nuevo con garantías, así que se redirige a la pregunta libre
-    // (el propio texto del último punto ya se lo indica al usuario). También
-    // se deshabilita mientras su propia tanda está en curso (deepenBusy),
-    // aunque el resto de chips (disabled, de arriba) no lo estén.
+    // "Profundiza más" es el único chip de IA que queda -- los 3 chips de
+    // tema (Historia secreta / Arquitectura / Leyendas) se quitaron: el
+    // propio guion de 7 puntos que arma "Profundiza más" ya pide mezclar
+    // esos mismos ángulos (ver buildStructuredInitPrompt), así que eran
+    // redundantes con lo que esto ya cubre por su cuenta. Se deshabilita en
+    // cuanto se agotan esos 7 puntos (ver queueDeepenWithFillers): a partir
+    // de ahí, seguir pulsando no daría nada nuevo con garantías, así que se
+    // redirige a la pregunta libre (el propio texto del último punto ya se
+    // lo indica al usuario). También se deshabilita mientras su propia
+    // tanda está en curso (deepenBusy), aunque el resto de chips (disabled,
+    // de arriba) no lo estén.
     const deepenExhausted = !!(STATE.ai.deepenProgress[poiId] && STATE.ai.deepenProgress[poiId].exhausted);
     chips.push({ id: 'deepen', kind: 'deepen', label: pickDual(AI_PROMPTS.deepenLabel), disabled: deepenExhausted || STATE.ai.deepenBusy });
-    const remaining = (AI_PROMPTS?.options || []).filter((o) => !exploredSet.has(o.id));
-    remaining.slice(0, 2).forEach((o) => chips.push({ id: o.id, kind: 'option', label: pickDual(o.label) }));
-    if (remaining.length === 0) chips.push({ id: 'reset', kind: 'reset', label: pickDual(AI_PROMPTS.resetLabel) });
 
     chips.forEach((chip) => {
       const b = document.createElement('button');
@@ -5861,6 +5858,13 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     $('.sheet-sub', els.sheet).textContent = pickDual(poi.subtitle);
     updateSheetDistance(id);
 
+    // EXPERIMENTO (rama experimento-diseno-editorial): "Cómo llegar" ya no
+    // es un chip de la fila de abajo (ver renderAiSuggestions) sino este
+    // icono fijo junto al de cerrar -- mismo criterio de antes (solo si el
+    // POI trae coords) para decidir si se muestra.
+    const dirBtn = $('#sheetDirectionsBtn', els.sheet);
+    if (dirBtn) dirBtn.hidden = !poi.coords;
+
     renderAiSuggestions();
     hideKidsQuiz();
 
@@ -6975,6 +6979,13 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     });
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && directionsModal && directionsModal.classList.contains('-open')) closeDirectionsConfirm();
+    });
+    // EXPERIMENTO (rama experimento-diseno-editorial): icono de "Cómo
+    // llegar" en la cabecera de la ficha (ver populateSheetContent) en vez
+    // del chip de abajo -- abre el mismo modal de confirmación de siempre.
+    $('#sheetDirectionsBtn')?.addEventListener('click', () => {
+      const poi = POIS.find((p) => p.id === STATE.activePoiId);
+      if (poi) openDirectionsConfirm(poi);
     });
 
     let chosenMode = STATE.mode === 'kids' ? 'kids' : 'adult';

@@ -1788,7 +1788,8 @@ html[data-mode="kids"] .bottom-sheet {
 .sheet-head[data-tinted="true"] .sheet-distance {
   color: #241C10;
 }
-.sheet-head[data-tinted="true"] .sheet-close {
+.sheet-head[data-tinted="true"] .sheet-close,
+.sheet-head[data-tinted="true"] .sheet-directions-btn {
   color: #241C10;
 }
 .sheet-thumb-wrap {
@@ -2146,6 +2147,33 @@ html[data-mode="kids"] .bottom-sheet {
 .sheet-close:hover { color: var(--color-text); }
 .sheet-close:active { transform: scale(0.92); }
 .sheet-close svg { width: 16px; height: 16px; stroke-width: 2.4; }
+
+/* EXPERIMENTO (rama experimento-diseno-editorial): "Cómo llegar" se muda
+   de la fila de chips de abajo a un icono junto al de cerrar -- es la
+   acción práctica más inmediata al abrir una ficha, así que gana un sitio
+   fijo y siempre visible en vez de competir por espacio con el resto de
+   chips (que ahora se desplazan por el scroll horizontal). Mismo tamaño
+   que .sheet-close, pero con el icono en el color de categoría de la
+   ficha (--color-primary, ver .bottom-sheet) para que se note que es una
+   acción, no solo otro botón neutro. Oculto por defecto (algún POI
+   suelto podría no traer coords) y se muestra en populateSheetContent. */
+.sheet-directions-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-primary);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.sheet-directions-btn:hover { border-color: var(--color-primary); }
+.sheet-directions-btn:active { transform: scale(0.92); }
+.sheet-directions-btn svg { width: 15px; height: 15px; }
+.sheet-directions-btn[hidden] { display: none; }
 
 /* ---------- AI CHAT ---------- */
 .ai-messages {
