@@ -63,8 +63,14 @@ const CITIES = {
     // en esta ciudad (ver maybeShowCityIntro en app.js) — no confundir con
     // "subtitle" (etiqueta breve) ni con tabs.history de cada POI.
     welcomeIntro: {
-      adult: 'Bienvenido a Toledo, la Ciudad de las Tres Culturas. Aquí vivieron juntos musulmanes, cristianos y judíos, y todavía se nota en cada calle. En este paseo verás su Alcázar, su Catedral y rincones que apenas han cambiado en siglos. Toledo te espera: ven a descubrirla.',
-      kids: '¡Bienvenido a Toledo, la ciudad construida sobre una roca gigante! Aquí vivieron juntos musulmanes, cristianos y judíos hace cientos de años. Vas a ver un castillo enorme, una catedral preciosa y calles que parecen de cuento. ¡Prepárate para la aventura!'
+      es: {
+        adult: 'Bienvenido a Toledo, la Ciudad de las Tres Culturas. Aquí vivieron juntos musulmanes, cristianos y judíos, y todavía se nota en cada calle. En este paseo verás su Alcázar, su Catedral y rincones que apenas han cambiado en siglos. Toledo te espera: ven a descubrirla.',
+        kids: '¡Bienvenido a Toledo, la ciudad construida sobre una roca gigante! Aquí vivieron juntos musulmanes, cristianos y judíos hace cientos de años. Vas a ver un castillo enorme, una catedral preciosa y calles que parecen de cuento. ¡Prepárate para la aventura!'
+      },
+      en: {
+        adult: "Welcome to Toledo, the City of the Three Cultures. Muslims, Christians, and Jews once lived here side by side, and you can still feel it on every street. On this walk you'll see its Alcázar, its Cathedral, and corners that have barely changed in centuries. Toledo is waiting: come and discover it.",
+        kids: "Welcome to Toledo, the city built on a giant rock! Muslims, Christians, and Jews all lived here together hundreds of years ago. You'll see a huge castle, a beautiful cathedral, and streets that look like they're out of a storybook. Get ready for adventure!"
+      }
     },
     // Insignia de ciudad (modo niño, ver STATE.game.cityBadges en app.js):
     // se gana al llegar a esta cantidad de estrellas SOLO con quizzes de
@@ -147,8 +153,14 @@ const CITIES = {
     continent: 'Europa',
     subtitle: { adult: 'La Villa y Corte', kids: '¡La Ciudad del Oso y el Madroño! 🐻' },
     welcomeIntro: {
-      adult: 'Bienvenido a Madrid, capital de España desde hace más de 450 años. Aquí encontrarás palacios, museos con arte de todo el mundo y calles llenas de vida a cualquier hora. En este paseo descubrirás sus rincones más especiales. ¡Empecemos!',
-      kids: '¡Bienvenido a Madrid, la ciudad del oso y el madroño! Es la capital de España desde hace más de 450 años. Vas a ver un palacio enorme, museos llenos de tesoros y plazas donde siempre pasa algo divertido. ¡Prepárate para descubrir Madrid!'
+      es: {
+        adult: 'Bienvenido a Madrid, capital de España desde hace más de 450 años. Aquí encontrarás palacios, museos con arte de todo el mundo y calles llenas de vida a cualquier hora. En este paseo descubrirás sus rincones más especiales. ¡Empecemos!',
+        kids: '¡Bienvenido a Madrid, la ciudad del oso y el madroño! Es la capital de España desde hace más de 450 años. Vas a ver un palacio enorme, museos llenos de tesoros y plazas donde siempre pasa algo divertido. ¡Prepárate para descubrir Madrid!'
+      },
+      en: {
+        adult: "Welcome to Madrid, the capital of Spain for over 450 years. Here you'll find palaces, museums with art from all over the world, and streets full of life at any hour. On this walk you'll discover its most special corners. Let's get started!",
+        kids: "Welcome to Madrid, the city of the bear and the strawberry tree! It's been Spain's capital for over 450 years. You'll see a huge palace, museums full of treasures, and squares where something fun is always happening. Get ready to discover Madrid!"
+      }
     },
     // ~50% del máximo real de Madrid (81 POIs con quiz × 10 = 2430 posibles).
     badgeThreshold: 1200,
@@ -249,8 +261,14 @@ const CITIES = {
     continent: 'Europa',
     subtitle: { adult: 'Cuna de Cervantes, Patrimonio de la Humanidad', kids: '¡La Ciudad Donde Nació Don Quijote... o Casi! 🖋️' },
     welcomeIntro: {
-      adult: 'Bienvenido a Alcalá de Henares, la ciudad donde nació Cervantes. Su universidad, de más de 500 años, la convirtió en un lugar clave para las letras en toda Europa. En este paseo caminarás por sus calles históricas. ¡Vamos a descubrirla!',
-      kids: '¡Bienvenido a Alcalá de Henares, la ciudad donde nació el escritor más famoso de España! Su universidad tiene más de 500 años. Vas a caminar por una calle con soportales enorme y descubrir dónde nació Cervantes. ¡Prepárate para la aventura!'
+      es: {
+        adult: 'Bienvenido a Alcalá de Henares, la ciudad donde nació Cervantes. Su universidad, de más de 500 años, la convirtió en un lugar clave para las letras en toda Europa. En este paseo caminarás por sus calles históricas. ¡Vamos a descubrirla!',
+        kids: '¡Bienvenido a Alcalá de Henares, la ciudad donde nació el escritor más famoso de España! Su universidad tiene más de 500 años. Vas a caminar por una calle con soportales enorme y descubrir dónde nació Cervantes. ¡Prepárate para la aventura!'
+      },
+      en: {
+        adult: "Welcome to Alcalá de Henares, the city where Cervantes was born. Its university, over 500 years old, made it a key place for literature across Europe. On this walk you'll stroll through its historic streets. Let's go discover it!",
+        kids: "Welcome to Alcalá de Henares, the city where Spain's most famous writer was born! Its university is over 500 years old. You'll walk down a huge arcaded street and discover where Cervantes was born. Get ready for adventure!"
+      }
     },
     // ~50% del máximo real de Alcalá de Henares (16 POIs con quiz × 30 = 480 posibles).
     badgeThreshold: 240,
@@ -311,8 +329,14 @@ const CITIES = {
     continent: 'Europa',
     subtitle: { adult: 'El pueblo amurallado de la Sierra Norte', kids: '¡El Pueblo con Muralla de Verdad! 🏰' },
     welcomeIntro: {
-      adult: 'Bienvenido a Buitrago del Lozoya, un pueblo con muralla en la Sierra Norte de Madrid. Tiene casi mil años de historia y hasta un museo con obras de Picasso. Se recorre en poco más de una hora. ¡Ven a descubrir un lugar único!',
-      kids: '¡Bienvenido a Buitrago del Lozoya, un pueblo con una muralla de verdad! Tiene casi 1.000 años y todavía puedes caminar junto a ella. ¡Hasta hay un museo con cuadros de Picasso! Prepárate para descubrir un pueblo mágico.'
+      es: {
+        adult: 'Bienvenido a Buitrago del Lozoya, un pueblo con muralla en la Sierra Norte de Madrid. Tiene casi mil años de historia y hasta un museo con obras de Picasso. Se recorre en poco más de una hora. ¡Ven a descubrir un lugar único!',
+        kids: '¡Bienvenido a Buitrago del Lozoya, un pueblo con una muralla de verdad! Tiene casi 1.000 años y todavía puedes caminar junto a ella. ¡Hasta hay un museo con cuadros de Picasso! Prepárate para descubrir un pueblo mágico.'
+      },
+      en: {
+        adult: "Welcome to Buitrago del Lozoya, a walled village in the Sierra Norte of Madrid. It has almost a thousand years of history, and even a museum with works by Picasso. You can walk the whole thing in just over an hour. Come discover a one-of-a-kind place!",
+        kids: "Welcome to Buitrago del Lozoya, a village with a real wall! It's almost 1,000 years old and you can still walk right beside it. There's even a museum with paintings by Picasso! Get ready to discover a magical village."
+      }
     },
     // ~50% del máximo real de Buitrago del Lozoya (7 POIs con quiz × 30 = 210 posibles).
     badgeThreshold: 105,
@@ -352,8 +376,14 @@ const CITIES = {
     continent: 'Europa',
     subtitle: { adult: 'La Ciudad en el Mar', kids: '¡El Castillo sobre las Olas! 🌊' },
     welcomeIntro: {
-      adult: 'Bienvenido a Peñíscola, la Ciudad en el Mar. Sobre sus rocas se alza el Castillo del Papa Luna, frente al Mediterráneo. En este paseo recorrerás murallas, playas y vistas que no olvidarás. ¡Ven a descubrirla!',
-      kids: '¡Bienvenido a Peñíscola, el pueblo con un castillo sobre el mar! Hace muchos años casi era una isla de verdad. Vas a caminar junto a murallas y subir hasta un castillo con vistas increíbles. ¡Prepárate para la aventura!'
+      es: {
+        adult: 'Bienvenido a Peñíscola, la Ciudad en el Mar. Sobre sus rocas se alza el Castillo del Papa Luna, frente al Mediterráneo. En este paseo recorrerás murallas, playas y vistas que no olvidarás. ¡Ven a descubrirla!',
+        kids: '¡Bienvenido a Peñíscola, el pueblo con un castillo sobre el mar! Hace muchos años casi era una isla de verdad. Vas a caminar junto a murallas y subir hasta un castillo con vistas increíbles. ¡Prepárate para la aventura!'
+      },
+      en: {
+        adult: "Welcome to Peñíscola, the City in the Sea. The Castillo del Papa Luna rises from its rocks, facing the Mediterranean. On this walk you'll explore walls, beaches, and views you won't forget. Come discover it!",
+        kids: "Welcome to Peñíscola, the village with a castle over the sea! Many years ago it was almost a real island. You'll walk beside old walls and climb up to a castle with incredible views. Get ready for adventure!"
+      }
     },
     // ~50% del máximo real de Peñíscola (6 POIs con quiz × 10 = 180 posibles).
     badgeThreshold: 90,
@@ -391,8 +421,14 @@ const CITIES = {
     continent: 'América',
     subtitle: { adult: 'Capital azteca y virreinal', kids: '¡La Ciudad de las Águilas y las Pirámides! 🦅' },
     welcomeIntro: {
-      adult: 'Bienvenido a la Ciudad de México, construida sobre Tenochtitlan, la antigua capital azteca. Aquí conviven una pirámide, palacios y barrios como Coyoacán, donde vivió Frida Kahlo. En este paseo descubrirás mucha historia en pocos pasos. ¡Vamos a explorarla!',
-      kids: '¡Bienvenido a la Ciudad de México, una ciudad construida encima de otra! Hace 500 años aquí estaba Tenochtitlan, la capital de los aztecas. Vas a ver una pirámide escondida, un palacio con pinturas gigantes y el barrio de una pintora muy famosa. ¡Prepárate para descubrir sus secretos!'
+      es: {
+        adult: 'Bienvenido a la Ciudad de México, construida sobre Tenochtitlan, la antigua capital azteca. Aquí conviven una pirámide, palacios y barrios como Coyoacán, donde vivió Frida Kahlo. En este paseo descubrirás mucha historia en pocos pasos. ¡Vamos a explorarla!',
+        kids: '¡Bienvenido a la Ciudad de México, una ciudad construida encima de otra! Hace 500 años aquí estaba Tenochtitlan, la capital de los aztecas. Vas a ver una pirámide escondida, un palacio con pinturas gigantes y el barrio de una pintora muy famosa. ¡Prepárate para descubrir sus secretos!'
+      },
+      en: {
+        adult: "Welcome to Mexico City, built on top of Tenochtitlan, the ancient Aztec capital. Here a pyramid, palaces, and neighbourhoods like Coyoacán, where Frida Kahlo lived, all exist side by side. On this walk you'll discover a lot of history in just a few steps. Let's go explore it!",
+        kids: "Welcome to Mexico City, a city built on top of another city! 500 years ago Tenochtitlan, the Aztec capital, stood right here. You'll see a hidden pyramid, a palace with giant paintings, and the neighbourhood of a very famous painter. Get ready to discover its secrets!"
+      }
     },
     // ~50% del máximo real de CDMX (19 POIs con quiz × 10 = 570 posibles).
     badgeThreshold: 290,
@@ -484,8 +520,14 @@ const CITIES = {
     continent: 'Europa',
     subtitle: { adult: 'Historia, muros y memoria', kids: '¡La Ciudad del Oso y el Muro! 🐻' },
     welcomeIntro: {
-      adult: 'Bienvenido a Berlín, una ciudad marcada por la historia: una guerra, un muro que la dividió durante casi 30 años y una libertad recuperada. En este paseo verás la Puerta de Brandeburgo, restos del Muro y su famosa Isla de los Museos. ¡Descubre esta ciudad!',
-      kids: '¡Bienvenido a Berlín, la ciudad del oso, igual que Madrid! Aquí hubo un muro gigante que dividió la ciudad en dos durante casi 30 años. Vas a ver una puerta enorme, trozos del muro pintados de colores y una isla llena de museos. ¡Prepárate para la aventura!'
+      es: {
+        adult: 'Bienvenido a Berlín, una ciudad marcada por la historia: una guerra, un muro que la dividió durante casi 30 años y una libertad recuperada. En este paseo verás la Puerta de Brandeburgo, restos del Muro y su famosa Isla de los Museos. ¡Descubre esta ciudad!',
+        kids: '¡Bienvenido a Berlín, la ciudad del oso, igual que Madrid! Aquí hubo un muro gigante que dividió la ciudad en dos durante casi 30 años. Vas a ver una puerta enorme, trozos del muro pintados de colores y una isla llena de museos. ¡Prepárate para la aventura!'
+      },
+      en: {
+        adult: "Welcome to Berlin, a city shaped by history: a war, a wall that split it for almost 30 years, and freedom regained. On this walk you'll see the Brandenburg Gate, remains of the Wall, and its famous Museum Island. Discover this city!",
+        kids: "Welcome to Berlin, the city of the bear, just like Madrid! There was once a giant wall here that split the city in two for almost 30 years. You'll see a huge gate, colourfully painted pieces of the wall, and an island full of museums. Get ready for adventure!"
+      }
     },
     // ~50% del máximo real de Berlín (30 POIs con quiz × 10 = 890 posibles).
     badgeThreshold: 450,
@@ -566,8 +608,14 @@ const CITIES = {
     continent: 'Europa',
     subtitle: { adult: 'La Ciudad Eterna', kids: '¡La Ciudad de los Gladiadores! ⚔️' },
     welcomeIntro: {
-      adult: 'Bienvenido a Roma, la Ciudad Eterna, con casi tres mil años de historia en sus calles. En este paseo entrarás en el Coliseo, caminarás por el Foro Romano y lanzarás una moneda a la Fontana di Trevi. ¡Prepárate para una de las ciudades más fascinantes del mundo!',
-      kids: '¡Bienvenido a Roma, la ciudad de los gladiadores! Tiene casi 3.000 años de historia, y todavía se puede visitar el anfiteatro gigante donde luchaban. Vas a caminar por las ruinas de un imperio enorme y lanzar una moneda a una fuente preciosa. ¡Prepárate para la aventura más grande!'
+      es: {
+        adult: 'Bienvenido a Roma, la Ciudad Eterna, con casi tres mil años de historia en sus calles. En este paseo entrarás en el Coliseo, caminarás por el Foro Romano y lanzarás una moneda a la Fontana di Trevi. ¡Prepárate para una de las ciudades más fascinantes del mundo!',
+        kids: '¡Bienvenido a Roma, la ciudad de los gladiadores! Tiene casi 3.000 años de historia, y todavía se puede visitar el anfiteatro gigante donde luchaban. Vas a caminar por las ruinas de un imperio enorme y lanzar una moneda a una fuente preciosa. ¡Prepárate para la aventura más grande!'
+      },
+      en: {
+        adult: "Welcome to Rome, the Eternal City, with almost three thousand years of history in its streets. On this walk you'll step inside the Colosseum, walk through the Roman Forum, and toss a coin into the Trevi Fountain. Get ready for one of the most fascinating cities in the world!",
+        kids: "Welcome to Rome, the city of the gladiators! It has almost 3,000 years of history, and you can still visit the giant amphitheatre where they fought. You'll walk through the ruins of an enormous empire and toss a coin into a beautiful fountain. Get ready for the biggest adventure yet!"
+      }
     },
     // ~50% del máximo real de Roma (39 POIs con quiz × 30 = 1170 posibles).
     badgeThreshold: 585,

@@ -389,6 +389,12 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
    corta a cada ciudad (una vez por ciudad, la primera vez que se entra).
    Card algo más ancha/alta que la de Maps porque el texto es un párrafo
    entero, no una frase. */
+/* EXPERIMENTO (rama experimento-diseno-editorial): fondo con la foto real
+   de la ciudad (--city-intro-photo, fijada en maybeShowCityIntro en
+   app.js) en vez del negro liso de siempre -- un degradado oscuro encima
+   sigue dejando la tarjeta blanca y su texto perfectamente legibles. Sin
+   foto disponible (--city-intro-photo sin fijar), el degradado solo cae
+   sobre el mismo negro de respaldo de antes. */
 .city-intro-modal {
   position: fixed;
   inset: 0;
@@ -397,7 +403,10 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(5, 7, 13, 0.92);
+  background:
+    linear-gradient(rgba(5, 7, 13, 0.55), rgba(5, 7, 13, 0.85)),
+    var(--city-intro-photo, none) center / cover no-repeat,
+    #05070d;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.25s ease;
