@@ -1258,6 +1258,11 @@
   // fountainsLayer/restroomsLayer. BORRAR junto con data/layers/food-*.js
   // si se retira el experimento (o dejarlo si la capa se queda de verdad).
   let foodLayer = null, foodVisible = false;
+  // EXPERIMENTO TEMPORAL — CAPA "HOTELES" (rama experimento-patrocinios-demo).
+  // Mismo criterio que la capa de comer/beber: TODOS los hoteles cercanos
+  // (datos abiertos de OpenStreetMap), patrocinen o no. BORRAR junto con
+  // data/layers/hotels-*.js si se retira el experimento.
+  let hotelsLayer = null, hotelsVisible = false;
   // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo).
   // Capa de pines patrocinados (solo nivel Oro pone pin permanente en el
   // mapa; Bronce/Plata solo aparecen dentro de la ficha, ver
@@ -1727,6 +1732,14 @@
     iconSize: [12, 12], iconAnchor: [6, 6], popupAnchor: [0, -6]
   });
 
+  // EXPERIMENTO TEMPORAL — CAPA "HOTELES": mismo tamaño/lenguaje que
+  // fuentes/aseos/comer-y-beber, icono de cama (ver .hotel-pin en styles.css).
+  const makeHotelIcon = () => L.divIcon({
+    className: 'fountain-pin-wrap',
+    html: '<div class="hotel-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-9a2 2 0 0 1 2-2h5v5"/><path d="M13 12h6a2 2 0 0 1 2 2v4"/><path d="M3 18h18"/><path d="M3 11v7"/></svg></div>',
+    iconSize: [12, 12], iconAnchor: [6, 6], popupAnchor: [0, -6]
+  });
+
   // Burbuja de agrupación (cluster): mismo lenguaje visual que .custom-pin,
   // pero con el número de POIs agrupados dentro. Crece un poco con la
   // cantidad para que se note de un vistazo si hay 3 o 30 ahí dentro.
@@ -1831,6 +1844,14 @@
       loadFoodPlaces(STATE.cityId).then(() => {
         renderFood();
         if (map && foodLayer) foodLayer.addTo(map);
+      });
+    }
+    // EXPERIMENTO TEMPORAL — CAPA "HOTELES": mismo patrón. BORRAR si se retira.
+    hotelsLayer = L.layerGroup();
+    if (hotelsVisible) {
+      loadHotelPlaces(STATE.cityId).then(() => {
+        renderHotels();
+        if (map && hotelsLayer) hotelsLayer.addTo(map);
       });
     }
     // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo):
@@ -2759,6 +2780,52 @@
   };
 
   /* =========================================================
+   * EXPERIMENTO TEMPORAL — CAPA "HOTELES"
+   * (rama experimento-patrocinios-demo, NO fusionar a main sin revisar)
+   *
+   * Mismo patrón exacto que la capa "Comer y beber" de arriba: TODOS los
+   * hoteles cercanos (datos abiertos de OpenStreetMap vía Overpass — ver
+   * scratchpad/build-hotels-layer.js), patrocinen o no.
+   * =======================================================*/
+  const loadedHotelScripts = new Set();
+  const loadHotelPlaces = async (cityId) => {
+    if (window.HOTEL_PLACES && window.HOTEL_PLACES[cityId]) return;
+    if (loadedHotelScripts.has(cityId)) return;
+    try {
+      await loadScriptOnce(`data/layers/hotels-${cityId}.js?v=1`);
+      loadedHotelScripts.add(cityId);
+    } catch (e) {
+      console.warn(`No se pudo cargar la capa de hoteles de ${cityId}`, e);
+    }
+  };
+
+  const renderHotels = () => {
+    if (!hotelsLayer) return;
+    hotelsLayer.clearLayers();
+    const list = (window.HOTEL_PLACES && window.HOTEL_PLACES[STATE.cityId]) || [];
+    list.forEach((h) => {
+      const marker = L.marker(h.coords, { icon: makeHotelIcon(), zIndexOffset: -1000 });
+      const stars = h.stars ? ` · ${'★'.repeat(h.stars)}` : '';
+      marker.bindPopup(`<strong>${h.name}</strong><br>Hotel${stars}`);
+      marker.addTo(hotelsLayer);
+    });
+  };
+
+  const toggleHotels = async () => {
+    hotelsVisible = !hotelsVisible;
+    const btn = $('#hotelsBtn');
+    btn?.classList.toggle('-active', hotelsVisible);
+    if (!map || !hotelsLayer) return;
+    if (hotelsVisible) {
+      await loadHotelPlaces(STATE.cityId);
+      renderHotels();
+      if (!map.hasLayer(hotelsLayer)) hotelsLayer.addTo(map);
+    } else if (map.hasLayer(hotelsLayer)) {
+      map.removeLayer(hotelsLayer);
+    }
+  };
+
+  /* =========================================================
    * EXPERIMENTO TEMPORAL — PATROCINIOS DEMO
    * (rama experimento-patrocinios-demo, NO fusionar a main)
    *
@@ -2777,9 +2844,48 @@
   // que se pusieron en assets/icons — ver scratchpad/clean-sponsor-icons.js.
   const SPONSOR_ICON_SRC = {
     restaurant: 'assets/icons/sponsor-restaurant-icon.png',
-    cafe: 'assets/icons/sponsor-cafe-icon.png'
+    cafe: 'assets/icons/sponsor-cafe-icon.png',
+    hotel: 'assets/icons/sponsor-hotel-icon.png'
   };
   const sponsorIconUrl = (sponsor) => SPONSOR_ICON_SRC[sponsor.icon] || SPONSOR_ICON_SRC.restaurant;
+
+  // FIX (reportado: la ficha de patrocinio y la mención por voz salían en
+  // español aunque la app estuviera en modo inglés): teaser/ctaLabel/
+  // audioLine/menu en data/sponsors-demo.js ahora van envueltos { es, en }
+  // (ver el comentario de ese archivo) -- pickLang() los resuelve igual
+  // que el resto del contenido bilingüe. Las cadenas fijas de la propia UI
+  // de este bloque (botones, etiquetas) viven aquí, en vez de en
+  // UI_STRINGS, porque todo este bloque se borra junto si se retira el
+  // experimento.
+  const SPONSOR_DEMO_STRINGS = {
+    es: {
+      sponsoredLabel: 'Contenido patrocinado',
+      sponsoredMapPopup: 'Patrocinado — DEMO',
+      seeOnMap: 'Ver en el mapa',
+      seeMenuDefault: 'Ver la carta',
+      directions: 'Cómo llegar',
+      closeMenu: 'Cerrar carta',
+      menuUnavailable: 'Carta no disponible en esta demo.',
+      demoFooter: 'Contenido ficticio — ejercicio de patrocinios (DEMO)'
+    },
+    en: {
+      sponsoredLabel: 'Sponsored content',
+      sponsoredMapPopup: 'Sponsored — DEMO',
+      seeOnMap: 'View on map',
+      seeMenuDefault: 'View menu',
+      directions: 'Directions',
+      closeMenu: 'Close menu',
+      menuUnavailable: 'Menu not available in this demo.',
+      demoFooter: 'Fictional content — sponsorship demo exercise'
+    }
+  };
+  const sd = (key) => (SPONSOR_DEMO_STRINGS[STATE.lang] || SPONSOR_DEMO_STRINGS.es)[key];
+  // "Muy cerca (X) tienes NOMBRE." / "Just X away you'll find NOMBRE." -- el
+  // orden de la frase cambia entre idiomas, así que es una función, no una
+  // simple cadena con hueco.
+  const sponsorNearbyIntro = (distLabel, name) => (STATE.lang === 'en'
+    ? `Just ${distLabel} away you'll find <b>${name}</b>.`
+    : `Muy cerca (${distLabel}) tienes <b>${name}</b>.`);
 
   const makeSponsorDemoIcon = (sponsor, pulse = false) => L.divIcon({
     className: 'custom-pin-wrap',
@@ -2793,7 +2899,7 @@
     const list = (typeof SPONSORS_DEMO !== 'undefined' ? SPONSORS_DEMO : []).filter((s) => s.city === STATE.cityId && s.tier === 'oro');
     list.forEach((s) => {
       const marker = L.marker(s.coords, { icon: makeSponsorDemoIcon(s) });
-      marker.bindPopup(`<strong>${s.name}</strong><br>${s.teaser}<br><em>Patrocinado — DEMO</em>`);
+      marker.bindPopup(`<strong>${s.name}</strong><br>${pickLang(s.teaser)}<br><em>${sd('sponsoredMapPopup')}</em>`);
       marker.addTo(sponsorsLayer);
     });
   };
@@ -2821,10 +2927,10 @@
     el.hidden = true;
     el.innerHTML = `
       <div class="sponsor-demo-menu-card" role="dialog" aria-modal="true">
-        <button type="button" class="sponsor-demo-menu-close" aria-label="Cerrar carta">✕</button>
+        <button type="button" class="sponsor-demo-menu-close"></button>
         <div class="sponsor-demo-menu-head"></div>
         <div class="sponsor-demo-menu-body"></div>
-        <p class="sponsor-demo-menu-foot">Carta ficticia — ejercicio de patrocinios (DEMO)</p>
+        <p class="sponsor-demo-menu-foot"></p>
       </div>`;
     document.body.appendChild(el);
     const close = () => { el.hidden = true; };
@@ -2837,9 +2943,12 @@
     const el = ensureSponsorDemoMenuModal();
     const card = el.querySelector('.sponsor-demo-menu-card');
     const cleanName = sponsor.name.replace(/\s*\(DEMO.*?\)\s*/i, '');
+    el.querySelector('.sponsor-demo-menu-close').innerHTML = '✕';
+    el.querySelector('.sponsor-demo-menu-close').setAttribute('aria-label', sd('closeMenu'));
+    el.querySelector('.sponsor-demo-menu-foot').textContent = sd('demoFooter');
     el.querySelector('.sponsor-demo-menu-head').innerHTML = `
       <span class="emoji"><img src="${sponsorIconUrl(sponsor)}" alt="" /></span>
-      <div><h3>${cleanName}</h3><p>${sponsor.teaser}</p></div>`;
+      <div><h3>${cleanName}</h3><p>${pickLang(sponsor.teaser)}</p></div>`;
     const body = el.querySelector('.sponsor-demo-menu-body');
     // Muchos negocios reales ya tienen su carta como PDF y prefieren
     // entregar eso a que alguien les teclee la carta a mano — se incrusta
@@ -2847,11 +2956,11 @@
     // salir de la app, ni descargar nada, ni abrir una pestaña nueva.
     card.classList.toggle('-pdf', !!sponsor.menuPdf);
     if (sponsor.menuPdf) {
-      body.innerHTML = `<iframe src="${sponsor.menuPdf}" title="Carta de ${cleanName}" loading="lazy"></iframe>`;
+      body.innerHTML = `<iframe src="${sponsor.menuPdf}" title="${cleanName}" loading="lazy"></iframe>`;
     } else {
       const items = (sponsor.menu || [])
-        .map((m) => `<li><span>${m.item}</span><span class="price">${m.price}</span></li>`)
-        .join('') || '<li><span>Carta no disponible en esta demo.</span></li>';
+        .map((m) => `<li><span>${pickLang(m.item)}</span><span class="price">${pickLang(m.price)}</span></li>`)
+        .join('') || `<li><span>${sd('menuUnavailable')}</span></li>`;
       body.innerHTML = `<ul class="sponsor-demo-menu-list">${items}</ul>`;
     }
     el.hidden = false;
@@ -2963,13 +3072,13 @@
     const iconImg = `<img class="inline-icon" src="${sponsorIconUrl(sponsor)}" alt="" />`;
     if (sponsor.tier === 'bronce') {
       el.className = 'sheet-sponsor-demo';
-      el.innerHTML = `<span class="label">Contenido patrocinado</span>
-        <p>${iconImg} Muy cerca (${distLabel}) tienes <b>${sponsor.name}</b>. ${sponsor.teaser}</p>`;
+      el.innerHTML = `<span class="label">${sd('sponsoredLabel')}</span>
+        <p>${iconImg} ${sponsorNearbyIntro(distLabel, sponsor.name)} ${pickLang(sponsor.teaser)}</p>`;
     } else if (sponsor.tier === 'plata') {
       el.className = 'sheet-sponsor-demo';
-      el.innerHTML = `<span class="label">Contenido patrocinado</span>
-        <p>${iconImg} Muy cerca (${distLabel}) tienes <b>${sponsor.name}</b>. ${sponsor.teaser}</p>
-        <button type="button" id="sponsorDemoMapBtn">Ver en el mapa</button>`;
+      el.innerHTML = `<span class="label">${sd('sponsoredLabel')}</span>
+        <p>${iconImg} ${sponsorNearbyIntro(distLabel, sponsor.name)} ${pickLang(sponsor.teaser)}</p>
+        <button type="button" id="sponsorDemoMapBtn">${sd('seeOnMap')}</button>`;
       const btn = $('#sponsorDemoMapBtn', el);
       if (btn) btn.addEventListener('click', () => { trackSponsorDemoEvent(sponsor, 'map'); flyToSponsorDemo(sponsor); });
     } else if (sponsor.tier === 'oro') {
@@ -2984,13 +3093,13 @@
       // retira el experimento (el layout se queda si el cambio se mantiene).
       el.innerHTML = `<div class="photo"><img src="${sponsorIconUrl(sponsor)}" alt="" /></div>
         <div class="body">
-          <span class="label">Contenido patrocinado</span>
-          <p><b>${sponsor.name}</b><br>${sponsor.teaser}</p>
+          <span class="label">${sd('sponsoredLabel')}</span>
+          <p><b>${sponsor.name}</b><br>${pickLang(sponsor.teaser)}</p>
           <span class="dist">${distLabel}</span>
         </div>
         <div class="cta-col">
-          <button type="button" id="sponsorDemoMenuBtn">Ver la carta</button>
-          <button type="button" id="sponsorDemoDirBtn">Cómo llegar</button>
+          <button type="button" id="sponsorDemoMenuBtn">${sponsor.ctaLabel ? pickLang(sponsor.ctaLabel) : sd('seeMenuDefault')}</button>
+          <button type="button" id="sponsorDemoDirBtn">${sd('directions')}</button>
         </div>`;
       const menuBtn = $('#sponsorDemoMenuBtn', el);
       if (menuBtn) menuBtn.addEventListener('click', () => {
@@ -3016,12 +3125,30 @@
     if (!poi || STATE.mode === 'kids') return;
     const match = activeSponsorDemoMatch;
     if (!match || match.poiId !== poi.id || !match.sponsor.audioMention) return;
+    // FIX (reportado: la mención sonaba al terminar CUALQUIER audio -- un
+    // chip de tema, "profundiza más", una pregunta escrita -- no solo la
+    // presentación principal del POI). En modo adulto SPEECH.getText()
+    // narra siempre el ÚLTIMO mensaje del historial (ver buildNarrativeText
+    // más abajo), así que solo procede si ese último mensaje es
+    // precisamente el resumen inicial (isSummary): cualquier otro es una
+    // respuesta posterior, y ahí esta mención no debe sonar.
+    const hist = aiHistoryFor(poi.id).filter((x) => x.role === 'assistant');
+    if (!hist.length || !hist[hist.length - 1].isSummary) return;
     setTimeout(() => {
       // Si mientras tanto se cerró la ficha o se abrió otro POI, no decimos
       // nada: sería una voz patrocinada sonando sobre una pantalla distinta.
       if (STATE.activePoiId !== poi.id || STATE.audio.playing) return;
       const cleanName = match.sponsor.name.replace(/\s*\(DEMO.*?\)\s*/i, '');
-      STATE.audio.overrideText = `Si quieres hacer una pausa para recuperar aliento y probar algo de la zona, cerca tienes ${cleanName}. ${match.sponsor.teaser}`;
+      // audioLine: frase a medida por sponsor (ver data/sponsors-demo.js) --
+      // la genérica de abajo está pensada para un sitio donde parar a
+      // comer/beber, no encaja igual para un hotel u otro tipo de negocio.
+      // Ambas (audioLine y la genérica) van en { es, en } / según idioma:
+      // ver el fix de idioma en data/sponsors-demo.js.
+      STATE.audio.overrideText = match.sponsor.audioLine
+        ? pickLang(match.sponsor.audioLine)
+        : (STATE.lang === 'en'
+          ? `If you feel like a break to catch your breath and try something local, nearby you have ${cleanName}. ${pickLang(match.sponsor.teaser)}`
+          : `Si quieres hacer una pausa para recuperar aliento y probar algo de la zona, cerca tienes ${cleanName}. ${pickLang(match.sponsor.teaser)}`);
       SPEECH.speak(() => { STATE.audio.overrideText = null; });
     }, 900);
   };
@@ -7257,6 +7384,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     // horizontal (rama experimento-patrocinios-demo). BORRAR este bloque
     // (y el trozo de closeAllMapMenus más abajo) si se retira el experimento.
     $('#foodBtn')?.addEventListener('click', () => toggleFood());
+    $('#hotelsBtn')?.addEventListener('click', () => toggleHotels());
     // (El botón "Capas" (#layersBtn) se cablea más arriba, junto con "Filtros".)
 
     $('#scanBtn')?.addEventListener('click', () => {

@@ -44,7 +44,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-  <link rel="stylesheet" href="styles.css?v=117" />
+  <link rel="stylesheet" href="styles.css?v=119" />
 </head>
 <body>
   <!-- PANTALLA DE ACCESO: se muestra ANTES que la de bienvenida cuando no
@@ -151,7 +151,7 @@
       </div>
     </div>
 
-    <span class="onboarding-version" id="appVersion">Beta V43</span>
+    <span class="onboarding-version" id="appVersion">Beta V45</span>
     <button type="button" class="onboarding-reset" id="obResetBtn">Reiniciar app</button>
     <a class="onboarding-legal" href="privacidad.html" id="obPrivacyLink">Privacidad y créditos</a>
   </div>
@@ -405,6 +405,15 @@
                   </svg>
                   <span>Comer y beber cerca</span>
                 </button>
+                <button type="button" class="layer-chip -hotels" id="hotelsBtn" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18">
+                    <path d="M3 18v-9a2 2 0 0 1 2-2h5v5"></path>
+                    <path d="M13 12h6a2 2 0 0 1 2 2v4"></path>
+                    <path d="M3 18h18"></path>
+                    <path d="M3 11v7"></path>
+                  </svg>
+                  <span>Hoteles</span>
+                </button>
                 <!-- Icono de antena/satélite, distinto del de "capas" del icono
                      que abre este menú — antes reutilizaba el mismo icono para
                      dos cosas distintas (abrir el menú vs. cambiar mapa↔satélite). -->
@@ -514,24 +523,37 @@
           </button>
         </div>
         <div class="sheet-head-text">
-          <span class="sheet-cat-badge">—</span>
           <h2 class="sheet-title">—</h2>
           <p class="sheet-sub">—</p>
-          <span class="sheet-distance" hidden></span>
         </div>
-        <button type="button" class="sheet-directions-btn" id="sheetDirectionsBtn" aria-label="Cómo llegar" hidden>
-          <span id="sheetDirectionsLabel">Llévame</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-          </svg>
-        </button>
-        <button type="button" class="sheet-close" id="sheetCloseBtn" aria-label="Cerrar ficha">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
+        <!-- FIX (mobile, reportado: "no se llega ni a leer la historia"):
+             categoría/distancia vivían dentro de .sheet-head-text, encima
+             del título -- le quitaban alto util a título/subtítulo (que
+             acababan cortados) mientras a la derecha, debajo de Llévame/
+             cerrar, quedaba una franja de la cabecera completamente vacía.
+             Se mudan aquí, apiladas bajo esos dos botones, para ocupar ese
+             hueco en vez de dejarlo en blanco. -->
+        <div class="sheet-head-actions">
+          <div class="sheet-head-actions-row">
+            <button type="button" class="sheet-directions-btn" id="sheetDirectionsBtn" aria-label="Cómo llegar" hidden>
+              <span id="sheetDirectionsLabel">Llévame</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+              </svg>
+            </button>
+            <button type="button" class="sheet-close" id="sheetCloseBtn" aria-label="Cerrar ficha">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="sheet-head-meta">
+            <span class="sheet-cat-badge">—</span>
+            <span class="sheet-distance" hidden></span>
+          </div>
+        </div>
       </div>
 
       <section class="audio-player" aria-label="Reproductor de audio">
@@ -718,8 +740,8 @@
   <script src="data/core.js?v=35"></script>
   <!-- EXPERIMENTO TEMPORAL (rama experimento-patrocinios-demo) — BORRAR
        esta línea junto con data/sponsors-demo.js antes de fusionar a main. -->
-  <script src="data/sponsors-demo.js?v=5"></script>
-  <script src="app.js?v=234"></script>
+  <script src="data/sponsors-demo.js?v=7"></script>
+  <script src="app.js?v=237"></script>
   <!-- Service Worker: cachea el shell de la app y las imágenes de POIs ya
        vistas, para que la audioguía siga funcionando con conexión
        intermitente (típico caminando por cascos históricos). Ruta relativa
