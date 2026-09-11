@@ -2442,12 +2442,19 @@ html[data-mode="kids"] .bottom-sheet {
    la fila de abajo, junto al texto, obligando a esa fila a repartir su
    ancho entre miniatura+texto+esos dos botones; sacarlos de ahí le
    devuelve al texto casi todo el ancho de la ficha (ver .sheet-head-main),
-   así que el mismo subtítulo necesita bastantes menos líneas. */
+   así que el mismo subtítulo necesita bastantes menos líneas.
+   FIX (reportado en producción/iPhone real: con una categoría larga +
+   distancia tipo "A 9.5 km", el grupo de la izquierda ya no cabía junto a
+   Llévame/cerrar en la misma línea, y flex-wrap los mandaba a SU PROPIA
+   fila ancha y pegada a la izquierda -- "me gustaba arriba a la derecha").
+   Ahora esta fila NO envuelve: Llévame/cerrar (flex-shrink:0) se quedan
+   siempre fijos arriba a la derecha, y es el grupo de categoría/distancia
+   el que envuelve puertas adentro si no le cabe todo en una línea (ver
+   .sheet-head-meta-left). */
 .sheet-head-meta {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: 8px;
 }
 .sheet-head-meta-left {
@@ -2455,6 +2462,7 @@ html[data-mode="kids"] .bottom-sheet {
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
+  flex: 1;
   min-width: 0;
 }
 .sheet-cat-badge {
