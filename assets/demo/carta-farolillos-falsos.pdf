@@ -1,0 +1,60 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 400 600] /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 765 >>
+stream
+BT
+/F1 18 Tf
+1 0 0 1 40 540 Tm
+(Churreria Los Farolillos Falsos) Tj
+/F1 9 Tf
+1 0 0 1 40 492 Tm
+(\(DEMO - BORRAR - carta ficticia\)) Tj
+/F1 11 Tf
+1 0 0 1 40 457 Tm
+(Churros y chocolate a la sombra de la Plaza Mayor) Tj
+/F1 12 Tf
+1 0 0 1 40 412 Tm
+(Racion de churros \(6 uds.\) ..................... 3,50 EUR) Tj
+/F1 12 Tf
+1 0 0 1 40 378 Tm
+(Racion de porras ................................ 3,80 EUR) Tj
+/F1 12 Tf
+1 0 0 1 40 344 Tm
+(Chocolate a la taza .............................. 2,80 EUR) Tj
+/F1 12 Tf
+1 0 0 1 40 310 Tm
+(Combinado churros + chocolate ................. 5,90 EUR) Tj
+/F1 12 Tf
+1 0 0 1 40 276 Tm
+(Cafe con leche .................................... 1,90 EUR) Tj
+/F1 8 Tf
+1 0 0 1 40 234 Tm
+(Carta ficticia - ejercicio de patrocinios \(DEMO\)) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1127
+%%EOF

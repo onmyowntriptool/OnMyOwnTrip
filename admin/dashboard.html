@@ -112,6 +112,19 @@
         </table>
       </div>
     </section>
+
+    <!-- EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo).
+         BORRAR esta sección entera antes de fusionar nada de esta rama a main. -->
+    <section>
+      <h2>Ranking de patrocinios (demo) — por restaurante, no por usuario</h2>
+      <p class="hint" style="margin-top:-6px">Ordenado por interés real ("Ver la carta" + "Cómo llegar" juntos), no por impresiones.</p>
+      <div class="table-wrap">
+        <table id="sponsorRankTable">
+          <thead><tr><th>Restaurante</th><th>Impresiones</th><th>Ver la carta</th><th>Cómo llegar</th><th>Interés</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
 <script>
@@ -166,6 +179,45 @@
     });
   };
 
+  // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo).
+  // BORRAR esta función y su llamada en loadDashboard antes de fusionar nada
+  // de esta rama a main. Un fallo aquí (endpoint sin desplegar todavía,
+  // namespace SPONSOR_METRICS sin configurar) no debe romper el resto del
+  // panel — por eso no toca la variable "err" del gate ni el flujo normal.
+  const renderSponsorRanking = (ranking) => {
+    const tbody = $('#sponsorRankTable tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (!ranking.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">Sin datos todavía.</td></tr>';
+      return;
+    }
+    ranking.forEach((r) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(r.name || r.sponsorId)}</td>
+        <td>${r.impression}</td>
+        <td>${r.menu}</td>
+        <td>${r.directions}</td>
+        <td><strong>${r.menu + r.directions}</strong></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  };
+
+  const loadSponsorRanking = async () => {
+    try {
+      const res = await fetch(`${WORKER_BASE}/sponsor/rank`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey })
+      });
+      if (!res.ok) return; // demo sin desplegar todavía, o namespace sin configurar: se ignora
+      const data = await res.json();
+      renderSponsorRanking(data.ranking || []);
+    } catch (e) { /* mismo criterio: no romper el resto del panel por esto */ }
+  };
+
   const loadDashboard = async () => {
     const err = $('#gateError');
     err.hidden = true;
@@ -188,6 +240,7 @@
       const data = await res.json();
       renderVisits(data.visits || []);
       renderHistory(data.history || []);
+      await loadSponsorRanking();
       return true;
     } catch (e) {
       err.hidden = false;

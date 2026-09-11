@@ -1251,6 +1251,18 @@
   let CURRENT_CITY = null;
   let fountainsLayer = null, fountainsVisible = false;
   let restroomsLayer = null, restroomsVisible = false;
+  // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo).
+  // Capa honesta con TODOS los locales de comer/beber cercanos (datos
+  // abiertos de OpenStreetMap), patrocinen o no — ver conversación sobre el
+  // "conflicto moral" de solo mostrar lo patrocinado. Mismo patrón que
+  // fountainsLayer/restroomsLayer. BORRAR junto con data/layers/food-*.js
+  // si se retira el experimento (o dejarlo si la capa se queda de verdad).
+  let foodLayer = null, foodVisible = false;
+  // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo).
+  // Capa de pines patrocinados (solo nivel Oro pone pin permanente en el
+  // mapa; Bronce/Plata solo aparecen dentro de la ficha, ver
+  // renderSponsorDemoInsert). BORRAR junto con data/sponsors-demo.js.
+  let sponsorsLayer = null;
   // EXPERIMENTO (rama experimento-vista-satelite): capa base alternativa de
   // imagen satelital en vez del mapa de calles de siempre. A diferencia de
   // fuentes/aseos (capas aditivas por encima del mapa), esta es una capa
@@ -1700,6 +1712,15 @@
     iconSize: [12, 12], iconAnchor: [6, 6], popupAnchor: [0, -6]
   });
 
+  // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER": mismo icono de tenedor y
+  // cuchillo que el botón #foodBtn, en el mismo tamaño/lenguaje que
+  // fuentes/aseos (ver .food-pin en styles.css).
+  const makeFoodIcon = () => L.divIcon({
+    className: 'fountain-pin-wrap',
+    html: '<div class="food-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v7a2 2 0 0 0 2 2v11"/><path d="M7 2v20"/><path d="M11 2v9"/><path d="M17 2c-1.7 0-3 2-3 5s1.3 5 3 5v10"/></svg></div>',
+    iconSize: [12, 12], iconAnchor: [6, 6], popupAnchor: [0, -6]
+  });
+
   // Burbuja de agrupación (cluster): mismo lenguaje visual que .custom-pin,
   // pero con el número de POIs agrupados dentro. Crece un poco con la
   // cantidad para que se note de un vistazo si hay 3 o 30 ahí dentro.
@@ -1797,9 +1818,24 @@
         if (map && restroomsLayer) restroomsLayer.addTo(map);
       });
     }
+    // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER": mismo patrón que
+    // fountainsLayer/restroomsLayer justo arriba. BORRAR si se retira.
+    foodLayer = L.layerGroup();
+    if (foodVisible) {
+      loadFoodPlaces(STATE.cityId).then(() => {
+        renderFood();
+        if (map && foodLayer) foodLayer.addTo(map);
+      });
+    }
+    // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo):
+    // capa siempre visible (sin toggle propio, a diferencia de fuentes/aseos)
+    // porque para este ejercicio interesa ver el pin Oro sin un paso extra.
+    // BORRAR junto con data/sponsors-demo.js.
+    sponsorsLayer = L.layerGroup().addTo(map);
     map.on('zoom', updatePinScale);
     updatePinScale();
     renderMarkers();
+    renderSponsorsDemo();
   };
   const isRouteMode = () => STATE.category === 'essential';
   // Rutas imprescindibles de la ciudad activa; las ciudades sin `routes` propio
@@ -2664,6 +2700,318 @@
     }
   };
 
+  /* =========================================================
+   * EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER"
+   * (rama experimento-patrocinios-demo, NO fusionar a main sin revisar)
+   *
+   * Mismo patrón exacto que fuentes/aseos de arriba, pero con TODOS los
+   * restaurantes/cafeterías/comida rápida cercanos (datos abiertos de
+   * OpenStreetMap vía Overpass — ver scratchpad/build-food-layer.js),
+   * patrocinen o no. Resuelve el conflicto de "solo enseñar lo pagado":
+   * esta capa es honesta y completa; el patrocinio (ver sponsorsLayer más
+   * arriba) solo compra protagonismo DENTRO de la ficha, nunca la
+   * posibilidad de aparecer aquí — aquí aparece todo el mundo igual.
+   * =======================================================*/
+  const loadedFoodScripts = new Set();
+  const loadFoodPlaces = async (cityId) => {
+    if (window.FOOD_PLACES && window.FOOD_PLACES[cityId]) return;
+    if (loadedFoodScripts.has(cityId)) return;
+    try {
+      await loadScriptOnce(`data/layers/food-${cityId}.js?v=1`);
+      loadedFoodScripts.add(cityId);
+    } catch (e) {
+      console.warn(`No se pudo cargar la capa de comer/beber de ${cityId}`, e);
+    }
+  };
+
+  const FOOD_TYPE_LABEL = { restaurant: 'Restaurante', cafe: 'Cafetería', fast_food: 'Comida rápida' };
+  const renderFood = () => {
+    if (!foodLayer) return;
+    foodLayer.clearLayers();
+    const list = (window.FOOD_PLACES && window.FOOD_PLACES[STATE.cityId]) || [];
+    list.forEach((f) => {
+      const marker = L.marker(f.coords, { icon: makeFoodIcon(), zIndexOffset: -1000 });
+      const typeLabel = FOOD_TYPE_LABEL[f.type] || 'Comer y beber';
+      const cuisine = f.cuisine ? ` · ${f.cuisine}` : '';
+      marker.bindPopup(`<strong>${f.name}</strong><br>${typeLabel}${cuisine}`);
+      marker.addTo(foodLayer);
+    });
+  };
+
+  const toggleFood = async () => {
+    foodVisible = !foodVisible;
+    const btn = $('#foodBtn');
+    btn?.classList.toggle('-active', foodVisible);
+    if (!map || !foodLayer) return;
+    if (foodVisible) {
+      await loadFoodPlaces(STATE.cityId);
+      renderFood();
+      if (!map.hasLayer(foodLayer)) foodLayer.addTo(map);
+    } else if (map.hasLayer(foodLayer)) {
+      map.removeLayer(foodLayer);
+    }
+  };
+
+  /* =========================================================
+   * EXPERIMENTO TEMPORAL — PATROCINIOS DEMO
+   * (rama experimento-patrocinios-demo, NO fusionar a main)
+   *
+   * Ejercicio de monetización: 3 restaurantes ficticios (ver
+   * data/sponsors-demo.js) prueban los 3 niveles de cuota:
+   *   - Bronce: mención de texto en la ficha del POI cercano.
+   *   - Plata:  mención + botón "Ver en el mapa" (pin temporal).
+   *   - Oro:    pin permanente en el mapa + tarjeta con foto en la ficha.
+   * BORRAR todo este bloque, la capa `sponsorsLayer` de arriba, la
+   * llamada a renderSponsorDemoInsert en populateSheetContent,
+   * data/sponsors-demo.js y su <script> en index.html antes de
+   * fusionar cualquier cosa de esta rama a main.
+   * =======================================================*/
+  // Iconos reales (no emoji, para que se lea igual de "en serio" que el
+  // resto de la ficha en modo adulto) recortados a partir de los dos PNG
+  // que se pusieron en assets/icons — ver scratchpad/clean-sponsor-icons.js.
+  const SPONSOR_ICON_SRC = {
+    restaurant: 'assets/icons/sponsor-restaurant-icon.png',
+    cafe: 'assets/icons/sponsor-cafe-icon.png'
+  };
+  const sponsorIconUrl = (sponsor) => SPONSOR_ICON_SRC[sponsor.icon] || SPONSOR_ICON_SRC.restaurant;
+
+  const makeSponsorDemoIcon = (sponsor, pulse = false) => L.divIcon({
+    className: 'custom-pin-wrap',
+    html: `<div class="sponsor-demo-pin${pulse ? ' -pulse' : ''}"><img src="${sponsorIconUrl(sponsor)}" alt="" /></div>`,
+    iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -26]
+  });
+
+  const renderSponsorsDemo = () => {
+    if (!sponsorsLayer) return;
+    sponsorsLayer.clearLayers();
+    const list = (typeof SPONSORS_DEMO !== 'undefined' ? SPONSORS_DEMO : []).filter((s) => s.city === STATE.cityId && s.tier === 'oro');
+    list.forEach((s) => {
+      const marker = L.marker(s.coords, { icon: makeSponsorDemoIcon(s) });
+      marker.bindPopup(`<strong>${s.name}</strong><br>${s.teaser}<br><em>Patrocinado — DEMO</em>`);
+      marker.addTo(sponsorsLayer);
+    });
+  };
+
+  // Nivel Plata: no tiene pin permanente, así que "Ver en el mapa" pone uno
+  // temporal (pulsando) y centra el mapa encima antes de quitarlo solo.
+  const flyToSponsorDemo = (sponsor) => {
+    if (!map || !sponsorsLayer) return;
+    const marker = L.marker(sponsor.coords, { icon: makeSponsorDemoIcon(sponsor, true), zIndexOffset: 800 });
+    marker.addTo(sponsorsLayer);
+    map.flyTo(sponsor.coords, 17, { duration: 0.6 });
+    setTimeout(() => sponsorsLayer.removeLayer(marker), 3000);
+  };
+
+  // Carta ficticia (nivel Oro, botón "Ver la carta"): un modal suelto fuera
+  // de la ficha (igual que el lightbox de fotos), no una tarjeta más dentro
+  // del sheet, porque tapa la pantalla entera y con la ficha de por medio
+  // sería muy poco espacio para leer una carta completa.
+  const ensureSponsorDemoMenuModal = () => {
+    let el = document.getElementById('sponsorDemoMenuModal');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'sponsorDemoMenuModal';
+    el.className = 'sponsor-demo-menu-overlay';
+    el.hidden = true;
+    el.innerHTML = `
+      <div class="sponsor-demo-menu-card" role="dialog" aria-modal="true">
+        <button type="button" class="sponsor-demo-menu-close" aria-label="Cerrar carta">✕</button>
+        <div class="sponsor-demo-menu-head"></div>
+        <div class="sponsor-demo-menu-body"></div>
+        <p class="sponsor-demo-menu-foot">Carta ficticia — ejercicio de patrocinios (DEMO)</p>
+      </div>`;
+    document.body.appendChild(el);
+    const close = () => { el.hidden = true; };
+    el.addEventListener('click', (e) => { if (e.target === el) close(); });
+    el.querySelector('.sponsor-demo-menu-close').addEventListener('click', close);
+    return el;
+  };
+
+  const showSponsorDemoMenu = (sponsor) => {
+    const el = ensureSponsorDemoMenuModal();
+    const card = el.querySelector('.sponsor-demo-menu-card');
+    const cleanName = sponsor.name.replace(/\s*\(DEMO.*?\)\s*/i, '');
+    el.querySelector('.sponsor-demo-menu-head').innerHTML = `
+      <span class="emoji"><img src="${sponsorIconUrl(sponsor)}" alt="" /></span>
+      <div><h3>${cleanName}</h3><p>${sponsor.teaser}</p></div>`;
+    const body = el.querySelector('.sponsor-demo-menu-body');
+    // Muchos negocios reales ya tienen su carta como PDF y prefieren
+    // entregar eso a que alguien les teclee la carta a mano — se incrusta
+    // con un <iframe> (visor nativo del navegador) para que se abra sin
+    // salir de la app, ni descargar nada, ni abrir una pestaña nueva.
+    card.classList.toggle('-pdf', !!sponsor.menuPdf);
+    if (sponsor.menuPdf) {
+      body.innerHTML = `<iframe src="${sponsor.menuPdf}" title="Carta de ${cleanName}" loading="lazy"></iframe>`;
+    } else {
+      const items = (sponsor.menu || [])
+        .map((m) => `<li><span>${m.item}</span><span class="price">${m.price}</span></li>`)
+        .join('') || '<li><span>Carta no disponible en esta demo.</span></li>';
+      body.innerHTML = `<ul class="sponsor-demo-menu-list">${items}</ul>`;
+    }
+    el.hidden = false;
+  };
+
+  // MEDICIÓN (demo): cuenta impresiones/clics por sponsor en localStorage,
+  // para poder responder "¿cuánta gente ve la carta / pide ir allí?" sin
+  // montar un backend de analítica solo para el ejercicio. En un producto
+  // real esto NUNCA se le muestra al turista dentro de la ficha (es un dato
+  // para el panel del anunciante) — por eso aquí solo se registra y se
+  // consulta por consola (window.SPONSOR_DEMO_STATS()), no se pinta en la
+  // tarjeta.
+  const SPONSOR_DEMO_METRICS_KEY = 'omot_sponsor_demo_metrics_v1';
+  // Cola en memoria de lo que aún no se ha mandado a Cloudflare — ver
+  // flushSponsorDemoMetrics. Se manda por RESTAURANTE, nunca por usuario:
+  // no hay ningún identificador de persona en el payload.
+  const pendingSponsorDemoDeltas = {};
+  const trackSponsorDemoEvent = (sponsor, kind) => {
+    const sponsorId = sponsor.id;
+    let all = {};
+    try { all = JSON.parse(localStorage.getItem(SPONSOR_DEMO_METRICS_KEY) || '{}'); } catch (_) { all = {}; }
+    if (!all[sponsorId]) all[sponsorId] = { impression: 0, map: 0, menu: 0, directions: 0 };
+    all[sponsorId][kind] = (all[sponsorId][kind] || 0) + 1;
+    try { localStorage.setItem(SPONSOR_DEMO_METRICS_KEY, JSON.stringify(all)); } catch (_) {}
+    console.log('[patrocinios demo]', sponsorId, kind, all[sponsorId]);
+
+    if (!pendingSponsorDemoDeltas[sponsorId]) {
+      pendingSponsorDemoDeltas[sponsorId] = { name: sponsor.name, impression: 0, map: 0, menu: 0, directions: 0 };
+    }
+    pendingSponsorDemoDeltas[sponsorId][kind]++;
+  };
+  // Consulta rápida desde la consola del navegador mientras se prueba.
+  window.SPONSOR_DEMO_STATS = () => {
+    try { return JSON.parse(localStorage.getItem(SPONSOR_DEMO_METRICS_KEY) || '{}'); } catch (_) { return {}; }
+  };
+
+  // Manda la cola acumulada al Worker DE UNA VEZ (1 escritura de KV por
+  // restaurante con eventos pendientes, no una por cada toque) — se llama
+  // al cerrar la ficha y cada 2 minutos como red de seguridad si se queda
+  // abierta. Mismo baseUrl que ya usa LICENSE para hablar con el Worker
+  // (ver window.LLM_CONFIG en index.html); si no hay red o el endpoint no
+  // existe todavía (rama sin desplegar en Cloudflare), falla en silencio y
+  // los datos siguen intactos en localStorage para la próxima vez.
+  const SPONSOR_TRACK_BASE = (typeof window !== 'undefined' && window.LLM_CONFIG && window.LLM_CONFIG.baseUrl) || '';
+  const flushSponsorDemoMetrics = () => {
+    if (!SPONSOR_TRACK_BASE) return;
+    const endpoint = `${SPONSOR_TRACK_BASE.replace(/\/$/, '')}/sponsor/track`;
+    Object.keys(pendingSponsorDemoDeltas).forEach((sponsorId) => {
+      const { name, ...events } = pendingSponsorDemoDeltas[sponsorId];
+      delete pendingSponsorDemoDeltas[sponsorId];
+      fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sponsorId, name, events })
+      }).catch(() => { /* red caída: se pierde este lote, pero no rompe nada */ });
+    });
+  };
+  setInterval(flushSponsorDemoMetrics, 120000);
+
+  // ROTACIÓN entre varios sponsors interesados en el mismo POI: gana
+  // siempre el nivel más alto (Oro > Plata > Bronce, igual que pagaría más
+  // caro un anunciante por más prioridad); si hay EMPATE de nivel entre
+  // varios (ver demo-oro-1/demo-oro-2 en data/sponsors-demo.js, misma zona
+  // a propósito), se alterna uno distinto cada vez que se abre la ficha de
+  // ESE POI en concreto, para que ninguno se quede siempre fuera.
+  const SPONSOR_TIER_RANK = { oro: 3, plata: 2, bronce: 1 };
+  const sponsorRotationCounters = {}; // { [poiId]: siguiente índice a mostrar }
+  const findNearbySponsorDemo = (poi) => {
+    if (!poi || !poi.coords) return null;
+    const candidates = (typeof SPONSORS_DEMO !== 'undefined' ? SPONSORS_DEMO : [])
+      .filter((s) => s.city === STATE.cityId)
+      .map((s) => ({ sponsor: s, distance: haversineMeters(poi.coords, s.coords) }))
+      .filter((c) => c.distance <= c.sponsor.radius);
+    if (!candidates.length) return null;
+    const bestRank = Math.max(...candidates.map((c) => SPONSOR_TIER_RANK[c.sponsor.tier] || 0));
+    const topTier = candidates.filter((c) => (SPONSOR_TIER_RANK[c.sponsor.tier] || 0) === bestRank);
+    if (topTier.length === 1) return topTier[0];
+    const i = sponsorRotationCounters[poi.id] || 0;
+    sponsorRotationCounters[poi.id] = (i + 1) % topTier.length;
+    return topTier[i % topTier.length];
+  };
+
+  // Recuerda qué sponsor quedó mostrado en la ficha actualmente abierta,
+  // para que la mención por voz (ver el "finished" de toggleAudio) hable
+  // del MISMO que ve el usuario en la tarjeta, en vez de recalcular y
+  // arriesgarse a rotar a otro distinto a media narración.
+  let activeSponsorDemoMatch = null;
+
+  const ensureSponsorDemoEl = () => {
+    let el = $('#sheetSponsorDemo', els.sheet);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'sheetSponsorDemo';
+      el.hidden = true;
+      const head = $('.sheet-head', els.sheet);
+      if (head) head.insertAdjacentElement('afterend', el);
+    }
+    return el;
+  };
+
+  const renderSponsorDemoInsert = (poi) => {
+    const el = ensureSponsorDemoEl();
+    const match = findNearbySponsorDemo(poi);
+    activeSponsorDemoMatch = match ? { poiId: poi.id, ...match } : null;
+    if (!match) { el.hidden = true; el.className = ''; el.innerHTML = ''; return; }
+    const { sponsor, distance } = match;
+    const distLabel = formatDistance(distance);
+    trackSponsorDemoEvent(sponsor, 'impression');
+    const iconImg = `<img class="inline-icon" src="${sponsorIconUrl(sponsor)}" alt="" />`;
+    if (sponsor.tier === 'bronce') {
+      el.className = 'sheet-sponsor-demo';
+      el.innerHTML = `<span class="label">Contenido patrocinado</span>
+        <p>${iconImg} Muy cerca (${distLabel}) tienes <b>${sponsor.name}</b>. ${sponsor.teaser}</p>`;
+    } else if (sponsor.tier === 'plata') {
+      el.className = 'sheet-sponsor-demo';
+      el.innerHTML = `<span class="label">Contenido patrocinado</span>
+        <p>${iconImg} Muy cerca (${distLabel}) tienes <b>${sponsor.name}</b>. ${sponsor.teaser}</p>
+        <button type="button" id="sponsorDemoMapBtn">Ver en el mapa</button>`;
+      const btn = $('#sponsorDemoMapBtn', el);
+      if (btn) btn.addEventListener('click', () => { trackSponsorDemoEvent(sponsor, 'map'); flyToSponsorDemo(sponsor); });
+    } else if (sponsor.tier === 'oro') {
+      el.className = 'sheet-sponsor-demo -oro';
+      el.innerHTML = `<div class="photo"><img src="${sponsorIconUrl(sponsor)}" alt="" /></div>
+        <div class="body">
+          <span class="label">Contenido patrocinado</span>
+          <p><b>${sponsor.name}</b><br>${sponsor.teaser}</p>
+          <span class="dist">${distLabel}</span>
+          <div class="cta-row">
+            <button type="button" id="sponsorDemoMenuBtn">Ver la carta</button>
+            <button type="button" id="sponsorDemoDirBtn">Cómo llegar</button>
+          </div>
+        </div>`;
+      const menuBtn = $('#sponsorDemoMenuBtn', el);
+      if (menuBtn) menuBtn.addEventListener('click', () => {
+        trackSponsorDemoEvent(sponsor, 'menu');
+        showSponsorDemoMenu(sponsor);
+      });
+      const dirBtn = $('#sponsorDemoDirBtn', el);
+      if (dirBtn) dirBtn.addEventListener('click', () => {
+        trackSponsorDemoEvent(sponsor, 'directions');
+        flyToSponsorDemo(sponsor);
+      });
+    }
+    el.hidden = false;
+  };
+
+  // "Plus" de nivel Oro (ver audioMention en data/sponsors-demo.js): al
+  // terminar la audioguía del POI orgánico, si el sponsor que quedó
+  // mostrado en su ficha pagó ese extra, se lee una frase corta con la
+  // misma voz — reutiliza el mecanismo de "texto puntual" (overrideText)
+  // que ya usan el tutorial y "cómo llegar" (ver más abajo, STATE.audio.
+  // overrideText), así que no hace falta ningún motor de voz nuevo.
+  const maybeSpeakSponsorDemoOutro = (poi) => {
+    if (!poi || STATE.mode === 'kids') return;
+    const match = activeSponsorDemoMatch;
+    if (!match || match.poiId !== poi.id || !match.sponsor.audioMention) return;
+    setTimeout(() => {
+      // Si mientras tanto se cerró la ficha o se abrió otro POI, no decimos
+      // nada: sería una voz patrocinada sonando sobre una pantalla distinta.
+      if (STATE.activePoiId !== poi.id || STATE.audio.playing) return;
+      const cleanName = match.sponsor.name.replace(/\s*\(DEMO.*?\)\s*/i, '');
+      STATE.audio.overrideText = `Si quieres hacer una pausa para recuperar aliento y probar algo de la zona, cerca tienes ${cleanName}. ${match.sponsor.teaser}`;
+      SPEECH.speak(() => { STATE.audio.overrideText = null; });
+    }, 900);
+  };
+
   // EXPERIMENTO (rama experimento-vista-satelite): a diferencia de
   // toggleFountains/toggleRestrooms (capas aditivas), aquí se INTERCAMBIA
   // la capa base — streetLayer y satelliteLayer nunca están las dos a la
@@ -2845,21 +3193,12 @@
     startRouteIntroAudio(false);
   };
 
-  // Posiciona un menú `position:absolute` justo bajo (o, si no cabe, sobre)
-  // un botón ancla, relativo al offsetParent del propio menú. Se usa para
-  // el selector de circuitos, anclado dentro del header.
-  const positionDropdownNear = (picker, anchorEl) => {
-    const anchor = picker.offsetParent;
-    if (!anchorEl || !anchor) return;
-    const elRect = anchorEl.getBoundingClientRect();
-    const anchorRect = anchor.getBoundingClientRect();
-    const pickerWidth = picker.offsetWidth;
-    const maxLeft = anchorRect.width - pickerWidth - 4;
-    const left = Math.max(4, Math.min(elRect.left - anchorRect.left, maxLeft));
-    picker.style.left = `${left}px`;
-  };
-
-  const closeRoutePicker = () => { if (els.routePicker) els.routePicker.hidden = true; };
+  // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+  // "cerrar el selector de rutas" ahora es simplemente volver al nivel
+  // "filters" del menú (ver showAppMenuLevel más arriba) — ya no es un
+  // dropdown flotante aparte que hubiera que ocultar/posicionar por su
+  // cuenta. BORRAR este comentario si se retira el experimento.
+  const closeRoutePicker = () => showAppMenuLevel('filters');
   const openRoutePicker = (routes) => {
     if (!els.routePicker) return;
     els.routePicker.innerHTML = routes.map((r) => `
@@ -2869,13 +3208,9 @@
       </button>
     `).join('');
     $$('.dropdown-option', els.routePicker).forEach((btn) => {
-      btn.addEventListener('click', () => activateRoute(btn.dataset.route));
+      btn.addEventListener('click', () => { activateRoute(btn.dataset.route); closeAppMenu(); });
     });
-    els.routePicker.hidden = false;
-    // Ancla el selector justo bajo la píldora "Recomendaciones" (y no a todo
-    // el ancho del header), para tapar lo mínimo posible del mapa.
-    const pill = els.filters && els.filters.querySelector('.pill[data-category="essential"]');
-    positionDropdownNear(els.routePicker, pill);
+    showAppMenuLevel('routes');
   };
 
   const updateEssentialPillLabel = () => {
@@ -2888,20 +3223,53 @@
     pill.style.setProperty('--pill-color', (active && active.color) || getCssVar('--color-primary'));
   };
 
+  // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo).
+  // Menú único tras el icono #menuToggleBtn: nivel "main" (elegir Filtros o
+  // Capas), "filters"/"layers" (sus opciones) y "routes" (lista de rutas,
+  // solo alcanzable desde dentro de "filters" — sustituye al selector de
+  // rutas flotante de antes, que se solapaba con este mismo menú). Cada
+  // nivel tiene su botón "‹" con data-menu-back indicando A QUÉ nivel
+  // vuelve (no siempre es "main": el de "routes" vuelve a "filters"). El
+  // contenedor #appMenu entero se abre/cierra con una clase "-open"
+  // animada (nunca "hidden" a secas); cambiar de nivel dentro de un mismo
+  // "abierto" es un simple show/hide interno, instantáneo. BORRAR este
+  // bloque si se retira el experimento.
+  const APP_MENU_LEVEL_IDS = { main: 'appMenuMain', filters: 'appMenuFilters', layers: 'appMenuLayers', routes: 'appMenuRoutes' };
+  const showAppMenuLevel = (level) => {
+    Object.entries(APP_MENU_LEVEL_IDS).forEach(([key, id]) => {
+      const el = $(`#${id}`);
+      if (el) el.hidden = key !== level;
+    });
+  };
+  const isAppMenuOpen = () => !!$('#appMenu')?.classList.contains('-open');
+  const openAppMenu = () => {
+    showAppMenuLevel('main');
+    $('#appMenu')?.classList.add('-open');
+    $('#menuToggleBtn')?.setAttribute('aria-expanded', 'true');
+  };
+  const closeAppMenu = () => {
+    $('#appMenu')?.classList.remove('-open');
+    $('#menuToggleBtn')?.setAttribute('aria-expanded', 'false');
+  };
+  const toggleAppMenu = () => { isAppMenuOpen() ? closeAppMenu() : openAppMenu(); };
+
   const buildHeader = () => {
     $$('.pill', els.filters).forEach((p) => {
       p.addEventListener('click', () => {
         if (p.dataset.category === 'essential') {
           const routes = getCityRoutes();
           if (routes.length > 1) {
-            if (els.routePicker && !els.routePicker.hidden) closeRoutePicker();
-            else openRoutePicker(routes);
+            // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+            // ya no alterna abrir/cerrar el mismo dropdown flotante — esto
+            // solo cambia de nivel dentro del menú (ver openRoutePicker),
+            // así que siempre "entra" en la lista de rutas.
+            openRoutePicker(routes);
             return;
           }
           activateRoute(routes[0].id);
+          closeAppMenu();
           return;
         }
-        closeRoutePicker();
         STATE.category = p.dataset.category;
         updatePills();
         updateEssentialPillLabel();
@@ -2912,7 +3280,22 @@
           if (!stillVisible) closeSheet();
           else setSelectedMarker(STATE.activePoiId);
         }
+        // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+        // elegir un filtro simple cierra el menú entero.
+        closeAppMenu();
       });
+    });
+    // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo).
+    // El icono único abre el menú; dentro, cada fila con data-menu-open
+    // entra a ese nivel y data-menu-back vuelve al nivel que indique su
+    // propio atributo (no siempre "main": el de rutas vuelve a "filters").
+    // BORRAR este bloque si se retira el experimento.
+    $('#menuToggleBtn')?.addEventListener('click', () => toggleAppMenu());
+    $$('[data-menu-open]').forEach((b) => {
+      b.addEventListener('click', () => showAppMenuLevel(b.dataset.menuOpen));
+    });
+    $$('[data-menu-back]').forEach((b) => {
+      b.addEventListener('click', () => showAppMenuLevel(b.dataset.menuBack || 'main'));
     });
     $$('.mode-toggle-option').forEach((opt) => {
       opt.addEventListener('click', () => setStateMode(opt.dataset.mode));
@@ -2923,16 +3306,18 @@
     // Cierra los desplegables (circuitos, voz) al tocar fuera de ellos o de
     // su botón.
     document.addEventListener('click', (e) => {
-      if (els.routePicker && !els.routePicker.hidden) {
-        const essentialPill = els.filters && els.filters.querySelector('.pill[data-category="essential"]');
-        if (!els.routePicker.contains(e.target) && !(essentialPill && essentialPill.contains(e.target))) closeRoutePicker();
-      }
       const scanMenu = $('#scanMenu'), scanBtn = $('#scanBtn');
       if (scanMenu && !scanMenu.hidden) {
         if (!scanMenu.contains(e.target) && !(scanBtn && scanBtn.contains(e.target))) {
           scanMenu.hidden = true;
           scanBtn?.setAttribute('aria-expanded', 'false');
         }
+      }
+      // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+      // cierra el menú (Filtros/Capas) al tocar fuera de él y de su icono.
+      if (isAppMenuOpen()) {
+        const menu = $('#appMenu'), btn = $('#menuToggleBtn');
+        if (menu && !menu.contains(e.target) && !(btn && btn.contains(e.target))) closeAppMenu();
       }
     }, true);
 
@@ -2957,8 +3342,14 @@
     const hasMore = filters.scrollWidth - filters.scrollLeft - filters.clientWidth > 4;
     hint.classList.toggle('-visible', hasMore);
   };
-  const updatePills = () => $$('.pill', els.filters)
-    .forEach((p) => p.dataset.active = p.dataset.category === STATE.category ? 'true' : 'false');
+  const updatePills = () => {
+    $$('.pill', els.filters).forEach((p) => p.dataset.active = p.dataset.category === STATE.category ? 'true' : 'false');
+    // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+    // puntito en el icono del menú cuando hay un filtro puesto distinto de
+    // "Todos", para que no se olvide estando el menú cerrado. BORRAR si se
+    // retira el experimento.
+    $('#menuToggleBtn')?.classList.toggle('-active', STATE.category !== CATEGORIES.ALL);
+  };
 
   // Niveles del explorador (modo niño): umbrales de puntos pensados para
   // cuando haya preguntas en más lugares, no solo para este prototipo.
@@ -4238,22 +4629,20 @@
     $$('.pill').forEach((p) => {
       const cat = p.dataset.category;
       if (cat === CATEGORIES.ALL) {
-        p.innerHTML = `<span>${t('allPill')}</span>`;
+        // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+        // se le añade un icono (antes no llevaba) para que quede igual que
+        // el resto de filas del menú Filtros — todas con icono + texto.
+        p.innerHTML = `<span class="pill-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span>${t('allPill')}</span>`;
       } else if (cat === 'essential') {
         updateEssentialPillLabel();
       } else {
         const meta = CATEGORY_META[cat];
         if (meta) {
-          // EXPERIMENTO (rama experimento-diseno-editorial): "Puntos de
-          // interés" también en dos líneas dentro de la píldora del
-          // filtro, igual que "Rutas / recomendadas" -- pero el salto de
-          // línea se añade SOLO aquí (innerHTML), no en meta.label: ese
-          // mismo texto se reutiliza tal cual en la ficha (sheet-cat-badge
-          // usa textContent, donde un <br> se vería como texto literal).
-          const pillLabel = cat === CATEGORIES.HIDDEN
-            ? pickDual(meta.label).replace(' de ', '<br>de ')
-            : pickDual(meta.label);
-          p.innerHTML = `<span class="pill-icon">${categoryIconSvg(cat)}</span><span>${pillLabel}</span>`;
+          // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+          // ya no hace falta partir "Puntos de interés" en dos líneas (era
+          // para que cupiera en una píldora estrecha) — ahora el menú
+          // Filtros es una lista de filas anchas con icono + texto.
+          p.innerHTML = `<span class="pill-icon">${categoryIconSvg(cat)}</span><span>${pickDual(meta.label)}</span>`;
         }
         p.style.setProperty('--pill-color', getCategoryPinColor(cat));
       }
@@ -5752,6 +6141,9 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     // siempre (ver abandonDeepenFlow).
     if (STATE.ai.deepenBusy) abandonDeepenFlow();
     cleanupAdHocScanIfNeeded(STATE.activePoiId);
+    // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO: BORRAR esta línea junto con
+    // flushSponsorDemoMetrics más arriba.
+    flushSponsorDemoMetrics();
     STATE.sheet = 'closed';
     STATE.activePoiId = null;
     els.backdrop.classList.remove('-open');
@@ -5937,6 +6329,9 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     $('.sheet-title', els.sheet).textContent = pickDual(poi.name);
     $('.sheet-sub', els.sheet).textContent = pickDual(poi.subtitle);
     updateSheetDistance(id);
+    // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo).
+    // BORRAR esta llamada junto con el bloque de funciones más arriba.
+    renderSponsorDemoInsert(poi);
 
     // EXPERIMENTO (rama experimento-diseno-editorial): "Cómo llegar" ya no
     // es un chip de la fila de abajo (ver renderAiSuggestions) sino este
@@ -6552,6 +6947,9 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       stopAudio();
       if (!silent) showToast(t('audioguideCompleted'));
       if (STATE.mode === 'kids') maybeShowFirstKidsQuiz();
+      // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO: BORRAR esta línea junto con
+      // maybeSpeakSponsorDemoOutro más arriba.
+      maybeSpeakSponsorDemoOutro(POIS.find((p) => p.id === STATE.activePoiId));
     };
     // Si el audio en caché falla al reproducir (blob corrupto, formato no
     // soportado, etc.) se reintenta ya mismo con Web Speech en vez de dejar
@@ -6654,6 +7052,9 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
           updateAudioUi();
           if (!silent) showToast(t('audioguideCompleted'));
           if (STATE.mode === 'kids') maybeShowFirstKidsQuiz();
+          // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO: BORRAR esta línea junto
+          // con maybeSpeakSponsorDemoOutro más arriba.
+          maybeSpeakSponsorDemoOutro(POIS.find((p) => p.id === STATE.activePoiId));
           notifySegmentEnd();
           return;
         }
@@ -6795,6 +7196,12 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     $('#fountainsBtn')?.addEventListener('click', () => toggleFountains());
     $('#restroomsBtn')?.addEventListener('click', () => toggleRestrooms());
     $('#satelliteBtn')?.addEventListener('click', () => toggleSatellite());
+    // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" / panel de capas
+    // horizontal (rama experimento-patrocinios-demo). BORRAR este bloque
+    // (y el trozo de closeAllMapMenus más abajo) si se retira el experimento.
+    $('#foodBtn')?.addEventListener('click', () => toggleFood());
+    // (El botón "Capas" ya no existe suelto: es la fila data-menu-open="layers"
+    // de dentro de #appMenu, cableada más arriba junto con "Filtros".)
 
     $('#scanBtn')?.addEventListener('click', () => {
       const menu = $('#scanMenu'), btn = $('#scanBtn');
