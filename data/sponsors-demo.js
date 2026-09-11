@@ -8,11 +8,19 @@
 // nombre a propósito, para que sea imposible confundirlos con un
 // negocio real dentro de la app.
 //
-// Los dos "oro" compiten por la MISMA zona (Plaza Mayor) a propósito:
-// sirve para probar la rotación entre patrocinadores cuando hay más de
-// uno interesado en el mismo sitio (ver findNearbySponsorDemo en
-// app.js) — solo demo-oro-1 lleva audioMention:true, para ver que el
-// "plus" de la mención por voz es independiente del nivel/tarjeta.
+// Los dos "oro" de Plaza Mayor (demo-oro-1/demo-oro-2) compiten por la
+// MISMA zona a propósito: sirve para probar la rotación entre
+// patrocinadores cuando hay más de uno interesado en el mismo sitio (ver
+// findNearbySponsorDemo en app.js) — solo demo-oro-1 lleva
+// audioMention:true, para ver que el "plus" de la mención por voz es
+// independiente del nivel/tarjeta.
+//
+// demo-oro-3 (cafetería) y demo-hotel-oro-1 (hotel) repiten el mismo
+// empate pero MEZCLANDO categorías, en la zona de Cibeles: la rotación
+// de findNearbySponsorDemo no distingue "restaurante" de "hotel", solo
+// nivel de cuota, así que un POI como el Museo del Prado (a ~490 m de
+// ambos) tiene que alternar entre un café y un hotel exactamente igual
+// que alternaría entre dos restaurantes.
 //
 // BORRAR antes de fusionar cualquier cosa de esta rama a main:
 //   - este archivo
@@ -111,6 +119,26 @@ const SPONSORS_DEMO = [
       { item: { es: 'Tarta de chocolate (porción)', en: 'Chocolate cake (slice)' }, price: { es: '3,90 €', en: '€3.90' } },
       { item: { es: 'Melindros con chocolate', en: 'Ladyfingers with chocolate' }, price: { es: '4,20 €', en: '€4.20' } },
       { item: { es: 'Chocolate frío', en: 'Iced chocolate' }, price: { es: '3,00 €', en: '€3.00' } }
+    ]
+  },
+  {
+    id: 'demo-oro-3',
+    tier: 'oro', // Zona de Cibeles, MISMO radio que demo-hotel-oro-1 a propósito (ver rotación mixta arriba)
+    city: 'madrid',
+    name: 'Cafetería Cibeles Dorada (DEMO — BORRAR)',
+    teaser: {
+      es: 'Café de especialidad y bollería recién hecha frente a la fuente de Cibeles.',
+      en: 'Specialty coffee and fresh pastries facing the Cibeles fountain.'
+    },
+    coords: [40.4193, -3.6928], // Plaza de Cibeles, dentro de los 500 m del hotel oro
+    radius: 500,
+    icon: 'cafe',
+    // Sin audioMention, igual que demo-oro-2: en este empate el "plus" de
+    // voz lo lleva solo demo-hotel-oro-1.
+    menu: [
+      { item: { es: 'Café de especialidad', en: 'Specialty coffee' }, price: { es: '3,20 €', en: '€3.20' } },
+      { item: { es: 'Tostada con tomate', en: 'Toast with tomato' }, price: { es: '3,50 €', en: '€3.50' } },
+      { item: { es: 'Napolitana de chocolate', en: 'Chocolate croissant' }, price: { es: '2,20 €', en: '€2.20' } }
     ]
   },
 
