@@ -44,7 +44,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-  <link rel="stylesheet" href="styles.css?v=102" />
+  <link rel="stylesheet" href="styles.css?v=117" />
 </head>
 <body>
   <!-- PANTALLA DE ACCESO: se muestra ANTES que la de bienvenida cuando no
@@ -151,7 +151,7 @@
       </div>
     </div>
 
-    <span class="onboarding-version" id="appVersion">Beta V42</span>
+    <span class="onboarding-version" id="appVersion">Beta V43</span>
     <button type="button" class="onboarding-reset" id="obResetBtn">Reiniciar app</button>
     <a class="onboarding-legal" href="privacidad.html" id="obPrivacyLink">Privacidad y créditos</a>
   </div>
@@ -296,155 +296,131 @@
         </div>
       </div>
 
+      <!-- EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo).
+           Cuarta vuelta de diseño de este menú — a diferencia de la anterior
+           (un solo icono ">>" que escondía Filtros/Capas detrás de un nivel
+           intermedio), aquí Inicio/Filtros/Capas son tres filas SIEMPRE
+           visibles en .header-bottom (nada que desplegar para verlas a
+           ellas mismas). Quinta vuelta: cada panel (Filtros/Rutas, Capas) ya
+           no es un único dropdown flotante compartido debajo de TODO el
+           bloque — ahora hay un "slot" de panel justo debajo de cada botón
+           disparador, dentro del propio flujo de .header-bottom, para que
+           abrir Filtros empuje "Capas" hacia abajo (en vez de tapar Capas
+           con un panel que sale por encima) y todo se vea como un mismo
+           bloque continuo de texto. Ver #filtersMenuSlot/#layersMenuSlot y
+           .app-menu-slot en el CSS. Hay un commit de checkpoint justo antes
+           de la vuelta anterior (rama experimento-patrocinios-demo) con la
+           versión del icono único, por si hay que volver atrás del todo.
+           BORRAR este comentario si se retira el experimento del todo. -->
       <div class="header-bottom">
-        <button type="button" class="change-city-btn" id="changeCityBtn" aria-label="Volver al menú principal" title="Menú principal">
+        <button type="button" class="menu-row-btn" id="changeCityBtn" aria-label="Volver al menú principal" title="Menú principal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M4 11.5 12 4l8 7.5"></path>
             <path d="M6 10v9a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1v-9"></path>
           </svg>
+          <span id="changeCityLabel">Inicio</span>
         </button>
 
-        <!-- EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo).
-             Tercera vuelta de diseño de este menú (antes: píldoras siempre
-             visibles → dos botones de texto "Filtros"/"Capas" en línea).
-             Ahora: UN solo icono junto a la casita que solo insinúa "hay un
-             menú" (sin texto), que al tocarlo despliega debajo un menú de
-             dos niveles — nivel 1 elige Filtros o Capas, nivel 2 muestra
-             las opciones de lo elegido (icono + texto cada una, con un
-             botón "‹" para volver al nivel 1). BORRAR este comentario si se
-             retira el experimento (el propio rediseño se queda si el
-             cambio se mantiene). -->
-        <button type="button" class="menu-icon-btn" id="menuToggleBtn" aria-label="Menú" aria-haspopup="true" aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="6 6 10 12 6 18"></polyline>
-            <polyline points="12 6 16 12 12 18"></polyline>
+        <button type="button" class="menu-row-btn" id="filtersToggleBtn" aria-label="Filtros" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 4h16l-6.5 8.5V19l-3 1.5v-8L4 4Z"></path>
           </svg>
+          <span id="filtersToggleLabel">Filtros</span>
         </button>
-        <div class="dropdown-menu app-menu" id="appMenu">
-          <div class="app-menu-level" id="appMenuMain">
-            <button type="button" class="dropdown-option" data-menu-open="filters">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18">
-                <path d="M4 4h16l-6.5 8.5V19l-3 1.5v-8L4 4Z"></path>
-              </svg>
-              <span>Filtros</span>
-              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><polyline points="9 6 15 12 9 18"></polyline></svg>
-            </button>
-            <button type="button" class="dropdown-option" data-menu-open="layers">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18">
-                <path d="M12 2 2 7l10 5 10-5-10-5Z"></path>
-                <path d="M2 17l10 5 10-5"></path>
-                <path d="M2 12l10 5 10-5"></path>
-              </svg>
-              <span>Capas</span>
-              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><polyline points="9 6 15 12 9 18"></polyline></svg>
-            </button>
-          </div>
 
-          <div class="app-menu-level" id="appMenuFilters" hidden>
-            <button type="button" class="dropdown-option -back" data-menu-back="main">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><polyline points="15 6 9 12 15 18"></polyline></svg>
-              <span>Filtros</span>
-            </button>
-            <nav class="filters" id="filters" role="tablist" aria-label="Filtrar puntos de interés">
-              <button type="button" class="pill" data-category="all" data-active="true">
-                <span>Todos</span>
-              </button>
-              <button type="button" class="pill" data-category="essential" data-active="false">
+        <div class="app-menu-slot" id="filtersMenuSlot">
+          <div class="app-menu-slot-inner">
+            <div class="app-menu-level" id="appMenuFilters">
+              <nav class="filters" id="filters" role="tablist" aria-label="Filtrar puntos de interés">
+                <button type="button" class="pill" data-category="all" data-active="true">
+                  <span>Todos</span>
+                </button>
+                <button type="button" class="pill" data-category="essential" data-active="false">
+                  <span>Rutas recomendadas</span>
+                </button>
+                <button type="button" class="pill" data-category="rincones-ocultos" data-active="false">
+                  <span>Puntos de interés</span>
+                </button>
+                <button type="button" class="pill" data-category="historia" data-active="false">
+                  <span>Museos</span>
+                </button>
+                <!-- EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+                     se quita el filtro "Restauración" (categoría gastronomia) de aquí porque
+                     ahora ese hueco lo cubre la capa "Comer y beber" de la pestaña Capas
+                     (#layersPanel), con TODOS los locales reales, no solo los pocos POI
+                     turísticos etiquetados a mano como gastronomía. La categoría
+                     CATEGORIES.GASTRONOMY sigue existiendo en los datos (pines, colores),
+                     solo se retira el filtro para no tener dos formas de buscar comida. -->
+              </nav>
+            </div>
+
+            <!-- EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+                 tercer nivel para elegir ruta, en vez del selector flotante de antes
+                 (#routePicker con position:absolute) — ese se solapaba de forma fea con
+                 este mismo menú, porque se posicionaba junto a la píldora "Rutas
+                 recomendadas" que ahora vive DENTRO del propio menú, no en la cabecera.
+                 Aquí simplemente sustituye el contenido del nivel "filters" por este,
+                 con su propio "‹" para volver — comparte el mismo slot que "filters"
+                 porque es un nivel anidado dentro de Filtros, no un panel propio.
+                 BORRAR si se retira el experimento. -->
+            <div class="app-menu-level" id="appMenuRoutes" hidden>
+              <button type="button" class="dropdown-option -back" data-menu-back="filters">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><polyline points="15 6 9 12 15 18"></polyline></svg>
                 <span>Rutas recomendadas</span>
               </button>
-              <button type="button" class="pill" data-category="rincones-ocultos" data-active="false">
-                <span>Puntos de interés</span>
-              </button>
-              <button type="button" class="pill" data-category="historia" data-active="false">
-                <span>Museos</span>
-              </button>
-              <!-- EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
-                   se quita el filtro "Restauración" (categoría gastronomia) de aquí porque
-                   ahora ese hueco lo cubre la capa "Comer y beber" de la pestaña Capas
-                   (#layersPanel), con TODOS los locales reales, no solo los pocos POI
-                   turísticos etiquetados a mano como gastronomía. La categoría
-                   CATEGORIES.GASTRONOMY sigue existiendo en los datos (pines, colores),
-                   solo se retira el filtro para no tener dos formas de buscar comida. -->
-            </nav>
-          </div>
-
-          <!-- EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
-               tercer nivel para elegir ruta, en vez del selector flotante de antes
-               (#routePicker con position:absolute) — ese se solapaba de forma fea con
-               este mismo menú, porque se posicionaba junto a la píldora "Rutas
-               recomendadas" que ahora vive DENTRO del propio menú, no en la cabecera.
-               Aquí simplemente sustituye el contenido del nivel "filters" por este,
-               con su propio "‹" para volver. BORRAR si se retira el experimento. -->
-          <div class="app-menu-level" id="appMenuRoutes" hidden>
-            <button type="button" class="dropdown-option -back" data-menu-back="filters">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><polyline points="15 6 9 12 15 18"></polyline></svg>
-              <span>Rutas recomendadas</span>
-            </button>
-            <div id="routePicker"></div>
-          </div>
-
-          <div class="app-menu-level" id="appMenuLayers" hidden>
-            <button type="button" class="dropdown-option -back" data-menu-back="main">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><polyline points="15 6 9 12 15 18"></polyline></svg>
-              <span>Capas</span>
-            </button>
-            <div class="layers-panel" id="layersPanel" role="group" aria-label="Capas del mapa">
-              <button type="button" class="layer-chip -fountains" id="fountainsBtn" aria-pressed="false">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18">
-                  <path d="M12 2C12 2 5 10.5 5 15a7 7 0 0 0 14 0c0-4.5-7-13-7-13Z"></path>
-                </svg>
-                <span>Fuentes de agua</span>
-              </button>
-              <button type="button" class="layer-chip -restrooms" id="restroomsBtn" aria-pressed="false">
-                <img src="assets/icons/restroom.png?v=2" alt="" aria-hidden="true" />
-                <span>Aseos públicos</span>
-              </button>
-              <button type="button" class="layer-chip -food" id="foodBtn" aria-pressed="false">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18">
-                  <path d="M7 2v7a2 2 0 0 0 2 2v11"></path>
-                  <path d="M7 2v20"></path>
-                  <path d="M11 2v9"></path>
-                  <path d="M17 2c-1.7 0-3 2-3 5s1.3 5 3 5v10"></path>
-                </svg>
-                <span>Comer y beber cerca</span>
-              </button>
-              <!-- Icono de antena/satélite, distinto del de "capas" del icono
-                   que abre este menú — antes reutilizaba el mismo icono para
-                   dos cosas distintas (abrir el menú vs. cambiar mapa↔satélite). -->
-              <button type="button" class="layer-chip -satellite" id="satelliteBtn" aria-pressed="false">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18">
-                  <path d="M4 10a7.31 7.31 0 0 0 10 10Z"></path>
-                  <path d="m9 15 3-3"></path>
-                  <path d="M17 13a6 6 0 0 0-6-6"></path>
-                  <path d="M21 13A10 10 0 0 0 11 3"></path>
-                </svg>
-                <span>Vista de satélite / mapa</span>
-              </button>
+              <div id="routePicker"></div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="route-intro" id="routeIntro" hidden aria-live="polite">
-        <button type="button" class="route-intro-play" id="routeIntroPlay" aria-label="Reproducir introducción de la ruta">
-          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
-            <polygon points="7 4 20 12 7 20 7 4"></polygon>
+        <button type="button" class="menu-row-btn" id="layersBtn" aria-label="Capas" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 2 2 7l10 5 10-5-10-5Z"></path>
+            <path d="M2 17l10 5 10-5"></path>
+            <path d="M2 12l10 5 10-5"></path>
           </svg>
+          <span id="layersLabel">Capas</span>
         </button>
-        <div class="route-intro-body">
-          <div class="route-intro-title" id="routeIntroTitle">Ruta</div>
-          <div class="route-intro-progress">
-            <div class="route-intro-bar"><div class="route-intro-fill" id="routeIntroFill"></div></div>
-            <div class="route-intro-time" id="routeIntroTime">0:00 / 0:00</div>
+
+        <div class="app-menu-slot" id="layersMenuSlot">
+          <div class="app-menu-slot-inner">
+            <div class="app-menu-level" id="appMenuLayers">
+              <div class="layers-panel" id="layersPanel" role="group" aria-label="Capas del mapa">
+                <button type="button" class="layer-chip -fountains" id="fountainsBtn" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18">
+                    <path d="M12 2C12 2 5 10.5 5 15a7 7 0 0 0 14 0c0-4.5-7-13-7-13Z"></path>
+                  </svg>
+                  <span>Fuentes de agua</span>
+                </button>
+                <button type="button" class="layer-chip -restrooms" id="restroomsBtn" aria-pressed="false">
+                  <img src="assets/icons/restroom.png?v=2" alt="" aria-hidden="true" />
+                  <span>Aseos públicos</span>
+                </button>
+                <button type="button" class="layer-chip -food" id="foodBtn" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18">
+                    <path d="M7 2v7a2 2 0 0 0 2 2v11"></path>
+                    <path d="M7 2v20"></path>
+                    <path d="M11 2v9"></path>
+                    <path d="M17 2c-1.7 0-3 2-3 5s1.3 5 3 5v10"></path>
+                  </svg>
+                  <span>Comer y beber cerca</span>
+                </button>
+                <!-- Icono de antena/satélite, distinto del de "capas" del icono
+                     que abre este menú — antes reutilizaba el mismo icono para
+                     dos cosas distintas (abrir el menú vs. cambiar mapa↔satélite). -->
+                <button type="button" class="layer-chip -satellite" id="satelliteBtn" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18">
+                    <path d="M4 10a7.31 7.31 0 0 0 10 10Z"></path>
+                    <path d="m9 15 3-3"></path>
+                    <path d="M17 13a6 6 0 0 0-6-6"></path>
+                    <path d="M21 13A10 10 0 0 0 11 3"></path>
+                  </svg>
+                  <span>Vista de satélite / mapa</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-        <button type="button" class="route-intro-close" id="routeIntroClose" aria-label="Cerrar introducción de la ruta">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
       </div>
     </header>
 
@@ -484,6 +460,36 @@
       </div>
 
       <input type="file" id="scanInput" accept="image/*" hidden />
+
+      <!-- EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+           segunda prueba de posición para el mini-reproductor de la intro de
+           ruta -- la primera lo puso justo debajo de la marca (arriba del
+           todo); esta prueba lo manda "al piso", flotando sobre el mapa
+           justo encima de .map-tools (cámara/ubicación), para comparar
+           cómo queda cada sitio antes de decidir cuál se queda. BORRAR este
+           comentario si se retira el experimento (la posición elegida se
+           queda si el resultado convence). -->
+      <div class="route-intro" id="routeIntro" hidden aria-live="polite">
+        <button type="button" class="route-intro-play" id="routeIntroPlay" aria-label="Reproducir introducción de la ruta">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+            <polygon points="7 4 20 12 7 20 7 4"></polygon>
+          </svg>
+        </button>
+        <div class="route-intro-body">
+          <div class="route-intro-title" id="routeIntroTitle">Ruta</div>
+          <div class="route-intro-progress">
+            <div class="route-intro-bar"><div class="route-intro-fill" id="routeIntroFill"></div></div>
+            <div class="route-intro-time" id="routeIntroTime">0:00 / 0:00</div>
+          </div>
+        </div>
+        <button type="button" class="route-intro-close" id="routeIntroClose" aria-label="Cerrar introducción de la ruta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <!-- BACKDROP -->
@@ -713,7 +719,7 @@
   <!-- EXPERIMENTO TEMPORAL (rama experimento-patrocinios-demo) — BORRAR
        esta línea junto con data/sponsors-demo.js antes de fusionar a main. -->
   <script src="data/sponsors-demo.js?v=5"></script>
-  <script src="app.js?v=231"></script>
+  <script src="app.js?v=234"></script>
   <!-- Service Worker: cachea el shell de la app y las imágenes de POIs ya
        vistas, para que la audioguía siga funcionando con conexión
        intermitente (típico caminando por cascos históricos). Ruta relativa

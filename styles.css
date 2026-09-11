@@ -829,6 +829,21 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* BUG REAL (reportado: tocar un pin del mapa a veces no responde): .header
+     ocupa TODO el ancho de la pantalla y tanto de alto como sumen sus hijos
+     -- con el menú Inicio/Filtros/Capas ahora más alto que los 2 iconos de
+     antes (y más aún con un panel abierto), esa caja invisible llegaba a
+     tapar una franja bastante grande del mapa por debajo de donde se ve
+     contenido real, y ahí NINGÚN pin respondía al toque porque el clic lo
+     interceptaba .header antes de llegar al mapa. pointer-events:none aquí
+     (con :auto de vuelta en .header-top/.header-bottom, sus únicos hijos)
+     hace que solo el contenido visible del header sea clicable, y el resto
+     de su caja deje pasar el toque al mapa de debajo. BORRAR este comentario
+     si se retira el experimento (el fix se queda si el cambio se mantiene). */
+  pointer-events: none;
+}
+.header-top, .header-bottom {
+  pointer-events: auto;
 }
 /* EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
    el degradado + desenfoque ya no vive en TODO .header (se quitó de ahí
@@ -1206,27 +1221,49 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   font-size: 16px;
 }
 
-.change-city-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+/* EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo).
+   Cuarta vuelta: Inicio/Filtros/Capas son tres filas iguales, siempre
+   visibles, con icono + texto — ver el comentario del bloque
+   "FILTROS + CAPAS" más abajo para el resto de este rediseño. Antes
+   .change-city-btn era un círculo de solo icono (antes de eso, gris
+   apagado); ahora comparte estilo con los otros dos botones de fila.
+   BORRAR este comentario si se retira el experimento. */
+.menu-row-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 12px;
   border: 0;
   background: transparent;
-  /* EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
-     antes era --color-text-soft (gris apagado) porque vivía en la barra
-     ancha de antes, con más elementos alrededor; ahora comparte una
-     cajita pequeña de solo 2 iconos con la flechita del menú (que ya usa
-     --color-text, más brillante) y se veía deslucida en comparación. */
   color: var(--color-text);
-  display: grid;
-  place-items: center;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
-  flex-shrink: 0;
+  position: relative;
   transition: transform 0.15s ease, color 0.2s ease, background 0.2s ease;
 }
-.change-city-btn svg { width: 18px; height: 18px; }
-.change-city-btn:active { transform: scale(0.92); }
-.change-city-btn:hover { color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 14%, transparent); }
+.menu-row-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
+.menu-row-btn img { width: 17px; height: 17px; object-fit: contain; flex-shrink: 0; }
+.menu-row-btn:active { transform: scale(0.97); }
+.menu-row-btn:hover { background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
+.menu-row-btn[aria-expanded="true"] { color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 14%, transparent); }
+/* Puntito que avisa de que hay un filtro activo distinto de "Todos". */
+.menu-row-btn.-active::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 1.5px solid var(--color-surface);
+}
 
 .mode-toggle {
   display: inline-flex;
@@ -1277,20 +1314,35 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
 .mode-toggle-option[data-active="true"] { color: #0B1120; }
 
 /* EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
-   antes esta barra era horizontal y ancha (tenía que caber la fila entera
-   de píldoras); ahora solo contiene la casita y el icono del menú, así que
-   se encoge a una columna compacta que los abraza a los dos en vez de dejar
-   una barra larga y vacía. BORRAR este comentario si se retira el
-   experimento (la forma compacta se queda si el cambio se mantiene). */
+   antes esta barra era horizontal y ancha (la fila entera de píldoras);
+   luego pasó a ser una columna compacta de solo 2 iconos circulares
+   (casita + flechita del menú). Cuarta vuelta: ahora son 3 filas de
+   icono+texto SIEMPRE visibles (Inicio/Filtros/Capas, ver .menu-row-btn),
+   así que la columna se estira (align-items:stretch) para que las 3 filas
+   compartan el mismo ancho, en vez de centrarse como los iconos sueltos de
+   antes. Sexta vuelta: vuelve a ser fit-content (se ajusta a la palabra
+   más larga de Inicio/Filtros/Capas) en vez de un ancho fijo -- el ancho
+   fijo evitaba que la columna se "agrandara" al elegir una ruta larga,
+   pero a cambio la dejaba más ancha de lo necesario en reposo. El
+   problema de fondo (un panel CERRADO seguía aportando su ancho al
+   fit-content, por ejemplo la píldora "Rutas recomendadas" mostrando el
+   nombre de la ruta activa) se arregla ahora en el propio
+   #filtersMenuSlot/#layersMenuSlot: cuando un slot está cerrado también
+   colapsa su ANCHO a 0, no solo el alto, así que deja de contar para el
+   fit-content -- ver .app-menu-slot más abajo. Así la columna se ajusta a
+   las 3 palabras en reposo, y crece de verdad (con la nueva fila estirada
+   por align-items:stretch) SOLO mientras un panel esté realmente abierto.
+   BORRAR este comentario si se retira el experimento (la forma compacta
+   se queda si el cambio se mantiene). */
 .header-bottom {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 2px;
   width: fit-content;
   position: relative;
   padding: 6px;
-  border-radius: 20px;
+  border-radius: 16px;
   background: color-mix(in srgb, var(--color-surface) 55%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
   box-shadow: var(--shadow-sm);
@@ -1298,23 +1350,6 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   -webkit-backdrop-filter: blur(6px);
 }
 
-/* ---------- SELECTOR DE CIRCUITOS (rutas imprescindibles) ----------
- * Ancho de contenido (no ocupa todo el header): se posiciona con JS
- * justo bajo la píldora "Recomendaciones", para tapar lo mínimo posible. */
-.dropdown-menu {
-  min-width: 190px;
-  max-width: min(260px, calc(100vw - 32px));
-  z-index: 700;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-}
-.dropdown-menu[hidden] { display: none; }
 .dropdown-option {
   display: flex;
   align-items: center;
@@ -1325,8 +1360,11 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   border: none;
   color: var(--color-text);
   font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  /* Mismo tamaño/peso que .menu-row-btn (Inicio/Filtros/Capas) -- antes
+     era 14px/600, más grande y más fino que las filas de arriba, y se
+     notaba como si fuera una fuente distinta al ver todo el bloque junto. */
+  font-size: 12.5px;
+  font-weight: 700;
   text-align: left;
   cursor: pointer;
 }
@@ -1345,80 +1383,71 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
    dentro del nivel #appMenuRoutes, con el mismo look que .dropdown-option
    por CSS heredado. BORRAR este comentario si se retira el experimento. */
 
-/* ---------- MENÚ ÚNICO: FILTROS + CAPAS ---------- */
+/* ---------- MENÚ: FILTROS + CAPAS ---------- */
 /* EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo).
-   Cuarta vuelta de diseño de este menú (píldoras siempre visibles → dos
-   botones de texto en línea → dos menús que se abrían en la propia fila):
-   ahora es UN solo icono junto a la casita (sin texto, solo insinúa "hay un
-   menú") que despliega ABAJO un menú de verdadero estilo app — nivel
-   principal (Filtros / Capas) y, al elegir uno, sus opciones (icono +
-   texto en cada fila, con un botón "‹" para volver). Todo con la misma
-   pinta que ya usa el resto de desplegables (.dropdown-menu/.dropdown-option),
-   para que no parezca un control aparte. BORRAR este bloque si se retira
-   el experimento (el propio rediseño se queda si el cambio se mantiene). */
-.menu-icon-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 0;
-  background: transparent;
-  color: var(--color-text);
+   Historial de este menú: píldoras siempre visibles → dos botones de texto
+   en línea → un solo icono que escondía Filtros/Capas detrás de un nivel
+   intermedio → Filtros y Capas como filas siempre visibles con un panel
+   flotante (position:absolute) compartido debajo de TODA la columna →
+   ahora (quinta vuelta) cada fila tiene su propio "slot" de panel EN EL
+   FLUJO normal, justo debajo de sí misma (ver #filtersMenuSlot/
+   #layersMenuSlot en index.html): abrir Filtros empuja la fila "Capas"
+   hacia abajo en vez de superponer un panel flotante encima de ella, así
+   que todo el bloque (Inicio/Filtros/[panel]/Capas/[panel]) se lee como
+   una sola columna continua. BORRAR este bloque si se retira el
+   experimento (el propio rediseño se queda si el cambio se mantiene). */
+/* CERRADO: ancho 0 además de alto 0. .header-bottom es fit-content (se
+   ajusta a la palabra más larga de Inicio/Filtros/Capas), y ese cálculo
+   mira el ancho INTRÍNSECO de todos los hijos en flujo, incluido un slot
+   con grid-template-rows:0fr -- colapsar solo el alto no basta, porque un
+   panel cerrado (ej.: la píldora "Rutas recomendadas" mostrando el nombre
+   de la ruta activa) seguiría "queriendo" su ancho de contenido y
+   ensanchando la columna aunque no se vea. Con width:0 + overflow:hidden
+   en el propio slot, un panel cerrado no cuenta para nada; al abrirse
+   (width:auto) vuelve a aportar su ancho real y la columna crece con él. */
+.app-menu-slot {
   display: grid;
-  place-items: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  position: relative;
-  transition: transform 0.15s ease, color 0.2s ease, background 0.2s ease;
+  grid-template-rows: 0fr;
+  width: 0;
+  overflow: hidden;
+  transition: grid-template-rows 0.28s cubic-bezier(.4, 0, .2, 1);
 }
-.menu-icon-btn svg { width: 19px; height: 19px; }
-.menu-icon-btn:active { transform: scale(0.92); }
-.menu-icon-btn[aria-expanded="true"] { color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 14%, transparent); }
-/* Puntito que avisa de que hay un filtro activo distinto de "Todos" aunque
-   el menú esté cerrado — sin esto, alguien podía olvidarse de que dejó
-   puesto "Museos" y no entender por qué faltan pines en el mapa. */
-.menu-icon-btn.-active::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  border: 1.5px solid var(--color-surface);
+.app-menu-slot.-open {
+  grid-template-rows: 1fr;
+  width: auto;
 }
-
-/* El propio menú reutiliza el look de .dropdown-menu (mismo componente
-   visual que el selector de rutas), con un fondo algo más cálido — "un
-   fondo que guste" — en vez del gris plano de superficie. Se anima con
-   opacidad + escala en vez de max-width: al cambiar de nivel (Filtros ↔
-   Capas) el alto de contenido cambia, y animar eso es mucho más simple con
-   scale/opacity que con max-height. */
-.app-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  min-width: 220px;
+/* El grid-item necesita overflow:hidden + min-height:0 para poder
+   encogerse a 0 de verdad -- sin min-height:0, el alto mínimo por defecto
+   de un item de grid es "auto" (el alto de su contenido), y grid-rows:0fr
+   no lograría colapsarlo. El padding vive en .app-menu-level (un nivel más
+   adentro) y no en este contenedor, precisamente para que ese padding no
+   cuente como "contenido mínimo" y deje un hueco residual visible cuando
+   el slot está cerrado. */
+.app-menu-slot-inner {
+  overflow: hidden;
+  min-height: 0;
+  border-radius: 14px;
   background: linear-gradient(160deg,
     color-mix(in srgb, var(--color-surface) 90%, var(--color-primary) 10%) 0%,
     var(--color-surface) 70%);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   opacity: 0;
-  transform: scale(0.95) translateY(-6px);
-  transform-origin: top left;
-  pointer-events: none;
-  transition: opacity 0.22s ease, transform 0.26s cubic-bezier(.4, 0, .2, 1);
+  /* Misma duración que grid-template-rows en .app-menu-slot (0.28s) para
+     que, al cerrar, el fundido y el colapso de alto terminen A LA VEZ --
+     antes esto duraba solo 0.16s (sin el retraso de abrir, que solo
+     aplica en el estado -open), así que la opacidad llegaba a 0 bastante
+     antes de que el alto llegara a 0 de verdad, dejando ver un hueco
+     gris vacío durante esa diferencia. */
+  transition: opacity 0.28s ease;
 }
-.app-menu.-open {
+.app-menu-slot.-open .app-menu-slot-inner {
   opacity: 1;
-  transform: scale(1) translateY(0);
-  pointer-events: auto;
+  transition: opacity 0.18s ease 0.08s;
 }
 .app-menu-level {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: 6px;
 }
 .app-menu-level[hidden] { display: none; }
 #routePicker { display: flex; flex-direction: column; gap: 2px; }
@@ -1455,8 +1484,12 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   border: none;
   color: var(--color-text);
   font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  /* Mismo tamaño/peso que .menu-row-btn y .dropdown-option -- ver
+     comentario en .dropdown-option sobre por qué antes se notaba como una
+     fuente distinta al ver el bloque Inicio/Filtros/Capas junto con su
+     panel abierto. */
+  font-size: 12.5px;
+  font-weight: 700;
   text-align: left;
   white-space: normal;
   cursor: pointer;
@@ -1938,7 +1971,23 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s linear 0.38s;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* BUG REAL (reportado: "se recorta arriba o abajo"): con overflow:hidden
+     a secas, cuando el contenido (cabecera + audio + chat + chips + campo
+     de pregunta, a veces con la ficha de patrocinio de por medio) supera
+     max-height, ese sobrante simplemente se recortaba sin más -- pero en
+     WebKit/iOS un overflow:hidden con contenido de verdad desbordado
+     TODAVÍA se puede arrastrar con el dedo, lo que scrollea TODA la ficha
+     (cabecera y botón de cerrar incluidos) fuera de la pantalla, sin forma
+     de volver salvo adivinar que hay que arrastrar hacia abajo nada más
+     abrirla. overflow-y:auto lo convierte en un scroll de verdad y
+     controlado (con su propia barra, sin rebote fuera de la ficha gracias
+     a overscroll-behavior) + .sheet-head sticky (ver más abajo) para que la
+     cabecera con el botón de cerrar NUNCA desaparezca, pase lo que pase
+     con el resto del contenido. BORRAR este comentario si se retira el
+     experimento (el fix se queda si el cambio se mantiene). */
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   visibility: hidden;
 }
 html[data-mode="kids"] .bottom-sheet {
@@ -1965,6 +2014,16 @@ html[data-mode="kids"] .bottom-sheet {
      mientras se arrastra el tirador (ver el pointermove en wireEvents,
      app.js), compitiendo con el gesto de cerrar. */
   touch-action: none;
+  /* Va pegado (sticky) justo encima de .sheet-head -- ver el comentario de
+     ese bloque sobre por qué. Necesita su propio fondo (antes lo heredaba
+     gratis del propio .bottom-sheet al no moverse) para no dejar ver el
+     contenido pasando por debajo al hacerse sticky. */
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--color-surface);
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
 }
 .sheet-handle-bar {
   width: 40px;
@@ -1979,6 +2038,15 @@ html[data-mode="kids"] .bottom-sheet {
   gap: 12px;
   padding: 16px 16px 14px;
   flex-shrink: 0;
+  /* BUG REAL (ver el comentario en .bottom-sheet sobre overflow-y:auto):
+     esta es la fila con el título y el botón de cerrar -- la que NUNCA
+     puede desaparecer al scrollear el resto de la ficha. Sticky justo
+     debajo de .sheet-handle (28px de alto: 14+10 de padding + 4 de la
+     barra), con su propio z-index para quedar por encima del audio/chat
+     que pasa por debajo. */
+  position: sticky;
+  top: 28px;
+  z-index: 5;
   /* EXPERIMENTO (rama experimento-diseno-editorial): cabecera teñida con el
      color de la categoría (ver --sheet-accent-raw, puesto por
      populateSheetContent en app.js), en vez de blanco liso -- inspirado en
@@ -2401,7 +2469,17 @@ html[data-mode="kids"] .bottom-sheet {
 /* ---------- AI CHAT ---------- */
 .ai-messages {
   flex: 1;
-  min-height: 120px;
+  /* BUG REAL (ligado al de arriba: "se recorta la ficha"): con este
+     min-height en 120px, cuando el resto de filas fijas de la ficha
+     (cabecera, audio, chips, campo de pregunta) ya ocupaban casi todo el
+     max-height de .bottom-sheet (76vh), el conjunto se pasaba de ese
+     límite -- .bottom-sheet no tiene overflow:auto propio así que en
+     teoría se recortaría sin más, pero algunos navegadores (WebKit/iOS)
+     igual dejan arrastrar ese sobrante con el dedo, lo que scrollea TODA
+     la ficha (cabecera incluida) fuera de vista en vez de solo este chat.
+     Bajarlo a 64px deja sitio de sobra en la mayoría de casos para que
+     nunca haga falta ese desbordamiento. */
+  min-height: 64px;
   max-height: 38vh;
   overflow-y: auto;
   margin: 0 16px 10px;
@@ -2884,8 +2962,21 @@ html[data-mode="kids"] .bottom-sheet {
 }
 
 /* ---------- INTRO DE RUTA (audioguía corta al elegir un circuito) ---------- */
+/* EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+   segunda prueba de posición -- ahora flota "al piso" sobre el mapa, como
+   un mini-reproductor anclado justo encima de .map-tools (cámara/
+   ubicación, bottom:20px + ~102px de alto), en vez de vivir dentro de
+   .header y quedar pegado arriba (primera prueba). El offset vertical dEja
+   sitio de sobra para .map-tools sin que se solapen. BORRAR este
+   comentario si se retira el experimento (la posición elegida se queda si
+   el resultado convence). */
 .route-intro[hidden] { display: none; }
 .route-intro {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: calc(max(20px, env(safe-area-inset-bottom)) + 112px);
+  z-index: 600;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: 16px;
@@ -2894,6 +2985,7 @@ html[data-mode="kids"] .bottom-sheet {
   grid-template-columns: 40px 1fr auto;
   column-gap: 10px;
   align-items: center;
+  box-shadow: var(--shadow-md);
 }
 .route-intro-play {
   width: 40px;
@@ -3258,42 +3350,59 @@ html[data-mode="kids"] .ai-input-wrap {
 }
 
 .sheet-sponsor-demo {
-  margin: 14px 18px 0;
-  padding-top: 12px;
+  margin: 10px 18px 0;
+  padding-top: 8px;
   border-top: 1px dashed var(--color-border);
 }
 .sheet-sponsor-demo .label {
   display: block;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #8F5C14;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
-.sheet-sponsor-demo p { margin: 0 0 8px; font-size: 13px; color: var(--color-text); }
+.sheet-sponsor-demo p { margin: 0 0 6px; font-size: 12px; color: var(--color-text); }
+/* Botón de las tarjetas bronce/plata (ej.: "Ver en el mapa") -- mismo
+   tamaño reducido que los de la tarjeta oro (.cta-col button), "se me hace
+   muy grande" aplicaba igual aquí.
+   BUG REAL encontrado al verificar por qué no bajaba de tamaño: el atajo
+   "font: 600 9px inherit" NO es válido -- "inherit" ahí se intenta usar
+   como font-family, y al mezclarlo con un peso/tamaño explícitos el
+   navegador descarta la declaración ENTERA en silencio (sin error visible),
+   dejando el botón con el tamaño heredado de siempre (16px) pase lo que
+   pase con el número que se le ponga. Por eso ningún cambio de tamaño
+   anterior se veía -- ni siquiera en el botón "oro", que tenía el mismo
+   fallo. Con font-size/font-weight por separado sí se aplica de verdad. */
 .sheet-sponsor-demo button {
-  font: 600 13px inherit;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 9px;
   border: 1px solid #B9791F;
   color: #8F5C14;
   background: #F6E8CE;
-  padding: 7px 12px;
-  border-radius: 9px;
+  padding: 5px 8px;
+  border-radius: 7px;
   cursor: pointer;
 }
+/* EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+   tarjeta oro más pequeña -- foto, textos y botones reducidos ("se me hace
+   muy grande"). BORRAR este comentario si se retira el experimento (el
+   tamaño se queda si el cambio se mantiene). */
 .sheet-sponsor-demo.-oro {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   background: #F6E8CE;
   border: 1px solid #B9791F;
-  border-radius: 12px;
-  padding: 10px;
+  border-radius: 10px;
+  padding: 8px;
 }
 .sheet-sponsor-demo.-oro .photo {
-  width: 52px;
-  height: 52px;
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 7px;
   flex: none;
   background: linear-gradient(135deg, #B9791F, #8F5C14);
   display: flex;
@@ -3310,25 +3419,46 @@ html[data-mode="kids"] .ai-input-wrap {
   vertical-align: -3px;
   margin-right: 2px;
 }
-.sheet-sponsor-demo.-oro .body p { margin: 0 0 6px; }
+.sheet-sponsor-demo.-oro .body { flex: 1; min-width: 0; }
+.sheet-sponsor-demo.-oro .body p { margin: 0 0 3px; }
 .sheet-sponsor-demo.-oro .dist {
-  font-size: 11.5px;
+  font-size: 10px;
   font-weight: 600;
   color: #8F5C14;
   display: block;
-  margin-bottom: 6px;
 }
-.sheet-sponsor-demo.-oro .cta-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.sheet-sponsor-demo.-oro .cta-row button {
-  font: 600 12.5px inherit;
+/* EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+   tercera columna junto a la foto y el texto (antes .cta-row iba DEBAJO
+   del texto, en su propia fila ancha) -- así los botones aprovechan el
+   hueco que quedaba vacío a la derecha en vez de alargar la tarjeta hacia
+   abajo. flex:none + width fija para que quepan cómodos en una sola línea
+   cada uno sin robarle demasiado ancho al texto. BORRAR este comentario si
+   se retira el experimento (el layout se queda si el cambio se mantiene). */
+.sheet-sponsor-demo.-oro .cta-col {
+  flex: none;
+  width: 92px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.sheet-sponsor-demo.-oro .cta-col button {
+  width: 100%;
+  /* BUG REAL: ver el comentario en .sheet-sponsor-demo button más arriba
+     sobre "font: 600 9px inherit" -- mismo fallo aquí, ahora con
+     font-family/font-weight/font-size por separado para que de verdad
+     tome el tamaño reducido. */
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 9px;
   border: 1px solid #B9791F;
   color: #8F5C14;
   background: #FFFDF8;
-  padding: 6px 10px;
-  border-radius: 8px;
+  padding: 5px 4px;
+  border-radius: 7px;
   cursor: pointer;
+  white-space: nowrap;
 }
-.sheet-sponsor-demo.-oro .cta-row button:last-child {
+.sheet-sponsor-demo.-oro .cta-col button:last-child {
   color: #fff;
   background: #8F5C14;
   border-color: #8F5C14;
@@ -3343,6 +3473,11 @@ html[data-mode="kids"] .ai-input-wrap {
   align-items: flex-end;
   justify-content: center;
 }
+/* BUG REAL: sin esto, display:flex de arriba gana siempre a la propiedad
+   nativa [hidden] del navegador -- el modal quedaba con hidden="true" pero
+   seguía pintándose en pantalla (mismo tipo de bug ya visto con
+   .app-menu-level[hidden]). */
+.sponsor-demo-menu-overlay[hidden] { display: none; }
 @media (min-width: 620px) {
   .sponsor-demo-menu-overlay { align-items: center; }
 }

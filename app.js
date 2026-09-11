@@ -1312,6 +1312,12 @@
     askPlaceholder: { es: { adult: 'Escribe tu pregunta…', kids: 'Escribe tu pregunta…' }, en: { adult: 'Type your question…', kids: 'Type your question…' } },
     askAriaLabel: { es: { adult: 'Escribe tu pregunta a la guía IA', kids: 'Escribe tu pregunta a la guía IA' }, en: { adult: 'Type your question to the AI guide', kids: 'Type your question to the AI guide' } },
     backToMenu: { es: { adult: 'Menú principal', kids: 'Menú principal' }, en: { adult: 'Main menu', kids: 'Main menu' } },
+    // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+    // etiquetas visibles de las tres filas siempre presentes en .header-bottom
+    // (Inicio/Filtros/Capas) — ver #changeCityLabel/#filtersToggleLabel/#layersLabel.
+    menuHomeLabel: { es: { adult: 'Inicio', kids: 'Inicio' }, en: { adult: 'Home', kids: 'Home' } },
+    menuFiltersLabel: { es: { adult: 'Filtros', kids: 'Filtros' }, en: { adult: 'Filters', kids: 'Filters' } },
+    menuLayersLabel: { es: { adult: 'Capas', kids: 'Capas' }, en: { adult: 'Layers', kids: 'Layers' } },
     audioguideCompleted: { es: { adult: 'Audioguía completada', kids: '¡Fin del cuento! 🎉' }, en: { adult: 'Audio guide completed', kids: 'The End! 🎉' } },
     locationUnsupported: { es: { adult: 'La geolocalización no está disponible en este navegador.', kids: 'Tu navegador no sabe dónde estás 😅' }, en: { adult: 'Geolocation is not available in this browser.', kids: "Your browser doesn't know where you are 😅" } },
     locationDenied: { es: { adult: 'Has denegado el permiso de ubicación. Actívalo en los ajustes del navegador para usar esta función.', kids: 'Necesito permiso para saber dónde estás 🗺️' }, en: { adult: 'You denied location permission. Enable it in your browser settings to use this feature.', kids: 'I need permission to know where you are 🗺️' } },
@@ -2968,15 +2974,23 @@
       if (btn) btn.addEventListener('click', () => { trackSponsorDemoEvent(sponsor, 'map'); flyToSponsorDemo(sponsor); });
     } else if (sponsor.tier === 'oro') {
       el.className = 'sheet-sponsor-demo -oro';
+      // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
+      // los botones vivían debajo del texto en su propia fila (.cta-row),
+      // dejando la ficha más alta de lo necesario con un hueco vacío a la
+      // derecha del texto (donde nunca llegaba a ocupar todo el ancho).
+      // Ahora son una TERCERA columna (.cta-col) al lado de la foto y el
+      // texto, apilados verticalmente en ese mismo hueco -- la tarjeta
+      // ocupa menos alto sin perder nada. BORRAR este comentario si se
+      // retira el experimento (el layout se queda si el cambio se mantiene).
       el.innerHTML = `<div class="photo"><img src="${sponsorIconUrl(sponsor)}" alt="" /></div>
         <div class="body">
           <span class="label">Contenido patrocinado</span>
           <p><b>${sponsor.name}</b><br>${sponsor.teaser}</p>
           <span class="dist">${distLabel}</span>
-          <div class="cta-row">
-            <button type="button" id="sponsorDemoMenuBtn">Ver la carta</button>
-            <button type="button" id="sponsorDemoDirBtn">Cómo llegar</button>
-          </div>
+        </div>
+        <div class="cta-col">
+          <button type="button" id="sponsorDemoMenuBtn">Ver la carta</button>
+          <button type="button" id="sponsorDemoDirBtn">Cómo llegar</button>
         </div>`;
       const menuBtn = $('#sponsorDemoMenuBtn', el);
       if (menuBtn) menuBtn.addEventListener('click', () => {
@@ -3210,7 +3224,7 @@
     $$('.dropdown-option', els.routePicker).forEach((btn) => {
       btn.addEventListener('click', () => { activateRoute(btn.dataset.route); closeAppMenu(); });
     });
-    showAppMenuLevel('routes');
+    openAppMenu('routes');
   };
 
   const updateEssentialPillLabel = () => {
@@ -3224,34 +3238,63 @@
   };
 
   // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo).
-  // Menú único tras el icono #menuToggleBtn: nivel "main" (elegir Filtros o
-  // Capas), "filters"/"layers" (sus opciones) y "routes" (lista de rutas,
-  // solo alcanzable desde dentro de "filters" — sustituye al selector de
-  // rutas flotante de antes, que se solapaba con este mismo menú). Cada
-  // nivel tiene su botón "‹" con data-menu-back indicando A QUÉ nivel
-  // vuelve (no siempre es "main": el de "routes" vuelve a "filters"). El
-  // contenedor #appMenu entero se abre/cierra con una clase "-open"
-  // animada (nunca "hidden" a secas); cambiar de nivel dentro de un mismo
-  // "abierto" es un simple show/hide interno, instantáneo. BORRAR este
-  // bloque si se retira el experimento.
-  const APP_MENU_LEVEL_IDS = { main: 'appMenuMain', filters: 'appMenuFilters', layers: 'appMenuLayers', routes: 'appMenuRoutes' };
+  // Cuarta vuelta de este menú: ya no hay un nivel "main" ni un icono único
+  // que lo esconda todo — "Filtros" y "Capas" son botones siempre visibles
+  // en .header-bottom (ver index.html), cada uno con su propio disparador
+  // (#filtersToggleBtn/#layersBtn) que abre/cierra DIRECTAMENTE su nivel.
+  // "routes" sigue siendo un nivel aparte (solo alcanzable desde dentro de
+  // "filters", con su "‹" para volver ahí — ver data-menu-back). Abrir un
+  // nivel cierra cualquier otro que estuviera abierto, para que Filtros y
+  // Capas no compitan por sitio en la misma fila. Un commit de checkpoint
+  // (rama experimento-patrocinios-demo) guarda la versión anterior de este
+  // menú (icono único ">>") por si esta no convence. BORRAR este bloque si
+  // se retira el experimento del todo.
+  const APP_MENU_LEVEL_IDS = { filters: 'appMenuFilters', layers: 'appMenuLayers', routes: 'appMenuRoutes' };
+  const APP_MENU_TRIGGERS = { filters: '#filtersToggleBtn', layers: '#layersBtn' };
+  // Quinta vuelta: "routes" ya no comparte disparador propio, pero SÍ
+  // comparte slot con "filters" (vive anidado dentro de Filtros, ver
+  // index.html) — por eso apunta al mismo slot que "filters" en vez de
+  // tener uno para sí mismo.
+  const APP_MENU_SLOTS = { filters: 'filtersMenuSlot', routes: 'filtersMenuSlot', layers: 'layersMenuSlot' };
   const showAppMenuLevel = (level) => {
     Object.entries(APP_MENU_LEVEL_IDS).forEach(([key, id]) => {
       const el = $(`#${id}`);
       if (el) el.hidden = key !== level;
     });
   };
-  const isAppMenuOpen = () => !!$('#appMenu')?.classList.contains('-open');
-  const openAppMenu = () => {
-    showAppMenuLevel('main');
-    $('#appMenu')?.classList.add('-open');
-    $('#menuToggleBtn')?.setAttribute('aria-expanded', 'true');
+  const openAppMenuLevels = () => Object.entries(APP_MENU_LEVEL_IDS)
+    .filter(([, id]) => !$(`#${id}`)?.hidden)
+    .map(([key]) => key);
+  const isAppMenuSlotOpen = (slotId) => !!$(`#${slotId}`)?.classList.contains('-open');
+  const isAppMenuOpen = () => isAppMenuSlotOpen('filtersMenuSlot') || isAppMenuSlotOpen('layersMenuSlot');
+  const closeAllAppMenuSlots = () => {
+    $('#filtersMenuSlot')?.classList.remove('-open');
+    $('#layersMenuSlot')?.classList.remove('-open');
+  };
+  // Abre el panel del nivel indicado en su propio slot, justo debajo de su
+  // botón disparador (ver .app-menu-slot en el CSS) — cierra cualquier otro
+  // slot abierto de paso, porque Filtros y Capas no pueden estar abiertos a
+  // la vez (competirían por el mismo hueco vertical bajo Capas).
+  const openAppMenu = (level) => {
+    showAppMenuLevel(level);
+    closeAllAppMenuSlots();
+    $(`#${APP_MENU_SLOTS[level]}`)?.classList.add('-open');
+    // "routes" cuenta como que Filtros sigue "abierto" para el aria-expanded
+    // de su botón: es un nivel anidado dentro de Filtros, no uno propio.
+    $(APP_MENU_TRIGGERS.filters)?.setAttribute('aria-expanded', String(APP_MENU_SLOTS[level] === 'filtersMenuSlot'));
+    $(APP_MENU_TRIGGERS.layers)?.setAttribute('aria-expanded', String(APP_MENU_SLOTS[level] === 'layersMenuSlot'));
   };
   const closeAppMenu = () => {
-    $('#appMenu')?.classList.remove('-open');
-    $('#menuToggleBtn')?.setAttribute('aria-expanded', 'false');
+    closeAllAppMenuSlots();
+    Object.values(APP_MENU_TRIGGERS).forEach((sel) => $(sel)?.setAttribute('aria-expanded', 'false'));
   };
-  const toggleAppMenu = () => { isAppMenuOpen() ? closeAppMenu() : openAppMenu(); };
+  // Alterna el nivel de un disparador de nivel superior (Filtros/Capas): si
+  // su slot ya estaba abierto, cierra todo; si no, lo abre (y de paso
+  // cierra cualquier otro slot que estuviera abierto).
+  const toggleAppMenuLevel = (level) => {
+    if (isAppMenuSlotOpen(APP_MENU_SLOTS[level])) closeAppMenu();
+    else openAppMenu(level);
+  };
 
   const buildHeader = () => {
     $$('.pill', els.filters).forEach((p) => {
@@ -3286,16 +3329,15 @@
       });
     });
     // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo).
-    // El icono único abre el menú; dentro, cada fila con data-menu-open
-    // entra a ese nivel y data-menu-back vuelve al nivel que indique su
-    // propio atributo (no siempre "main": el de rutas vuelve a "filters").
-    // BORRAR este bloque si se retira el experimento.
-    $('#menuToggleBtn')?.addEventListener('click', () => toggleAppMenu());
-    $$('[data-menu-open]').forEach((b) => {
-      b.addEventListener('click', () => showAppMenuLevel(b.dataset.menuOpen));
-    });
+    // "Filtros" y "Capas" son botones siempre visibles, cada uno alterna
+    // DIRECTAMENTE su propio nivel (ver toggleAppMenuLevel más arriba).
+    // data-menu-back (solo lo usa "Rutas recomendadas" por ahora) vuelve al
+    // nivel que indique su propio atributo. BORRAR este bloque si se
+    // retira el experimento.
+    $('#filtersToggleBtn')?.addEventListener('click', () => toggleAppMenuLevel('filters'));
+    $('#layersBtn')?.addEventListener('click', () => toggleAppMenuLevel('layers'));
     $$('[data-menu-back]').forEach((b) => {
-      b.addEventListener('click', () => showAppMenuLevel(b.dataset.menuBack || 'main'));
+      b.addEventListener('click', () => openAppMenu(b.dataset.menuBack || 'filters'));
     });
     $$('.mode-toggle-option').forEach((opt) => {
       opt.addEventListener('click', () => setStateMode(opt.dataset.mode));
@@ -3314,10 +3356,14 @@
         }
       }
       // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
-      // cierra el menú (Filtros/Capas) al tocar fuera de él y de su icono.
+      // cierra el menú (Filtros/Capas) al tocar fuera de sus dos slots y de
+      // sus dos botones disparadores.
       if (isAppMenuOpen()) {
-        const menu = $('#appMenu'), btn = $('#menuToggleBtn');
-        if (menu && !menu.contains(e.target) && !(btn && btn.contains(e.target))) closeAppMenu();
+        const slots = [$('#filtersMenuSlot'), $('#layersMenuSlot')];
+        const btns = [$(APP_MENU_TRIGGERS.filters), $(APP_MENU_TRIGGERS.layers)];
+        const insideSlot = slots.some((s) => s && s.contains(e.target));
+        const insideTrigger = btns.some((b) => b && b.contains(e.target));
+        if (!insideSlot && !insideTrigger) closeAppMenu();
       }
     }, true);
 
@@ -3345,10 +3391,11 @@
   const updatePills = () => {
     $$('.pill', els.filters).forEach((p) => p.dataset.active = p.dataset.category === STATE.category ? 'true' : 'false');
     // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
-    // puntito en el icono del menú cuando hay un filtro puesto distinto de
-    // "Todos", para que no se olvide estando el menú cerrado. BORRAR si se
-    // retira el experimento.
-    $('#menuToggleBtn')?.classList.toggle('-active', STATE.category !== CATEGORIES.ALL);
+    // puntito en el botón "Filtros" cuando hay uno puesto distinto de
+    // "Todos" — con Filtros/Capas siempre visibles ya no hace tanta falta
+    // como con el icono único de antes, pero se deja igual de útil.
+    // BORRAR si se retira el experimento.
+    $('#filtersToggleBtn')?.classList.toggle('-active', STATE.category !== CATEGORIES.ALL);
   };
 
   // Niveles del explorador (modo niño): umbrales de puntos pensados para
@@ -4521,6 +4568,16 @@
     if (aiCallInputEl) { aiCallInputEl.placeholder = t('askPlaceholder'); aiCallInputEl.setAttribute('aria-label', t('askPlaceholder')); }
     const changeCityBtnEl = $('#changeCityBtn');
     if (changeCityBtnEl) { changeCityBtnEl.setAttribute('aria-label', t('backToMenu')); changeCityBtnEl.setAttribute('title', t('backToMenu')); }
+    const changeCityLabelEl = $('#changeCityLabel');
+    if (changeCityLabelEl) changeCityLabelEl.textContent = t('menuHomeLabel');
+    const filtersToggleBtnEl = $('#filtersToggleBtn');
+    if (filtersToggleBtnEl) filtersToggleBtnEl.setAttribute('aria-label', t('menuFiltersLabel'));
+    const filtersToggleLabelEl = $('#filtersToggleLabel');
+    if (filtersToggleLabelEl) filtersToggleLabelEl.textContent = t('menuFiltersLabel');
+    const layersBtnEl = $('#layersBtn');
+    if (layersBtnEl) layersBtnEl.setAttribute('aria-label', t('menuLayersLabel'));
+    const layersLabelEl = $('#layersLabel');
+    if (layersLabelEl) layersLabelEl.textContent = t('menuLayersLabel');
     const tutSkipEl = $('#tutorialSkip');
     if (tutSkipEl) tutSkipEl.textContent = t('tutorialSkip');
     const tutBackEl = $('#tutorialBack');
@@ -7200,8 +7257,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     // horizontal (rama experimento-patrocinios-demo). BORRAR este bloque
     // (y el trozo de closeAllMapMenus más abajo) si se retira el experimento.
     $('#foodBtn')?.addEventListener('click', () => toggleFood());
-    // (El botón "Capas" ya no existe suelto: es la fila data-menu-open="layers"
-    // de dentro de #appMenu, cableada más arriba junto con "Filtros".)
+    // (El botón "Capas" (#layersBtn) se cablea más arriba, junto con "Filtros".)
 
     $('#scanBtn')?.addEventListener('click', () => {
       const menu = $('#scanMenu'), btn = $('#scanBtn');
