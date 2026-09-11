@@ -61,8 +61,14 @@ export default {
     const isDashboard = url.pathname.endsWith('/license/dashboard');
     const isDashboardClear = url.pathname.endsWith('/license/dashboard/clear');
     const isContent = url.pathname.endsWith('/content');
+    // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo).
+    // BORRAR estas dos rutas, sus "if" de despacho de abajo, y las funciones
+    // handleSponsorTrack/handleSponsorRank más abajo, antes de fusionar nada
+    // de esta rama a main.
+    const isSponsorTrack = url.pathname.endsWith('/sponsor/track');
+    const isSponsorRank = url.pathname.endsWith('/sponsor/rank');
 
-    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent)) {
+    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank)) {
       return new Response(JSON.stringify({ error: 'not found' }), {
         status: 404,
         headers: { ...headers, 'Content-Type': 'application/json' }
@@ -86,6 +92,8 @@ export default {
     if (isDashboard) return handleDashboard(request, env, headers);
     if (isDashboardClear) return handleDashboardClear(request, env, headers);
     if (isContent) return handleContent(request, env, headers);
+    if (isSponsorTrack) return handleSponsorTrack(request, env, headers);
+    if (isSponsorRank) return handleSponsorRank(request, env, headers);
 
     // Rate limiting por IP (binding "RATE_LIMITER", configurado en el panel
     // de Cloudflare → pestaña "Bindings" → Add binding → Rate Limiting).
@@ -380,7 +388,7 @@ async function logAccessEvent(env, data) {
 // handleDashboardClear. Devuelve una Response de error si algo no cuadra
 // (payload inválido, clave incorrecta, KV sin configurar), o null si todo
 // está en orden y se puede continuar.
-async function checkAdminAccess(request, env, headers) {
+async function checkAdminAccess(request, env, headers, requiredBinding = 'ACCESS_LOG') {
   let payload;
   try {
     payload = await request.json();
@@ -396,7 +404,7 @@ async function checkAdminAccess(request, env, headers) {
       headers: { ...headers, 'Content-Type': 'application/json' }
     }) };
   }
-  if (!env.ACCESS_LOG) {
+  if (!env[requiredBinding]) {
     return { error: new Response(JSON.stringify({ error: 'not-configured' }), {
       status: 501,
       headers: { ...headers, 'Content-Type': 'application/json' }
@@ -534,6 +542,118 @@ async function handleContent(request, env, headers) {
   // El valor en KV ya es el JSON tal cual (array de pois, generado por
   // scripts/build-city-content.js) — se devuelve sin volver a parsear/serializar.
   return new Response(content, {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+}
+
+// ============================================================
+// EXPERIMENTO TEMPORAL — PATROCINIOS DEMO
+// (rama experimento-patrocinios-demo, NO fusionar a main)
+//
+// Cuenta impresiones/clics por RESTAURANTE (nunca por usuario — no hay
+// ningún dato personal aquí, solo un contador por sponsorId) para poder
+// rankear qué patrocinado se lleva más "Ver la carta"/"Cómo llegar". Vive
+// en su propio KV namespace (SPONSOR_METRICS) precisamente para poder
+// borrarlo entero sin tocar LICENSES/ACCESS_LOG cuando se retire el
+// experimento (ver worker/README.md).
+//
+// OJO con la cuota: el plan gratis de KV son 1.000 escrituras/día para
+// TODA la cuenta (compartidas con LICENSES/ACCESS_LOG/CITY_CONTENT), así
+// que app.js manda esto en LOTES agregados (al cerrar la ficha, o cada
+// 2 minutos) en vez de una petición por cada toque — ver
+// flushSponsorDemoMetrics en app.js. Con eso, un patrocinador visto y
+// tocado varias veces en una sesión sigue siendo 1 sola escritura, no una
+// por evento.
+// ============================================================
+async function handleSponsorTrack(request, env, headers) {
+  let payload;
+  try {
+    payload = await request.json();
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false }), {
+      status: 400,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  const sponsorId = String((payload && payload.sponsorId) || '').trim().slice(0, 80);
+  const name = String((payload && payload.name) || '').trim().slice(0, 120);
+  const events = (payload && payload.events) || {};
+  if (!sponsorId || !env.SPONSOR_METRICS) {
+    return new Response(JSON.stringify({ ok: false }), {
+      status: 200,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Rate limiting propio ("sponsor:..."), igual que license/content: este
+  // endpoint no pide clave ninguna (es un contador anónimo por sponsor, no
+  // hay nada sensible que proteger), así que sin esto alguien podría
+  // machacarlo a propósito y comerse la cuota de escrituras del día.
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (env.RATE_LIMITER) {
+    const { success } = await env.RATE_LIMITER.limit({ key: `sponsor:${ip}` });
+    if (!success) {
+      return new Response(JSON.stringify({ ok: false, reason: 'rate-limited' }), {
+        status: 429,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
+  const key = `sponsor:${sponsorId}`;
+  let current = { impression: 0, menu: 0, directions: 0, map: 0, name: '' };
+  try {
+    const raw = await env.SPONSOR_METRICS.get(key);
+    if (raw) current = { ...current, ...JSON.parse(raw) };
+  } catch (_) { /* si el valor guardado estuviera corrupto, se parte de cero */ }
+
+  // Tope de 100 por campo y por petición: de sobra para un lote real (una
+  // persona no toca "Ver la carta" cien veces en una sesión), y evita que
+  // un payload manipulado infle los contadores de golpe.
+  ['impression', 'menu', 'directions', 'map'].forEach((k) => {
+    const delta = Math.min(100, Math.max(0, parseInt(events[k], 10) || 0));
+    current[k] = (current[k] || 0) + delta;
+  });
+  if (name) current.name = name;
+
+  try {
+    await env.SPONSOR_METRICS.put(key, JSON.stringify(current));
+  } catch (_) { /* un fallo aquí nunca debe romper la ficha del usuario */ }
+
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+}
+
+// Ranking para el panel (ver admin/dashboard.html): protegido con la misma
+// clave de administrador que /license/dashboard, pero exige el binding
+// SPONSOR_METRICS en vez de ACCESS_LOG.
+async function handleSponsorRank(request, env, headers) {
+  const { error } = await checkAdminAccess(request, env, headers, 'SPONSOR_METRICS');
+  if (error) return error;
+
+  const list = await env.SPONSOR_METRICS.list({ prefix: 'sponsor:' });
+  const ranking = await Promise.all(list.keys.map(async (k) => {
+    let data = {};
+    try { data = JSON.parse(await env.SPONSOR_METRICS.get(k.name)) || {}; } catch (_) {}
+    return {
+      sponsorId: k.name.slice('sponsor:'.length),
+      name: data.name || '',
+      impression: data.impression || 0,
+      menu: data.menu || 0,
+      directions: data.directions || 0,
+      map: data.map || 0
+    };
+  }));
+  // Orden pedido: quién se lleva más "Ver la carta" + "Cómo llegar" juntos
+  // (las dos acciones que de verdad indican interés real, no solo que se
+  // le mostró el aviso).
+  ranking.sort((a, b) => (b.menu + b.directions) - (a.menu + a.directions));
+
+  return new Response(JSON.stringify({ ranking }), {
     status: 200,
     headers: { ...headers, 'Content-Type': 'application/json' }
   });

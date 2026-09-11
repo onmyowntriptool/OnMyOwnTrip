@@ -184,6 +184,43 @@ el historial simplemente no se guardan (el resto de la app sigue
 funcionando igual) — es una capa informativa opcional, no un requisito
 para que el control de acceso funcione.
 
+## EXPERIMENTO TEMPORAL — Ranking de patrocinios (rama experimento-patrocinios-demo)
+
+**Borrar esta sección entera, el KV namespace y las rutas `/sponsor/track`
+y `/sponsor/rank` de `proxy.js` antes de fusionar nada de esta rama a
+main.** Cuenta impresiones/clics ("Ver la carta", "Cómo llegar") por
+RESTAURANTE — nunca por usuario, es un ejercicio de qué patrocinador
+funciona mejor, no de seguimiento de personas.
+
+### Configurarlo
+
+1. **Storage & databases → Workers KV → Create Instance**. Nómbralo, por
+   ejemplo, `omot-sponsor-metrics-demo` (el prefijo "demo" ayuda a
+   recordar que hay que borrarlo luego).
+2. En tu Worker → pestaña **Bindings** → **Add binding** → tipo **KV
+   Namespace**. Variable: `SPONSOR_METRICS` (tiene que llamarse exactamente
+   así). Selecciona el namespace del paso 1.
+3. Guarda/Deploy. Reutiliza el mismo secret `ADMIN_KEY` que ya tengas
+   configurado para el panel de accesos — no hace falta crear otro.
+
+### Cómo verlo
+
+Es la misma clave de administrador que abre `admin/dashboard.html`: ahí
+aparece una tabla nueva "Ranking de patrocinios (demo)" con impresiones,
+"Ver la carta" y "Cómo llegar" por restaurante, ordenada por quién se
+lleva más interés real (carta + cómo llegar juntos).
+
+### Por qué en lotes y no una escritura por clic
+
+El plan gratis de KV son 1.000 escrituras/día para TODA la cuenta
+(compartidas con `LICENSES`/`ACCESS_LOG`/`CITY_CONTENT`). Si cada toque en
+"Ver la carta" disparara su propia petición al Worker, un puñado de
+pruebas podría acercarse a ese límite y dejar sin cuota al control de
+acceso real. Por eso `app.js` acumula los eventos en el propio móvil y
+los manda en un solo lote agregado al cerrar la ficha (o cada 2 minutos
+si se queda abierta) — un restaurante visto y tocado varias veces en una
+sesión sigue siendo 1 sola escritura, no una por evento.
+
 ## Rate limiting por IP (opcional, recomendado)
 
 Importante: como este Worker vive en un subdominio `workers.dev` (no en un
