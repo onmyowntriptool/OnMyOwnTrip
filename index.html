@@ -44,7 +44,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-  <link rel="stylesheet" href="styles.css?v=120" />
+  <link rel="stylesheet" href="styles.css?v=121" />
 </head>
 <body>
   <!-- PANTALLA DE ACCESO: se muestra ANTES que la de bienvenida cuando no
@@ -151,7 +151,7 @@
       </div>
     </div>
 
-    <span class="onboarding-version" id="appVersion">Beta V47</span>
+    <span class="onboarding-version" id="appVersion">Beta V48</span>
     <button type="button" class="onboarding-reset" id="obResetBtn">Reiniciar app</button>
     <a class="onboarding-legal" href="privacidad.html" id="obPrivacyLink">Privacidad y créditos</a>
   </div>
@@ -512,32 +512,34 @@
       </div>
 
       <div class="sheet-head">
-        <div class="sheet-thumb-wrap">
-          <img class="sheet-thumb" src="" alt="" loading="eager" draggable="false" />
-          <button type="button" class="sheet-thumb-retry" hidden aria-label="Reintentar cargar la imagen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M3 12a9 9 0 0 1 15.5-6.3M21 12a9 9 0 0 1-15.5 6.3"></path>
-              <path d="M3 5v5h5M21 19v-5h-5"></path>
-            </svg>
-          </button>
+        <!-- FIX (mobile, reportado: "no se llega ni a leer la historia" +
+             feedback de seguimiento sobre el rediseño anterior): categoría/
+             distancia ya no comparten columna con Llévame/cerrar (eso
+             obligaba a esa columna a ser tan ancha como el propio badge,
+             dejando muy poco ancho para el título/subtítulo de al lado, que
+             seguían necesitando más líneas de las que cabían). Ahora son una
+             franja propia A TODO EL ANCHO, arriba del todo (feedback: "eso
+             puede ir arriba donde señalo") -- así la fila de abajo
+             (miniatura + texto + Llévame/cerrar) parte de cero en ancho
+             disponible para el texto. -->
+        <div class="sheet-head-meta">
+          <span class="sheet-cat-badge">—</span>
+          <span class="sheet-distance" hidden></span>
         </div>
-        <div class="sheet-head-text">
-          <h2 class="sheet-title">—</h2>
-          <p class="sheet-sub">—</p>
-        </div>
-        <!-- FIX (mobile, reportado: "no se llega ni a leer la historia"):
-             categoría/distancia vivían dentro de .sheet-head-text, encima
-             del título -- le quitaban alto util a título/subtítulo (que
-             acababan cortados) mientras a la derecha, debajo de Llévame/
-             cerrar, quedaba una franja de la cabecera completamente vacía.
-             Se mudan aquí -- ARRIBA de Llévame/cerrar, no debajo (feedback:
-             "se puede mover arriba del llévame") -- para ocupar ese hueco
-             en vez de dejarlo en blanco. -->
-        <div class="sheet-head-actions">
-          <div class="sheet-head-meta">
-            <span class="sheet-cat-badge">—</span>
-            <span class="sheet-distance" hidden></span>
+        <div class="sheet-head-main">
+          <div class="sheet-thumb-wrap">
+            <img class="sheet-thumb" src="" alt="" loading="eager" draggable="false" />
+            <button type="button" class="sheet-thumb-retry" hidden aria-label="Reintentar cargar la imagen">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 0 1 15.5-6.3M21 12a9 9 0 0 1-15.5 6.3"></path>
+                <path d="M3 5v5h5M21 19v-5h-5"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="sheet-head-text">
+            <h2 class="sheet-title">—</h2>
+            <p class="sheet-sub">—</p>
           </div>
           <div class="sheet-head-actions-row">
             <button type="button" class="sheet-directions-btn" id="sheetDirectionsBtn" aria-label="Cómo llegar" hidden>

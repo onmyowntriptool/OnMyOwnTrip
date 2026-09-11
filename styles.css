@@ -2056,9 +2056,9 @@ html[data-mode="kids"] .bottom-sheet {
 
 .sheet-head {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px 12px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px 12px;
   flex-shrink: 0;
   /* BUG REAL (ver el comentario en .bottom-sheet sobre overflow-y:auto):
      esta es la fila con el título y el botón de cerrar -- la que NUNCA
@@ -2403,11 +2403,11 @@ html[data-mode="kids"] .bottom-sheet {
 }
 /* FIX (mobile, reportado: título/subtítulo cortados, "no se llega ni a leer
    la historia"): categoría y distancia ya no viven aquí (ver
-   .sheet-head-meta, dentro de .sheet-head-actions), y ya no se recorta el
-   texto con line-clamp -- la ficha entera scrollea (ver overflow-y:auto en
-   .bottom-sheet), así que no hay necesidad real de limitar las líneas del
-   título/subtítulo: mejor dejar que ocupen las que hagan falta a que se
-   corten a media frase con "…". */
+   .sheet-head-meta, ahora su propia franja arriba de todo), y ya no se
+   recorta el texto con line-clamp -- la ficha entera scrollea (ver
+   overflow-y:auto en .bottom-sheet), así que no hay necesidad real de
+   limitar las líneas del título/subtítulo: mejor dejar que ocupen las que
+   hagan falta a que se corten a media frase con "…". */
 .sheet-title {
   font-size: 15px;
   font-weight: 700;
@@ -2419,29 +2419,32 @@ html[data-mode="kids"] .bottom-sheet {
   line-height: 1.35;
   color: var(--color-text-soft);
 }
-/* FIX (mobile, mismo reporte): columna a la derecha del título para
-   categoría/distancia + Llévame/cerrar debajo -- antes esa franja bajo esos
-   dos botones quedaba vacía ("espacio inutilizado") porque badge y
-   distancia vivían arriba, dentro de .sheet-head-text. Va ARRIBA de
-   Llévame/cerrar, no debajo (feedback: "se puede mover arriba del
-   llévame"), alineada a la derecha para quedar pegada a esos botones. */
-.sheet-head-actions {
-  flex-shrink: 0;
+/* FIX (mobile, feedback de seguimiento): miniatura + texto + Llévame/cerrar,
+   la fila "de verdad" de la cabecera -- categoría/distancia ya NO comparten
+   esta fila (ver .sheet-head-meta más abajo), así que el título/subtítulo
+   parten con todo el ancho libre que dejan la miniatura y los dos botones,
+   en vez de competir también con el ancho del badge. */
+.sheet-head-main {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  padding-top: 1px;
+  align-items: flex-start;
+  gap: 12px;
 }
 .sheet-head-actions-row {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
 }
+/* FIX (mobile, feedback de seguimiento sobre el rediseño anterior: "eso
+   puede ir arriba donde señalo"): categoría + distancia ya no viven en una
+   columna junto a Llévame/cerrar (esa columna tenía que ser tan ancha como
+   el propio badge, dejándole muy poco sitio al título/subtítulo de al
+   lado). Ahora son su propia franja A TODO EL ANCHO, arriba del todo de la
+   cabecera -- badge a la izquierda, distancia a la derecha. */
 .sheet-head-meta {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 6px;
 }
