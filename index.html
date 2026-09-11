@@ -44,7 +44,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-  <link rel="stylesheet" href="styles.css?v=119" />
+  <link rel="stylesheet" href="styles.css?v=120" />
 </head>
 <body>
   <!-- PANTALLA DE ACCESO: se muestra ANTES que la de bienvenida cuando no
@@ -151,7 +151,7 @@
       </div>
     </div>
 
-    <span class="onboarding-version" id="appVersion">Beta V46</span>
+    <span class="onboarding-version" id="appVersion">Beta V47</span>
     <button type="button" class="onboarding-reset" id="obResetBtn">Reiniciar app</button>
     <a class="onboarding-legal" href="privacidad.html" id="obPrivacyLink">Privacidad y créditos</a>
   </div>
@@ -531,9 +531,14 @@
              del título -- le quitaban alto util a título/subtítulo (que
              acababan cortados) mientras a la derecha, debajo de Llévame/
              cerrar, quedaba una franja de la cabecera completamente vacía.
-             Se mudan aquí, apiladas bajo esos dos botones, para ocupar ese
-             hueco en vez de dejarlo en blanco. -->
+             Se mudan aquí -- ARRIBA de Llévame/cerrar, no debajo (feedback:
+             "se puede mover arriba del llévame") -- para ocupar ese hueco
+             en vez de dejarlo en blanco. -->
         <div class="sheet-head-actions">
+          <div class="sheet-head-meta">
+            <span class="sheet-cat-badge">—</span>
+            <span class="sheet-distance" hidden></span>
+          </div>
           <div class="sheet-head-actions-row">
             <button type="button" class="sheet-directions-btn" id="sheetDirectionsBtn" aria-label="Cómo llegar" hidden>
               <span id="sheetDirectionsLabel">Llévame</span>
@@ -548,10 +553,6 @@
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
-          </div>
-          <div class="sheet-head-meta">
-            <span class="sheet-cat-badge">—</span>
-            <span class="sheet-distance" hidden></span>
           </div>
         </div>
       </div>
@@ -741,7 +742,7 @@
   <!-- EXPERIMENTO TEMPORAL (rama experimento-patrocinios-demo) — BORRAR
        esta línea junto con data/sponsors-demo.js antes de fusionar a main. -->
   <script src="data/sponsors-demo.js?v=8"></script>
-  <script src="app.js?v=237"></script>
+  <script src="app.js?v=238"></script>
   <!-- Service Worker: cachea el shell de la app y las imágenes de POIs ya
        vistas, para que la audioguía siga funcionando con conexión
        intermitente (típico caminando por cascos históricos). Ruta relativa

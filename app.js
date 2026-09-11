@@ -3091,15 +3091,27 @@
       // texto, apilados verticalmente en ese mismo hueco -- la tarjeta
       // ocupa menos alto sin perder nada. BORRAR este comentario si se
       // retira el experimento (el layout se queda si el cambio se mantiene).
-      el.innerHTML = `<div class="photo"><img src="${sponsorIconUrl(sponsor)}" alt="" /></div>
-        <div class="body">
+      //
+      // FIX (feedback: la etiqueta "Contenido patrocinado" quedaba metida
+      // dentro de .body, a la derecha de la foto en vez de pegada al borde
+      // izquierdo de la tarjeta; la distancia iba suelta en su propia línea
+      // debajo del texto en vez de aprovechar esa misma fila de arriba):
+      // el label + la distancia ahora son una cabecera propia (.sponsor-head)
+      // a todo el ancho de la tarjeta, ANTES de la fila foto+texto+botones
+      // (.sponsor-body-row) -- una línea menos de alto en total.
+      el.innerHTML = `<div class="sponsor-head">
           <span class="label">${sd('sponsoredLabel')}</span>
-          <p><b>${sponsor.name}</b><br>${pickLang(sponsor.teaser)}</p>
           <span class="dist">${distLabel}</span>
         </div>
-        <div class="cta-col">
-          <button type="button" id="sponsorDemoMenuBtn">${sponsor.ctaLabel ? pickLang(sponsor.ctaLabel) : sd('seeMenuDefault')}</button>
-          <button type="button" id="sponsorDemoDirBtn">${sd('directions')}</button>
+        <div class="sponsor-body-row">
+          <div class="photo"><img src="${sponsorIconUrl(sponsor)}" alt="" /></div>
+          <div class="body">
+            <p><b>${sponsor.name}</b><br>${pickLang(sponsor.teaser)}</p>
+          </div>
+          <div class="cta-col">
+            <button type="button" id="sponsorDemoMenuBtn">${sponsor.ctaLabel ? pickLang(sponsor.ctaLabel) : sd('seeMenuDefault')}</button>
+            <button type="button" id="sponsorDemoDirBtn">${sd('directions')}</button>
+          </div>
         </div>`;
       const menuBtn = $('#sponsorDemoMenuBtn', el);
       if (menuBtn) menuBtn.addEventListener('click', () => {
