@@ -2419,11 +2419,10 @@ html[data-mode="kids"] .bottom-sheet {
   line-height: 1.35;
   color: var(--color-text-soft);
 }
-/* FIX (mobile, feedback de seguimiento): miniatura + texto + Llévame/cerrar,
-   la fila "de verdad" de la cabecera -- categoría/distancia ya NO comparten
-   esta fila (ver .sheet-head-meta más abajo), así que el título/subtítulo
-   parten con todo el ancho libre que dejan la miniatura y los dos botones,
-   en vez de competir también con el ancho del badge. */
+/* FIX (mobile, reportado: el subtítulo seguía en 4 líneas en vez de 2 --
+   "Llévame"/cerrar se mudaron arriba de esta fila (ver .sheet-head-meta),
+   así que aquí ya solo queda miniatura + texto, que ahora sí tiene casi
+   todo el ancho de la ficha para él solo. */
 .sheet-head-main {
   display: flex;
   align-items: flex-start;
@@ -2436,17 +2435,27 @@ html[data-mode="kids"] .bottom-sheet {
   gap: 8px;
 }
 /* FIX (mobile, feedback de seguimiento sobre el rediseño anterior: "eso
-   puede ir arriba donde señalo"): categoría + distancia ya no viven en una
-   columna junto a Llévame/cerrar (esa columna tenía que ser tan ancha como
-   el propio badge, dejándole muy poco sitio al título/subtítulo de al
-   lado). Ahora son su propia franja A TODO EL ANCHO, arriba del todo de la
-   cabecera -- badge a la izquierda, distancia a la derecha. */
+   puede ir arriba donde señalo" + "tiene 4 líneas, pudiera colocarse en
+   dos"): categoría/distancia Y Llévame/cerrar viven ahora en esta misma
+   franja de arriba, a todo el ancho -- el grupo categoría+distancia a la
+   izquierda, Llévame+cerrar a la derecha. Antes Llévame/cerrar vivían en
+   la fila de abajo, junto al texto, obligando a esa fila a repartir su
+   ancho entre miniatura+texto+esos dos botones; sacarlos de ahí le
+   devuelve al texto casi todo el ancho de la ficha (ver .sheet-head-main),
+   así que el mismo subtítulo necesita bastantes menos líneas. */
 .sheet-head-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
+  gap: 8px;
+}
+.sheet-head-meta-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
+  min-width: 0;
 }
 .sheet-cat-badge {
   font-size: 10px;
