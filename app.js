@@ -3274,7 +3274,7 @@
         ? pickLang(match.sponsor.audioLine)
         : buildSponsorOutroFallback(match.sponsor, match.distance);
       SPEECH.speak(() => { STATE.audio.overrideText = null; done(); });
-    }, 350);
+    }, 300);
   };
 
   // Cierre de "Introducción" pospuesto (ver showFullIntro): se llama como
@@ -3296,7 +3296,7 @@
       if (STATE.activePoiId !== poi.id || STATE.audio.playing) { STATE.audio.overrideText = null; return; }
       STATE.audio.overrideText = pending.text;
       SPEECH.speak(() => { STATE.audio.overrideText = null; });
-    }, 350);
+    }, 300);
   };
 
   // EXPERIMENTO (rama experimento-vista-satelite): a diferencia de
