@@ -4554,6 +4554,9 @@
     $('#brandIcon')?.addEventListener('click', () => {
       if (STATE.mode === 'adult') startTutorial();
     });
+    // Botón "?" siempre visible en el header, para quien quiera repetir el
+    // tutorial sin conocer el atajo oculto de tocar el logo/Billy de arriba.
+    $('#tutorialHelpBtn')?.addEventListener('click', () => startTutorial());
   };
 
   /* =========================================================

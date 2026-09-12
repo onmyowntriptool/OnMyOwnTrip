@@ -44,7 +44,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-  <link rel="stylesheet" href="styles.css?v=125" />
+  <link rel="stylesheet" href="styles.css?v=126" />
 </head>
 <body>
   <!-- PANTALLA DE ACCESO: se muestra ANTES que la de bienvenida cuando no
@@ -151,7 +151,7 @@
       </div>
     </div>
 
-    <span class="onboarding-version" id="appVersion">Beta V54</span>
+    <span class="onboarding-version" id="appVersion">Beta V55</span>
     <button type="button" class="onboarding-reset" id="obResetBtn">Reiniciar app</button>
     <a class="onboarding-legal" href="privacidad.html" id="obPrivacyLink">Privacidad y créditos</a>
   </div>
@@ -277,6 +277,13 @@
         </div>
 
         <div class="header-actions">
+          <button type="button" class="tutorial-help-btn" id="tutorialHelpBtn" aria-label="Ver tutorial" title="Ver tutorial">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.4-1.2 1.9-1.9 2.8-.4.5-.6 1-.6 1.7"></path>
+              <line x1="12" y1="16.5" x2="12" y2="16.51"></line>
+            </svg>
+          </button>
           <button type="button" class="reward-chest-btn" id="rewardChestBtn" hidden aria-label="Abrir la mochila de viaje">
             <canvas id="rewardChestBtnIcon" width="34" height="34"></canvas>
           </button>
@@ -777,7 +784,7 @@
   <!-- EXPERIMENTO TEMPORAL (rama experimento-patrocinios-demo) — BORRAR
        esta línea junto con data/sponsors-demo.js antes de fusionar a main. -->
   <script src="data/sponsors-demo.js?v=8"></script>
-  <script src="app.js?v=241"></script>
+  <script src="app.js?v=242"></script>
   <!-- Service Worker: cachea el shell de la app y las imágenes de POIs ya
        vistas, para que la audioguía siga funcionando con conexión
        intermitente (típico caminando por cascos históricos). Ruta relativa

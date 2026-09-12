@@ -1010,6 +1010,24 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.45));
 }
 
+/* ---------- BOTON "VER TUTORIAL" (repetirlo a voluntad desde el header) ---------- */
+.tutorial-help-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 0;
+  background: color-mix(in srgb, #fff 22%, transparent);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+  padding: 0;
+}
+.tutorial-help-btn:active { transform: scale(0.9); }
+.tutorial-help-btn:hover { background: color-mix(in srgb, #fff 32%, transparent); }
+
 /* ---------- COFRE DEL TESORO (modo niño) ---------- */
 .reward-chest-btn {
   width: 34px;
