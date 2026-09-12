@@ -98,6 +98,12 @@
   .field { display: flex; flex-direction: column; gap: 6px; }
   .field.-span2 { grid-column: 1 / -1; }
   .field label { font-size: 12px; color: var(--text-soft); font-weight: 600; }
+  /* Campo obligatorio vacío al intentar guardar (ver spSaveBtn). Se quita
+     solo en cuanto el admin escribe algo en ese campo. */
+  .field.-invalid label { color: #F87171; }
+  .field.-invalid input, .field.-invalid select, .field.-invalid textarea {
+    border-color: #F87171; box-shadow: 0 0 0 1px #F87171;
+  }
   .field input, .field select, .field textarea {
     border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2);
     color: var(--text); padding: 8px 10px; font-size: 13px; font-family: inherit;
@@ -255,6 +261,7 @@
           <div class="form-grid">
             <div class="field">
               <label for="spId">ID único</label>
+              <span class="sub-hint">Se genera solo a partir del nombre — cámbialo solo si ya hay otro igual.</span>
               <input type="text" id="spId" placeholder="p.ej. churreria-farolillos" autocapitalize="off" spellcheck="false">
             </div>
             <div class="field">
@@ -300,11 +307,16 @@
               <input type="date" id="spStartDate">
             </div>
             <div class="field">
+              <label for="spContractMonths">Meses contratados (opcional)</label>
+              <span class="sub-hint">Rellena la fecha de fin sola, contando desde el inicio. Si es 1, dura un mes.</span>
+              <input type="number" id="spContractMonths" min="1" max="36" step="1" placeholder="p.ej. 1">
+            </div>
+            <div class="field">
               <label for="spEndDate">Fecha fin (opcional)</label>
               <input type="date" id="spEndDate">
             </div>
           </div>
-          <p class="hint-small">Sin fechas, el patrocinio está activo siempre. Con ellas, desaparece solo de la app al pasar la fecha de fin.</p>
+          <p class="hint-small">Sin fechas, el patrocinio está activo siempre. Con ellas, desaparece solo de la app al pasar la fecha de fin. La fecha de fin siempre se puede ajustar a mano después.</p>
 
           <div class="field -checkbox" style="margin-bottom:14px">
             <input type="checkbox" id="spAudioMention">
@@ -565,6 +577,60 @@
     $('#spAudioLineFields').hidden = !defaults.audioMention;
   });
 
+  // ID único = nombre convertido a slug (minúsculas, sin acentos, espacios
+  // a guiones) — se recalcula mientras el admin escribe el nombre, y deja de
+  // seguirlo en cuanto toca el campo ID a mano (p.ej. porque ya existe otro
+  // patrocinador con el mismo nombre). resetSponsorForm/importPendingSponsor
+  // reactivan el seguimiento para cada alta nueva; en edición (spId
+  // deshabilitado) nunca se toca.
+  const slugify = (s) => String(s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(new RegExp('[' + String.fromCharCode(0x0300) + '-' + String.fromCharCode(0x036f) + ']', 'g'), '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+  let spIdAutoSynced = true;
+  const syncSpIdFromName = () => {
+    if (!spIdAutoSynced || $('#spId').disabled) return;
+    $('#spId').value = slugify($('#spName').value);
+    markFieldInvalid('spId', false);
+  };
+  $('#spName').addEventListener('input', syncSpIdFromName);
+  $('#spId').addEventListener('input', () => { spIdAutoSynced = false; });
+
+  // Fecha fin = fecha inicio + N meses contratados (último día cubierto, no
+  // el primero del mes siguiente) — se recalcula sola al tocar cualquiera de
+  // los dos a mano; la fecha de fin resultante se puede seguir ajustando
+  // después sin que nada la vuelva a pisar hasta el próximo cambio de inicio
+  // o de meses.
+  const addMonthsToDateStr = (dateStr, months) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, (m - 1) + Number(months), d));
+    dt.setUTCDate(dt.getUTCDate() - 1);
+    return dt.toISOString().slice(0, 10);
+  };
+  const recomputeEndDate = () => {
+    const start = $('#spStartDate').value;
+    const months = parseInt($('#spContractMonths').value, 10);
+    if (!start || !months || months < 1) return;
+    $('#spEndDate').value = addMonthsToDateStr(start, months);
+  };
+  $('#spStartDate').addEventListener('change', recomputeEndDate);
+  $('#spContractMonths').addEventListener('change', recomputeEndDate);
+
+  // Campos obligatorios marcados en rojo (ver spSaveBtn) — se limpia el
+  // marcado de un campo en cuanto el admin escribe algo en él.
+  const markFieldInvalid = (inputId, invalid) => {
+    const el = $('#' + inputId);
+    const field = el && el.closest('.field');
+    if (field) field.classList.toggle('-invalid', invalid);
+  };
+  const REQUIRED_SPONSOR_FIELDS = ['spId', 'spName', 'spCity', 'spLat', 'spLng', 'spTeaserEs'];
+  const clearInvalidMarks = () => REQUIRED_SPONSOR_FIELDS.forEach((id) => markFieldInvalid(id, false));
+  REQUIRED_SPONSOR_FIELDS.forEach((id) => {
+    $('#' + id).addEventListener('input', () => markFieldInvalid(id, false));
+  });
+
   const todayISO = () => new Date().toISOString().slice(0, 10);
 
   const sponsorStatus = (s) => {
@@ -700,6 +766,7 @@
     importingPendingId = p.id;
     $('#sponsorFormTitle').textContent = 'Importando solicitud: ' + p.name;
     $('#spName').value = p.name || '';
+    syncSpIdFromName();
     $('#spTeaserEs').value = (p.teaser && p.teaser.es) || '';
     $('#spTeaserEn').value = (p.teaser && p.teaser.en) || '';
     $('#spCtaEs').value = (p.ctaLabel && p.ctaLabel.es) || '';
@@ -750,8 +817,9 @@
   const resetSponsorForm = () => {
     editingSponsorId = null;
     importingPendingId = null;
+    spIdAutoSynced = true;
     $('#sponsorFormTitle').textContent = 'Nuevo patrocinador';
-    ['spId', 'spName', 'spCity', 'spLat', 'spLng', 'spStartDate', 'spEndDate',
+    ['spId', 'spName', 'spCity', 'spLat', 'spLng', 'spStartDate', 'spEndDate', 'spContractMonths',
       'spTeaserEs', 'spTeaserEn', 'spCtaEs', 'spCtaEn', 'spMenuPdf', 'spAudioLineEs', 'spAudioLineEn']
       .forEach((id) => { $('#' + id).value = ''; });
     $('#spTier').value = 'bronce';
@@ -762,11 +830,13 @@
     $('#spId').disabled = false;
     $('#spMenuRows').innerHTML = '';
     $('#spFormError').hidden = true;
+    clearInvalidMarks();
   };
 
   const fillSponsorForm = (s) => {
     editingSponsorId = s.id;
     importingPendingId = null;
+    spIdAutoSynced = false;
     $('#sponsorFormTitle').textContent = 'Editando: ' + s.name;
     $('#spId').value = s.id;
     $('#spId').disabled = true; // el id es la clave en KV: no se cambia al editar, solo al crear
@@ -778,6 +848,7 @@
     $('#spLat').value = (s.coords && s.coords[0]) || '';
     $('#spLng').value = (s.coords && s.coords[1]) || '';
     $('#spStartDate').value = s.startDate || '';
+    $('#spContractMonths').value = s.contractMonths || '';
     $('#spEndDate').value = s.endDate || '';
     $('#spTeaserEs').value = (s.teaser && s.teaser.es) || '';
     $('#spTeaserEn').value = (s.teaser && s.teaser.en) || '';
@@ -791,6 +862,7 @@
     $('#spMenuRows').innerHTML = '';
     (s.menu || []).forEach((row) => addMenuRow(row.item, row.price));
     $('#spFormError').hidden = true;
+    clearInvalidMarks();
     $('#tabManage').scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -812,7 +884,8 @@
       coords: [parseFloat($('#spLat').value), parseFloat($('#spLng').value)],
       teaser: { es: $('#spTeaserEs').value.trim(), en: $('#spTeaserEn').value.trim() },
       startDate: $('#spStartDate').value || undefined,
-      endDate: $('#spEndDate').value || undefined
+      endDate: $('#spEndDate').value || undefined,
+      contractMonths: parseInt($('#spContractMonths').value, 10) || undefined
     };
     const ctaEs = $('#spCtaEs').value.trim();
     const ctaEn = $('#spCtaEn').value.trim();
@@ -843,9 +916,21 @@
     const err = $('#spFormError');
     err.hidden = true;
     const sponsor = collectSponsorForm();
-    if (!sponsor.id || !sponsor.name || !sponsor.city || !Number.isFinite(sponsor.coords[0]) || !Number.isFinite(sponsor.coords[1]) || !sponsor.teaser.es) {
+
+    const invalid = {
+      spId: !sponsor.id,
+      spName: !sponsor.name,
+      spCity: !sponsor.city,
+      spLat: !Number.isFinite(sponsor.coords[0]),
+      spLng: !Number.isFinite(sponsor.coords[1]),
+      spTeaserEs: !sponsor.teaser.es
+    };
+    REQUIRED_SPONSOR_FIELDS.forEach((id) => markFieldInvalid(id, invalid[id]));
+    const firstInvalidId = REQUIRED_SPONSOR_FIELDS.find((id) => invalid[id]);
+    if (firstInvalidId) {
       err.hidden = false;
-      err.textContent = 'Faltan campos obligatorios: ID, nombre, ciudad, coordenadas y teaser (ES).';
+      err.textContent = 'Faltan campos obligatorios: revisa lo marcado en rojo.';
+      $('#' + firstInvalidId).scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     const btn = $('#spSaveBtn');

@@ -773,6 +773,15 @@ function sanitizeSponsorInput(raw) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(startDate)) sponsor.startDate = startDate;
   if (/^\d{4}-\d{2}-\d{2}$/.test(endDate)) sponsor.endDate = endDate;
 
+  // Solo informativo (cuántos meses se contrataron) — admin/dashboard.html
+  // lo usa para rellenar endDate solo, pero se guarda aparte porque
+  // endDate se puede editar después a mano sin perder de vista cuánto se
+  // pactó originalmente.
+  const contractMonths = parseInt(raw.contractMonths, 10);
+  if (Number.isFinite(contractMonths) && contractMonths > 0) {
+    sponsor.contractMonths = Math.min(36, contractMonths);
+  }
+
   return sponsor;
 }
 
