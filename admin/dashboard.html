@@ -50,7 +50,7 @@
 
   .dashboard, .gate.-hidden { display: none; }
   .dashboard.-visible { display: block; }
-  .dashboard { max-width: 900px; margin: 0 auto; }
+  .dashboard { max-width: 1180px; margin: 0 auto; }
 
   .top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 24px; }
   .refresh-btn { padding: 0 16px; white-space: nowrap; }
@@ -58,11 +58,19 @@
   section { margin-bottom: 32px; }
   h2 { font-size: 13px; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 12px; }
 
+  /* Antes forzaba una sola línea por celda (white-space: nowrap) y había que
+     hacer scroll horizontal para ver Estado/Editar/Borrar en las tablas de
+     Gestión, con nombres largos tipo "(PRUEBA — BORRAR)". Ahora el texto que
+     no cabe salta de línea dentro de su propia celda -- la tabla queda más
+     compacta en vertical en vez de desbordar hacia los lados. Las columnas
+     cortas (fechas, estado, botones) siguen en una sola línea porque su
+     contenido nunca es tan largo como para necesitarlo. */
   .table-wrap { overflow-x: auto; border-radius: 12px; background: var(--surface); }
-  table { width: 100%; border-collapse: collapse; min-width: 480px; }
-  th, td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-  th { color: var(--text-soft); font-weight: 600; background: var(--surface-2); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: break-word; }
+  th { color: var(--text-soft); font-weight: 600; background: var(--surface-2); white-space: nowrap; }
   tr:last-child td { border-bottom: none; }
+  .row-actions { white-space: nowrap; }
 
   .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
   .badge.-ok { background: #14532D; color: #86EFAC; }
