@@ -4403,14 +4403,47 @@
   // callback de SPEECH.speak: un cancel() a mitad de frase dispara un
   // "canceled" que el propio motor traga a propósito (no llama al
   // callback), así que hay que soltar el texto puntual aquí mismo.
+  // Audio propio del tutorial para el mismo fallback a CLOUD_TTS que ya usa
+  // startAudio con los POI (ver su comentario: WebView de Capacitor en
+  // Android no tiene window.speechSynthesis, así que sin esto el tutorial
+  // se quedaba mudo del todo en la app empaquetada). No reutiliza el
+  // cloudAudioEl compartido de la ficha de POI para no heredar sus
+  // onended/onerror (maybeShowFirstKidsQuiz, sponsor demo, etc.), que no
+  // pintan nada durante el tutorial.
+  let tutorialAudioEl = null;
   const stopTutorialSpeech = () => {
     SPEECH.cancel();
+    if (tutorialAudioEl) {
+      tutorialAudioEl.pause();
+      tutorialAudioEl.onended = tutorialAudioEl.onerror = null;
+    }
     STATE.audio.overrideText = null;
   };
   const speakTutorialStep = (step) => {
-    if (!SPEECH.isSupported()) return;
-    STATE.audio.overrideText = `${pickLang(step.title)}. ${pickLang(step.text)}`;
-    SPEECH.speak(() => { STATE.audio.overrideText = null; });
+    const text = `${pickLang(step.title)}. ${pickLang(step.text)}`;
+    STATE.audio.overrideText = text;
+    if (SPEECH.isSupported()) {
+      SPEECH.speak(() => { STATE.audio.overrideText = null; });
+      return;
+    }
+    if (!CLOUD_TTS.isConfigured()) { STATE.audio.overrideText = null; return; }
+    const playCloudUrl = (url) => {
+      if (!tutorialAudioEl) tutorialAudioEl = (typeof Audio !== 'undefined') ? new Audio() : null;
+      if (!tutorialAudioEl) { STATE.audio.overrideText = null; return; }
+      tutorialAudioEl.onended = tutorialAudioEl.onerror = () => { STATE.audio.overrideText = null; };
+      tutorialAudioEl.src = url;
+      tutorialAudioEl.currentTime = 0;
+      tutorialAudioEl.play().catch(() => { STATE.audio.overrideText = null; });
+    };
+    const cachedUrl = CLOUD_TTS.getReadyUrl(text);
+    if (cachedUrl) { playCloudUrl(cachedUrl); return; }
+    CLOUD_TTS.fetchAndCache(text).then((url) => {
+      // Si mientras llegaba el audio ya se pasó a otro paso (o se cerró el
+      // tutorial), overrideText ya no es este texto: se descarta sin sonar
+      // encima del paso nuevo, igual que hace startAudio con STATE.activePoiId.
+      if (url && STATE.audio.overrideText === text) playCloudUrl(url);
+      else STATE.audio.overrideText = null;
+    });
   };
 
   const showTutorialStep = (index) => {
@@ -5252,6 +5285,12 @@
       // startAudio más abajo, que ya sabe pedir la voz en la nube al vuelo
       // cuando no hay síntesis local) — sin esto, la app se quedaba muda
       // ahí porque esta comprobación solo miraba la voz del navegador.
+      // FIX (mismo mecanismo que showFullIntro/showVisitInfo): un
+      // overrideText de otro POI interrumpido a medias (mención de
+      // patrocinador, "cómo llegar"...) no se limpia solo, así que sin este
+      // borrado la bienvenida de este POI nuevo podía sonar con ese texto
+      // viejo en vez de la suya.
+      STATE.audio.overrideText = null;
       if ((SPEECH.isSupported() || CLOUD_TTS.isConfigured()) && !STATE.audio.playing) startAudio(false, true);
     }
     renderAiMessages();
@@ -5644,6 +5683,12 @@
     renderAiMessages();
     scrollAiToBottom();
     saveState();
+    // FIX (reportado: el audio narraba la mención del patrocinador -- u otro
+    // "texto puntual" ya cortado -- en vez del horario/precio real). Un
+    // overrideText anterior interrumpido con SPEECH.cancel() no limpia solo
+    // (ver el mismo fix en queueAiMessage más abajo): sin este borrado
+    // explícito, buildNarrativeText seguía devolviendo ese texto viejo.
+    STATE.audio.overrideText = null;
     if (STATE.activePoiId === poi.id) startAudio(false, true);
   };
 
@@ -5659,6 +5704,12 @@
     renderAiMessages();
     scrollAiToBottom();
     saveState();
+    // FIX (reportado: al tocar "Introducción" el audio narraba la mención
+    // del patrocinador -- u otro "texto puntual" ya cortado -- en vez de la
+    // intro real). Mismo fix que showVisitInfo/queueAiMessage: un
+    // overrideText anterior interrumpido con SPEECH.cancel() no se limpia
+    // solo, así que buildNarrativeText seguía devolviendo ese texto viejo.
+    STATE.audio.overrideText = null;
     if (STATE.activePoiId === poi.id) startAudio(false, true);
   };
 
