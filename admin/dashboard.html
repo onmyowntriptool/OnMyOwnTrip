@@ -69,6 +69,17 @@
   .badge.-fail { background: #7F1D1D; color: #FCA5A5; }
 
   .empty { color: var(--text-soft); font-size: 13px; padding: 18px; text-align: center; }
+
+  /* Pestañas: separan la revisión de accesos/licencias del ranking de
+     patrocinios en vez de apilarlas una debajo de otra -- antes había que
+     bajar hasta el final para ver el ranking. */
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .tab-btn {
+    border: 0; background: none; color: var(--text-soft); font-weight: 700; font-size: 13.5px;
+    padding: 10px 16px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab-btn.-active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -93,38 +104,47 @@
       </div>
     </div>
 
-    <section>
-      <h2>Visitas por usuario</h2>
-      <div class="table-wrap">
-        <table id="visitsTable">
-          <thead><tr><th>Usuario</th><th>Visitas</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab-btn -active" id="tabBtnAccess" role="tab" aria-selected="true">Accesos</button>
+      <button type="button" class="tab-btn" id="tabBtnSponsors" role="tab" aria-selected="false">Patrocinios</button>
+    </div>
 
-    <section>
-      <h2>Historial reciente (últimos 200 eventos)</h2>
-      <div class="table-wrap">
-        <table id="historyTable">
-          <thead><tr><th>Fecha y hora</th><th>Usuario</th><th>Tipo</th><th>Resultado</th><th>IP</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
+    <div class="tab-panel" id="tabAccess" role="tabpanel">
+      <section>
+        <h2>Visitas por usuario</h2>
+        <div class="table-wrap">
+          <table id="visitsTable">
+            <thead><tr><th>Usuario</th><th>Visitas</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h2>Historial reciente (últimos 200 eventos)</h2>
+        <div class="table-wrap">
+          <table id="historyTable">
+            <thead><tr><th>Fecha y hora</th><th>Usuario</th><th>Tipo</th><th>Resultado</th><th>IP</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
 
     <!-- EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo).
          BORRAR esta sección entera antes de fusionar nada de esta rama a main. -->
-    <section>
-      <h2>Ranking de patrocinios (demo) — por patrocinador, no por usuario</h2>
-      <p class="hint" style="margin-top:-6px">Ordenado por interés real ("Ver la carta" + "Cómo llegar" juntos), no por impresiones. Incluye restaurantes, cafeterías y hoteles.</p>
-      <div class="table-wrap">
-        <table id="sponsorRankTable">
-          <thead><tr><th>Patrocinador</th><th>Impresiones</th><th>Ver la carta</th><th>Cómo llegar</th><th>Interés</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
+    <div class="tab-panel" id="tabSponsors" role="tabpanel" hidden>
+      <section>
+        <h2>Ranking de patrocinios (demo) — por patrocinador, no por usuario</h2>
+        <p class="hint" style="margin-top:-6px">Ordenado por interés real ("Ver la carta" + "Cómo llegar" juntos), no por impresiones. Incluye restaurantes, cafeterías y hoteles.</p>
+        <div class="table-wrap">
+          <table id="sponsorRankTable">
+            <thead><tr><th>Patrocinador</th><th>Impresiones</th><th>Ver la carta</th><th>Cómo llegar</th><th>Interés</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
   </div>
 
 <script>
@@ -291,6 +311,27 @@
       clearBtn.textContent = '🗑️ Borrar historial';
     }
   });
+
+  // Pestañas Accesos/Patrocinios: "Borrar historial" solo tiene sentido en
+  // la de Accesos (borra licencias/visitas, no el ranking de patrocinios),
+  // así que se oculta al cambiar a la otra. "Actualizar" se deja siempre
+  // visible: loadDashboard ya trae ambos juegos de datos de una sola vez.
+  const tabBtnAccess = $('#tabBtnAccess');
+  const tabBtnSponsors = $('#tabBtnSponsors');
+  const tabAccess = $('#tabAccess');
+  const tabSponsors = $('#tabSponsors');
+  const showTab = (name) => {
+    const isAccess = name === 'access';
+    tabAccess.hidden = !isAccess;
+    tabSponsors.hidden = isAccess;
+    tabBtnAccess.classList.toggle('-active', isAccess);
+    tabBtnAccess.setAttribute('aria-selected', String(isAccess));
+    tabBtnSponsors.classList.toggle('-active', !isAccess);
+    tabBtnSponsors.setAttribute('aria-selected', String(!isAccess));
+    clearBtn.hidden = !isAccess;
+  };
+  tabBtnAccess.addEventListener('click', () => showTab('access'));
+  tabBtnSponsors.addEventListener('click', () => showTab('sponsors'));
 </script>
 </body>
 </html>
