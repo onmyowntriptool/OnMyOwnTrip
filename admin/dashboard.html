@@ -85,6 +85,14 @@
      "SPONSORS" (ver worker/README.md) -- formulario + tabla + import JSON. */
   .form-card { background: var(--surface); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
   .form-card h3 { font-size: 14px; margin: 0 0 14px; }
+  /* Separa dentro de la misma ficha lo que rellena el negocio (vía
+     patrocinador.html) de lo que decides tú al importarlo/darlo de alta. */
+  .form-section-label {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent);
+    margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .form-section-label span { color: var(--text-soft); text-transform: none; letter-spacing: normal; font-weight: 400; }
+  .sub-hint { display: block; font-size: 11px; color: var(--text-soft); font-weight: 400; margin-top: -2px; }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-bottom: 14px; }
   @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
   .field { display: flex; flex-direction: column; gap: 6px; }
@@ -182,6 +190,21 @@
          (ver worker/README.md, sección "Gestión de patrocinadores"). -->
     <div class="tab-panel" id="tabManage" role="tabpanel" hidden>
       <section>
+        <h2>Solicitudes pendientes</h2>
+        <p class="hint" style="margin-top:-6px">
+          Manda este enlace al negocio para que rellene sus propios datos:
+          <a href="../patrocinador.html" target="_blank" id="sponsorFormLink" style="color:var(--accent)">patrocinador.html</a>.
+          Lo que envíen aparece aquí para que lo revises antes de que se publique nada.
+        </p>
+        <div class="table-wrap">
+          <table id="sponsorsPendingTable">
+            <thead><tr><th>Negocio</th><th>Teaser</th><th>Contacto</th><th>Recibido</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
         <h2>Patrocinadores</h2>
         <div class="table-wrap">
           <table id="sponsorsManageTable">
@@ -194,14 +217,45 @@
       <section>
         <div class="form-card">
           <h3 id="sponsorFormTitle">Nuevo patrocinador</h3>
+
+          <h4 class="form-section-label">Datos del negocio <span>— los rellena el cliente</span></h4>
+          <div class="form-grid">
+            <div class="field">
+              <label for="spName">Nombre</label>
+              <input type="text" id="spName" placeholder="Nombre del negocio">
+            </div>
+            <div class="field -span2">
+              <label for="spTeaserEs">Teaser (ES)</label>
+              <textarea id="spTeaserEs" placeholder="Frase corta que aparece en la ficha del POI cercano."></textarea>
+            </div>
+            <div class="field -span2">
+              <label for="spTeaserEn">Teaser (EN)</label>
+              <textarea id="spTeaserEn" placeholder="Same short line, in English."></textarea>
+            </div>
+            <div class="field">
+              <label for="spCtaEs">Texto del botón (ES, opcional)</label>
+              <input type="text" id="spCtaEs" placeholder="Ver la carta (por defecto)">
+            </div>
+            <div class="field">
+              <label for="spCtaEn">Texto del botón (EN, opcional)</label>
+              <input type="text" id="spCtaEn" placeholder="See the menu (default)">
+            </div>
+            <div class="field -span2">
+              <label for="spMenuPdf">PDF de la carta (URL, opcional)</label>
+              <input type="text" id="spMenuPdf" placeholder="assets/demo/carta.pdf o URL completa">
+            </div>
+          </div>
+          <div id="spMenuSection">
+            <p class="hint-small" style="margin-top:0">Carta / precios (opcional, en vez de o además del PDF)</p>
+            <div class="menu-rows" id="spMenuRows"></div>
+            <button type="button" class="small-btn" id="spAddMenuRow">+ Añadir línea</button>
+          </div>
+
+          <h4 class="form-section-label" style="margin-top:22px">Configuración interna <span>— la decides tú</span></h4>
           <div class="form-grid">
             <div class="field">
               <label for="spId">ID único</label>
               <input type="text" id="spId" placeholder="p.ej. churreria-farolillos" autocapitalize="off" spellcheck="false">
-            </div>
-            <div class="field">
-              <label for="spName">Nombre</label>
-              <input type="text" id="spName" placeholder="Nombre del negocio">
             </div>
             <div class="field">
               <label for="spCity">Ciudad</label>
@@ -230,6 +284,7 @@
             </div>
             <div class="field">
               <label for="spRadius">Radio (metros)</label>
+              <span class="sub-hint">Se rellena solo según el nivel — cámbialo si este caso concreto necesita otro.</span>
               <input type="number" id="spRadius" min="50" max="2000" step="10" value="150">
             </div>
             <div class="field">
@@ -251,32 +306,9 @@
           </div>
           <p class="hint-small">Sin fechas, el patrocinio está activo siempre. Con ellas, desaparece solo de la app al pasar la fecha de fin.</p>
 
-          <div class="form-grid">
-            <div class="field -span2">
-              <label for="spTeaserEs">Teaser (ES)</label>
-              <textarea id="spTeaserEs" placeholder="Frase corta que aparece en la ficha del POI cercano."></textarea>
-            </div>
-            <div class="field -span2">
-              <label for="spTeaserEn">Teaser (EN)</label>
-              <textarea id="spTeaserEn" placeholder="Same short line, in English."></textarea>
-            </div>
-            <div class="field">
-              <label for="spCtaEs">Texto del botón (ES, opcional)</label>
-              <input type="text" id="spCtaEs" placeholder="Ver la carta (por defecto)">
-            </div>
-            <div class="field">
-              <label for="spCtaEn">Texto del botón (EN, opcional)</label>
-              <input type="text" id="spCtaEn" placeholder="See the menu (default)">
-            </div>
-            <div class="field -span2">
-              <label for="spMenuPdf">PDF de la carta (URL, opcional)</label>
-              <input type="text" id="spMenuPdf" placeholder="assets/demo/carta.pdf o URL completa">
-            </div>
-          </div>
-
           <div class="field -checkbox" style="margin-bottom:14px">
             <input type="checkbox" id="spAudioMention">
-            <label for="spAudioMention">Mención por voz al terminar la audioguía (solo tiene efecto real en nivel Oro)</label>
+            <label for="spAudioMention">Mención por voz al terminar la audioguía <span class="sub-hint">(se marca sola en nivel Oro — solo tiene efecto real ahí)</span></label>
           </div>
           <div class="form-grid" id="spAudioLineFields" hidden>
             <div class="field -span2">
@@ -289,10 +321,6 @@
             </div>
           </div>
 
-          <h3 style="margin-top:18px">Carta / precios (opcional, en vez de o además del PDF)</h3>
-          <div class="menu-rows" id="spMenuRows"></div>
-          <button type="button" class="small-btn" id="spAddMenuRow">+ Añadir línea</button>
-
           <div class="form-actions" style="margin-top:18px">
             <button type="button" class="refresh-btn" id="spSaveBtn">Guardar patrocinador</button>
             <button type="button" class="small-btn" id="spCancelBtn">Cancelar edición</button>
@@ -304,7 +332,7 @@
       <section>
         <div class="form-card import-card">
           <h3>Importar varios de una vez (JSON)</h3>
-          <p class="hint-small" style="margin-top:-6px">Pega un array con la misma forma que tenía data/sponsors-demo.js. Solo hace falta para la migración inicial.</p>
+          <p class="hint-small" style="margin-top:-6px">Pega un array con esta misma forma. Solo hace falta para migraciones o altas en bloque.</p>
           <textarea id="spImportJson" placeholder="[ { &quot;id&quot;: ..., &quot;name&quot;: ..., ... } ]"></textarea>
           <div class="form-actions" style="margin-top:10px">
             <button type="button" class="refresh-btn" id="spImportBtn">Importar</button>
@@ -500,7 +528,10 @@
     tabBtnManage.classList.toggle('-active', name === 'manage');
     tabBtnManage.setAttribute('aria-selected', String(name === 'manage'));
     clearBtn.hidden = name !== 'access';
-    if (name === 'manage') loadSponsorsAdmin();
+    if (name === 'manage') {
+      loadSponsorsAdmin();
+      loadSponsorsPending();
+    }
   };
   tabBtnAccess.addEventListener('click', () => showTab('access'));
   tabBtnSponsors.addEventListener('click', () => showTab('sponsors'));
@@ -513,6 +544,26 @@
   // ============================================================
   let sponsorsCache = [];
   let editingSponsorId = null;
+  let pendingCache = [];
+  let importingPendingId = null;
+
+  // Al elegir el nivel a mano se rellenan solos el radio y la mención de voz
+  // habituales de ese nivel (siguen siendo editables después, por si este
+  // caso concreto necesita otra cosa). Como usa .value= en vez de un evento
+  // "change" real, fillSponsorForm/importPendingSponsor (que sí ponen el
+  // valor guardado) nunca disparan esto por accidente.
+  const SPONSOR_TIER_DEFAULTS = {
+    bronce: { radius: 150, audioMention: false },
+    plata: { radius: 300, audioMention: false },
+    oro: { radius: 500, audioMention: true }
+  };
+  $('#spTier').addEventListener('change', () => {
+    const defaults = SPONSOR_TIER_DEFAULTS[$('#spTier').value];
+    if (!defaults) return;
+    $('#spRadius').value = defaults.radius;
+    $('#spAudioMention').checked = defaults.audioMention;
+    $('#spAudioLineFields').hidden = !defaults.audioMention;
+  });
 
   const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -586,6 +637,95 @@
     }
   };
 
+  // Fichas recibidas vía patrocinador.html (ver worker/proxy.js,
+  // handleSponsorsPendingList): el negocio solo manda contenido, nunca
+  // ciudad/nivel/coordenadas — "Importar" precarga esos campos en el
+  // formulario de abajo y deja los internos en blanco para que los rellenes.
+  const renderSponsorsPendingTable = (pending) => {
+    const tbody = $('#sponsorsPendingTable tbody');
+    tbody.innerHTML = '';
+    if (!pending.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">Sin solicitudes nuevas.</td></tr>';
+      return;
+    }
+    pending.forEach((p) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(p.name)}</td>
+        <td>${escapeHtml((p.teaser && p.teaser.es) || '')}</td>
+        <td>${escapeHtml(p.contact || '—')}</td>
+        <td>${p.submittedAt ? fmtDate(p.submittedAt) : '—'}</td>
+        <td class="row-actions">
+          <button type="button" class="small-btn" data-import="${escapeHtml(p.id)}">Importar</button>
+          <button type="button" class="small-btn -danger" data-discard="${escapeHtml(p.id)}">Descartar</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('[data-import]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const p = pendingCache.find((x) => x.id === btn.dataset.import);
+        if (p) importPendingSponsor(p);
+      });
+    });
+    tbody.querySelectorAll('[data-discard]').forEach((btn) => {
+      btn.addEventListener('click', () => discardPending(btn.dataset.discard));
+    });
+  };
+
+  const loadSponsorsPending = async () => {
+    try {
+      const res = await fetch(`${WORKER_BASE}/sponsors/pending/list`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey })
+      });
+      if (!res.ok) {
+        renderSponsorsPendingTable([]);
+        return;
+      }
+      const data = await res.json();
+      pendingCache = data.pending || [];
+      renderSponsorsPendingTable(pendingCache);
+    } catch (e) {
+      renderSponsorsPendingTable([]);
+    }
+  };
+
+  // Precarga SOLO los campos de "Datos del negocio" (lo que mandó el
+  // cliente); ID/ciudad/nivel/coordenadas/fechas quedan en blanco para que
+  // los decidas tú antes de guardar.
+  const importPendingSponsor = (p) => {
+    resetSponsorForm();
+    importingPendingId = p.id;
+    $('#sponsorFormTitle').textContent = 'Importando solicitud: ' + p.name;
+    $('#spName').value = p.name || '';
+    $('#spTeaserEs').value = (p.teaser && p.teaser.es) || '';
+    $('#spTeaserEn').value = (p.teaser && p.teaser.en) || '';
+    $('#spCtaEs').value = (p.ctaLabel && p.ctaLabel.es) || '';
+    $('#spCtaEn').value = (p.ctaLabel && p.ctaLabel.en) || '';
+    $('#spMenuPdf').value = p.menuPdf || '';
+    $('#spMenuRows').innerHTML = '';
+    (p.menu || []).forEach((row) => addMenuRow(row.item, row.price));
+    $('#tabManage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const discardPending = async (id) => {
+    const p = pendingCache.find((x) => x.id === id);
+    if (!confirm(`¿Descartar la solicitud de "${p ? p.name : id}"? No se puede deshacer.`)) return;
+    try {
+      const res = await fetch(`${WORKER_BASE}/sponsors/pending/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey, id })
+      });
+      if (!res.ok) throw new Error('código ' + res.status);
+      await loadSponsorsPending();
+    } catch (e) {
+      alert('No se pudo descartar: ' + e.message);
+    }
+  };
+
   // Filas dinámicas de "item / precio" (carta): cada fila son 4 inputs
   // (item ES/EN, precio ES/EN) + un botón para quitarla.
   const addMenuRow = (item = { es: '', en: '' }, price = { es: '', en: '' }) => {
@@ -609,6 +749,7 @@
 
   const resetSponsorForm = () => {
     editingSponsorId = null;
+    importingPendingId = null;
     $('#sponsorFormTitle').textContent = 'Nuevo patrocinador';
     ['spId', 'spName', 'spCity', 'spLat', 'spLng', 'spStartDate', 'spEndDate',
       'spTeaserEs', 'spTeaserEn', 'spCtaEs', 'spCtaEn', 'spMenuPdf', 'spAudioLineEs', 'spAudioLineEn']
@@ -625,6 +766,7 @@
 
   const fillSponsorForm = (s) => {
     editingSponsorId = s.id;
+    importingPendingId = null;
     $('#sponsorFormTitle').textContent = 'Editando: ' + s.name;
     $('#spId').value = s.id;
     $('#spId').disabled = true; // el id es la clave en KV: no se cambia al editar, solo al crear
@@ -711,8 +853,19 @@
     btn.textContent = 'Guardando…';
     try {
       await upsertSponsor(sponsor);
+      if (importingPendingId) {
+        const doneId = importingPendingId;
+        try {
+          await fetch(`${WORKER_BASE}/sponsors/pending/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ adminKey, id: doneId })
+          });
+        } catch (_) { /* el patrocinador ya se guardó bien; si esto falla, la solicitud solo se queda visible para borrarla a mano */ }
+      }
       resetSponsorForm();
       await loadSponsorsAdmin();
+      await loadSponsorsPending();
     } catch (e) {
       err.hidden = false;
       err.textContent = 'No se pudo guardar: ' + e.message;

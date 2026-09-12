@@ -75,8 +75,16 @@ export default {
     const isSponsorsAdminList = url.pathname.endsWith('/sponsors/admin/list');
     const isSponsorsUpsert = url.pathname.endsWith('/sponsors/upsert');
     const isSponsorsDelete = url.pathname.endsWith('/sponsors/delete');
+    // Ficha pública (ver patrocinador.html): el propio negocio rellena sus
+    // datos de contenido (nombre, teaser, carta...) y quedan en "pending:"
+    // dentro del mismo KV SPONSORS, a la espera de que tú los revises y los
+    // conviertas en un patrocinador real desde "Gestión" (con ciudad, nivel,
+    // coordenadas... que el cliente nunca decide). Nunca se publican solos.
+    const isSponsorsSubmit = url.pathname.endsWith('/sponsors/submit');
+    const isSponsorsPendingList = url.pathname.endsWith('/sponsors/pending/list');
+    const isSponsorsPendingDelete = url.pathname.endsWith('/sponsors/pending/delete');
 
-    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete)) {
+    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete)) {
       return new Response(JSON.stringify({ error: 'not found' }), {
         status: 404,
         headers: { ...headers, 'Content-Type': 'application/json' }
@@ -106,6 +114,9 @@ export default {
     if (isSponsorsAdminList) return handleSponsorsAdminList(request, env, headers);
     if (isSponsorsUpsert) return handleSponsorsUpsert(request, env, headers);
     if (isSponsorsDelete) return handleSponsorsDelete(request, env, headers);
+    if (isSponsorsSubmit) return handleSponsorsSubmit(request, env, headers);
+    if (isSponsorsPendingList) return handleSponsorsPendingList(request, env, headers);
+    if (isSponsorsPendingDelete) return handleSponsorsPendingDelete(request, env, headers);
 
     // Rate limiting por IP (binding "RATE_LIMITER", configurado en el panel
     // de Cloudflare → pestaña "Bindings" → Add binding → Rate Limiting).
@@ -681,6 +692,13 @@ async function handleSponsorRank(request, env, headers) {
 
 const SPONSOR_TIERS = new Set(['bronce', 'plata', 'oro']);
 const SPONSOR_ICONS = new Set(['restaurant', 'cafe', 'hotel']);
+// Límites propios (más cortos que los de sanitizeSponsorInput) para lo que
+// rellena el negocio en patrocinador.html: nadie revisa esto antes de
+// guardarlo en "pending:", así que el tope va aquí, no solo en el HTML del
+// formulario (que un cliente podría saltarse editando el DOM).
+const SPONSOR_SUBMISSION_TEASER_MAX = 160;
+const SPONSOR_SUBMISSION_CTA_MAX = 40;
+const SPONSOR_SUBMISSION_MENU_MAX_ROWS = 8;
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -694,10 +712,10 @@ function isSponsorActive(sponsor, dateStr) {
   return true;
 }
 
-function dualText(value) {
+function dualText(value, maxLen = 400) {
   if (!value || typeof value !== 'object') return null;
-  const es = String(value.es || '').trim().slice(0, 400);
-  const en = String(value.en || '').trim().slice(0, 400);
+  const es = String(value.es || '').trim().slice(0, maxLen);
+  const en = String(value.en || '').trim().slice(0, maxLen);
   if (!es && !en) return null;
   return { es, en };
 }
@@ -860,6 +878,136 @@ async function handleSponsorsDelete(request, env, headers) {
   }
 
   await env.SPONSORS.delete(`sponsor:${id}`);
+
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+}
+
+// ============================================================
+// FICHA PÚBLICA DEL NEGOCIO (ver patrocinador.html)
+//
+// El negocio rellena solo su parte de contenido (nunca ciudad, nivel,
+// coordenadas, fechas...: eso lo decides tú al importarlo desde "Gestión").
+// Se guarda bajo "pending:<id>" en el mismo KV SPONSORS, separado de
+// "sponsor:<id>" por prefijo — nunca aparece en /sponsors/list ni en la app
+// hasta que tú lo conviertes en un patrocinador real.
+// ============================================================
+function sanitizeSponsorSubmission(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+
+  const name = String(raw.name || '').trim().slice(0, 120);
+  const teaser = dualText(raw.teaser, SPONSOR_SUBMISSION_TEASER_MAX);
+  if (!name || !teaser) return null;
+
+  const submission = { name, teaser };
+
+  const contact = String(raw.contact || '').trim().slice(0, 120);
+  if (contact) submission.contact = contact;
+
+  const ctaLabel = dualText(raw.ctaLabel, SPONSOR_SUBMISSION_CTA_MAX);
+  if (ctaLabel) submission.ctaLabel = ctaLabel;
+
+  const menuPdf = String(raw.menuPdf || '').trim().slice(0, 300);
+  if (menuPdf) submission.menuPdf = menuPdf;
+
+  if (Array.isArray(raw.menu)) {
+    const menu = raw.menu
+      .slice(0, SPONSOR_SUBMISSION_MENU_MAX_ROWS)
+      .map((row) => ({
+        item: dualText(row && row.item, 60),
+        price: dualText(row && row.price, 20)
+      }))
+      .filter((row) => row.item && row.price);
+    if (menu.length) submission.menu = menu;
+  }
+
+  return submission;
+}
+
+async function handleSponsorsSubmit(request, env, headers) {
+  let payload;
+  try {
+    payload = await request.json();
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, reason: 'bad-request' }), {
+      status: 400,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  if (!env.SPONSORS) {
+    return new Response(JSON.stringify({ ok: false, reason: 'not-configured' }), {
+      status: 501,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (env.RATE_LIMITER) {
+    const { success } = await env.RATE_LIMITER.limit({ key: `sponsors-submit:${ip}` });
+    if (!success) {
+      return new Response(JSON.stringify({ ok: false, reason: 'rate-limited' }), {
+        status: 429,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
+  const submission = sanitizeSponsorSubmission(payload);
+  if (!submission) {
+    return new Response(JSON.stringify({ ok: false, reason: 'bad-request' }), {
+      status: 400,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+  submission.submittedAt = Date.now();
+
+  const id = crypto.randomUUID();
+  await env.SPONSORS.put(`pending:${id}`, JSON.stringify(submission));
+
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+}
+
+// Lista de fichas recibidas todavía sin importar (pestaña "Gestión").
+async function handleSponsorsPendingList(request, env, headers) {
+  const { error } = await checkAdminAccess(request, env, headers, 'SPONSORS');
+  if (error) return error;
+
+  const list = await env.SPONSORS.list({ prefix: 'pending:' });
+  const pending = (await Promise.all(list.keys.map(async (k) => {
+    try {
+      const data = JSON.parse(await env.SPONSORS.get(k.name));
+      return { ...data, id: k.name.slice('pending:'.length) };
+    } catch (_) { return null; }
+  }))).filter(Boolean);
+  pending.sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+
+  return new Response(JSON.stringify({ pending }), {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+}
+
+// Descarta una ficha pendiente — tanto al rechazarla como justo después de
+// importarla con éxito (ver spImportPending en admin/dashboard.html).
+async function handleSponsorsPendingDelete(request, env, headers) {
+  const { error, payload } = await checkAdminAccess(request, env, headers, 'SPONSORS');
+  if (error) return error;
+
+  const id = String((payload && payload.id) || '').trim().slice(0, 80);
+  if (!id) {
+    return new Response(JSON.stringify({ ok: false, reason: 'bad-request' }), {
+      status: 400,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  await env.SPONSORS.delete(`pending:${id}`);
 
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,

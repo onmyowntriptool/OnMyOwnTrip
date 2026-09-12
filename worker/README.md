@@ -263,6 +263,32 @@ devolver nada.
   Exige `adminKey`.
 - `POST /sponsors/delete`: borra por `id`. Exige `adminKey`.
 
+### Ficha para que el propio negocio rellene sus datos
+
+`patrocinador.html` (en la raíz del repo, sin enlazar desde ningún sitio,
+igual que `admin/dashboard.html`) es una páginita pública que le puedes
+mandar directamente a un negocio interesado: rellena su nombre, un teaser
+corto (limitado a 160 caracteres, para que no escriba un párrafo entero),
+el texto de su botón, un enlace a su carta en PDF o unos platos con
+precio, y un contacto. Nunca decide ciudad, nivel, radio, coordenadas ni
+fechas — eso lo sigues decidiendo tú.
+
+Lo que envía queda guardado en el mismo KV `SPONSORS`, bajo la clave
+`pending:<id>` (en vez de `sponsor:<id>`), así que nunca aparece en
+`/sponsors/list` ni en la app hasta que tú lo apruebas. En la pestaña
+**Gestión** del panel verás una tabla "Solicitudes pendientes" con lo
+recibido; el botón **Importar** precarga esos datos en el formulario de
+alta (dejando ciudad/nivel/coordenadas/fechas en blanco para que los
+rellenes) y, al guardar, borra la solicitud automáticamente. El botón
+**Descartar** la quita sin convertirla en nada.
+
+- `POST /sponsors/submit`: pública (sin `adminKey`, con rate limiting
+  propio), la llama `patrocinador.html`.
+- `POST /sponsors/pending/list`: lista lo recibido sin revisar. Exige
+  `adminKey`.
+- `POST /sponsors/pending/delete`: borra una solicitud por `id` (al
+  descartarla, o justo después de importarla). Exige `adminKey`.
+
 ## Rate limiting por IP (opcional, recomendado)
 
 Importante: como este Worker vive en un subdominio `workers.dev` (no en un
