@@ -123,6 +123,11 @@
           <input type="text" id="fMenuPdf" maxlength="300" placeholder="https://...">
         </div>
         <div class="field">
+          <label for="fWebsiteUrl">Enlace a tu web (si no tienes carta, o además de ella)</label>
+          <span class="sub">Ideal si ofreces una actividad o experiencia en vez de comida — se abre directamente en el navegador.</span>
+          <input type="text" id="fWebsiteUrl" maxlength="300" placeholder="https://...">
+        </div>
+        <div class="field">
           <label>O algunos platos destacados con precio</label>
           <span class="sub">Español / inglés (opcional) / precio. Hasta 8 líneas.</span>
         </div>
@@ -212,6 +217,8 @@
     if (ctaEs || ctaEn) payload.ctaLabel = { es: ctaEs, en: ctaEn };
     const menuPdf = $('#fMenuPdf').value.trim();
     if (menuPdf) payload.menuPdf = menuPdf;
+    const websiteUrl = $('#fWebsiteUrl').value.trim();
+    if (websiteUrl) payload.websiteUrl = websiteUrl;
     if (menu.length) payload.menu = menu;
 
     const btn = $('#submitBtn');

@@ -763,6 +763,12 @@ function sanitizeSponsorInput(raw) {
   const menuPdf = String(raw.menuPdf || '').trim().slice(0, 300);
   if (menuPdf) sponsor.menuPdf = menuPdf;
 
+  // Enlace externo (web propia del negocio, reservas...) en vez de -- o
+  // además de -- un PDF: se abre en pestaña aparte (ver app.js), pensado
+  // sobre todo para "experiencia" (no tiene sentido un menú/carta ahí).
+  const websiteUrl = String(raw.websiteUrl || '').trim().slice(0, 300);
+  if (websiteUrl) sponsor.websiteUrl = websiteUrl;
+
   if (Array.isArray(raw.menu)) {
     const menu = raw.menu
       .slice(0, 30)
@@ -923,6 +929,9 @@ function sanitizeSponsorSubmission(raw) {
 
   const menuPdf = String(raw.menuPdf || '').trim().slice(0, 300);
   if (menuPdf) submission.menuPdf = menuPdf;
+
+  const websiteUrl = String(raw.websiteUrl || '').trim().slice(0, 300);
+  if (websiteUrl) submission.websiteUrl = websiteUrl;
 
   if (Array.isArray(raw.menu)) {
     const menu = raw.menu

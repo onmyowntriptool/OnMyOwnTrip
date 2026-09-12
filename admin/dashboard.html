@@ -258,6 +258,11 @@
               <label for="spMenuPdf">PDF de la carta (URL, opcional)</label>
               <input type="text" id="spMenuPdf" placeholder="assets/demo/carta.pdf o URL completa">
             </div>
+            <div class="field -span2">
+              <label for="spWebsiteUrl">Enlace a su web o "más información" (URL, opcional)</label>
+              <span class="sub-hint">Se abre en una pestaña aparte. Para "Experiencia / actividad" es la opción recomendada en vez del PDF de la carta.</span>
+              <input type="text" id="spWebsiteUrl" placeholder="https://...">
+            </div>
           </div>
           <div id="spMenuSection">
             <p class="hint-small" style="margin-top:0">Carta / precios (opcional, en vez de o además del PDF)</p>
@@ -781,6 +786,7 @@
     $('#spCtaEs').value = (p.ctaLabel && p.ctaLabel.es) || '';
     $('#spCtaEn').value = (p.ctaLabel && p.ctaLabel.en) || '';
     $('#spMenuPdf').value = p.menuPdf || '';
+    $('#spWebsiteUrl').value = p.websiteUrl || '';
     $('#spMenuRows').innerHTML = '';
     (p.menu || []).forEach((row) => addMenuRow(row.item, row.price));
     $('#tabManage').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -829,7 +835,7 @@
     spIdAutoSynced = true;
     $('#sponsorFormTitle').textContent = 'Nuevo patrocinador';
     ['spId', 'spName', 'spCity', 'spLat', 'spLng', 'spStartDate', 'spEndDate', 'spContractMonths',
-      'spTeaserEs', 'spTeaserEn', 'spCtaEs', 'spCtaEn', 'spMenuPdf', 'spAudioLineEs', 'spAudioLineEn']
+      'spTeaserEs', 'spTeaserEn', 'spCtaEs', 'spCtaEn', 'spMenuPdf', 'spWebsiteUrl', 'spAudioLineEs', 'spAudioLineEn']
       .forEach((id) => { $('#' + id).value = ''; });
     $('#spTier').value = 'bronce';
     $('#spIcon').value = 'restaurant';
@@ -864,6 +870,7 @@
     $('#spCtaEs').value = (s.ctaLabel && s.ctaLabel.es) || '';
     $('#spCtaEn').value = (s.ctaLabel && s.ctaLabel.en) || '';
     $('#spMenuPdf').value = s.menuPdf || '';
+    $('#spWebsiteUrl').value = s.websiteUrl || '';
     $('#spAudioMention').checked = !!s.audioMention;
     $('#spAudioLineFields').hidden = !s.audioMention;
     $('#spAudioLineEs').value = (s.audioLine && s.audioLine.es) || '';
@@ -901,6 +908,8 @@
     if (ctaEs || ctaEn) sponsor.ctaLabel = { es: ctaEs, en: ctaEn };
     const menuPdf = $('#spMenuPdf').value.trim();
     if (menuPdf) sponsor.menuPdf = menuPdf;
+    const websiteUrl = $('#spWebsiteUrl').value.trim();
+    if (websiteUrl) sponsor.websiteUrl = websiteUrl;
     if ($('#spAudioMention').checked) {
       sponsor.audioMention = true;
       sponsor.audioLine = { es: $('#spAudioLineEs').value.trim(), en: $('#spAudioLineEn').value.trim() };

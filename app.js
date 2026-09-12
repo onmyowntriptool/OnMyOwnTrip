@@ -963,6 +963,15 @@
       // pulsar "Profundiza más"/"entradas" en cuanto lo oiga, así ya ha
       // escuchado antes la mención en vez de taparla sin querer.
       pendingIntroCta: null,
+      // Se incrementa cada vez que arranca una narración nueva (no un
+      // resume) — ver startAudio/maybeSpeakSponsorDemoOutro/
+      // speakPendingIntroCta. Detecta cuándo un aviso de patrocinador o un
+      // cierre pospuesto quedó "huérfano" porque, mientras esperaba su
+      // pausa de 300ms, el usuario ya disparó una narración más nueva sobre
+      // el mismo POI (p.ej. tocar "Introducción" justo cuando terminaba el
+      // saludo corto inicial) — sin esto, ese aviso viejo consumía el cierre
+      // pendiente de la narración nueva antes de que le tocara sonar.
+      playId: 0,
       // Callback pendiente de "este segmento ha terminado" del startAudio
       // en curso (lo usa queueDeepenWithFillers para saber cuándo pedir
       // el siguiente párrafo) — seekAudioTo lo relee para no perderlo al
@@ -2901,6 +2910,7 @@
       sponsoredMapPopup: 'Patrocinado — DEMO',
       seeOnMap: 'Ver en el mapa',
       seeMenuDefault: 'Ver la carta',
+      moreInfoDefault: 'Más información',
       directions: 'Cómo llegar',
       closeMenu: 'Cerrar carta',
       menuUnavailable: 'Carta no disponible en esta demo.',
@@ -2911,6 +2921,7 @@
       sponsoredMapPopup: 'Sponsored — DEMO',
       seeOnMap: 'View on map',
       seeMenuDefault: 'View menu',
+      moreInfoDefault: 'More info',
       directions: 'Directions',
       closeMenu: 'Close menu',
       menuUnavailable: 'Menu not available in this demo.',
@@ -2918,6 +2929,13 @@
     }
   };
   const sd = (key) => (SPONSOR_DEMO_STRINGS[STATE.lang] || SPONSOR_DEMO_STRINGS.es)[key];
+  // Etiqueta por defecto del botón principal cuando el patrocinador no puso
+  // su propio ctaLabel (ver Gestión): "Ver la carta" no tiene sentido para
+  // una experiencia/actividad (no hay menú que enseñar), así que esas usan
+  // "Más información" en su lugar. Restaurante/cafetería/hotel se quedan
+  // con el de siempre (un hotel puede seguir poniendo "Ver disponibilidad"
+  // a mano vía ctaLabel, esto solo cambia el valor por defecto sin tocarlo).
+  const sponsorMenuButtonLabel = (sponsor) => (sponsor.icon === 'experience' ? sd('moreInfoDefault') : sd('seeMenuDefault'));
   // "Muy cerca (X) tienes NOMBRE." / "Just X away you'll find NOMBRE." -- el
   // orden de la frase cambia entre idiomas, así que es una función, no una
   // simple cadena con hueco.
@@ -3146,14 +3164,19 @@
             <p><b>${sponsor.name}</b><br>${pickLang(sponsor.teaser)}</p>
           </div>
           <div class="cta-col">
-            <button type="button" id="sponsorDemoMenuBtn">${sponsor.ctaLabel ? pickLang(sponsor.ctaLabel) : sd('seeMenuDefault')}</button>
+            <button type="button" id="sponsorDemoMenuBtn">${sponsor.ctaLabel ? pickLang(sponsor.ctaLabel) : sponsorMenuButtonLabel(sponsor)}</button>
             <button type="button" id="sponsorDemoDirBtn">${sd('directions')}</button>
           </div>
         </div>`;
       const menuBtn = $('#sponsorDemoMenuBtn', el);
+      // Sitio web (websiteUrl, ver Gestión): se abre en pestaña aparte en vez
+      // de incrustarlo -- a diferencia de un PDF propio, una web ajena casi
+      // siempre bloquea que la metan en un <iframe> (X-Frame-Options), así
+      // que el visor interno de showSponsorDemoMenu se quedaría en blanco.
       if (menuBtn) menuBtn.addEventListener('click', () => {
         trackSponsorDemoEvent(sponsor, 'menu');
-        showSponsorDemoMenu(sponsor);
+        if (sponsor.websiteUrl) window.open(sponsor.websiteUrl, '_blank', 'noopener');
+        else showSponsorDemoMenu(sponsor);
       });
       const dirBtn = $('#sponsorDemoDirBtn', el);
       if (dirBtn) dirBtn.addEventListener('click', () => {
@@ -3264,9 +3287,22 @@
   // en cuanto termina de sonar el anuncio — lo usa showFullIntro para
   // encadenar el cierre pospuesto ("Profundiza más"/"entradas", ver
   // speakPendingIntroCta) justo después, en vez de simultáneo o antes.
-  const maybeSpeakSponsorDemoOutro = (poi, onDone) => {
+  //
+  // myPlayId: el STATE.audio.playId que había cuando ARRANCÓ la narración
+  // que acaba de terminar (ver startAudio). Bug real encontrado en pruebas:
+  // si el usuario tocaba "Introducción" justo cuando terminaba el saludo
+  // corto inicial, esta función (programada 300ms atrás para ESE saludo)
+  // llegaba a disparase después de que la narración nueva ya hubiera
+  // arrancado; su guarda de "STATE.audio.playing" la hacía abortar sin
+  // sonar, pero aun así llamaba a done()->speakPendingIntroCta, que
+  // consumía el pendingIntroCta de la narración NUEVA antes de que le
+  // tocara — el cierre acababa sonando ANTES que el anuncio, o directamente
+  // desaparecía. Comparar playId aquí (antes de tocar nada) evita que una
+  // llamada "huérfana" de una narración vieja interfiera con la actual.
+  const maybeSpeakSponsorDemoOutro = (poi, myPlayId, onDone) => {
     const done = () => { if (typeof onDone === 'function') onDone(); };
     if (!poi || STATE.mode === 'kids') return done();
+    if (STATE.audio.playId !== myPlayId) return done();
     const match = activeSponsorDemoMatch;
     if (!match || match.poiId !== poi.id || !match.sponsor.audioMention) return done();
     // FIX (reportado: la mención sonaba al terminar CUALQUIER audio -- un
@@ -3283,9 +3319,9 @@
     // pausa natural). Antes eran 900ms; esta pausa más breve sigue evitando
     // que se pisen los dos audios, sin sonar a corte.
     setTimeout(() => {
-      // Si mientras tanto se cerró la ficha o se abrió otro POI, no decimos
-      // nada: sería una voz patrocinada sonando sobre una pantalla distinta.
-      if (STATE.activePoiId !== poi.id || STATE.audio.playing) return done();
+      // Si mientras tanto se cerró la ficha, se abrió otro POI o arrancó una
+      // narración más nueva sobre el mismo POI, no decimos nada.
+      if (STATE.activePoiId !== poi.id || STATE.audio.playing || STATE.audio.playId !== myPlayId) return done();
       // audioLine: frase a medida escrita por el patrocinador (ver Gestión
       // en admin/dashboard.html) tiene prioridad; si no la escribió, se
       // usa la batería genérica de arriba, ya adaptada a su tipo de
@@ -3302,18 +3338,22 @@
   // del posible anuncio (o justo tras la narración si no hubo ninguno).
   // pendingIntroCta se consume una sola vez -- si por lo que sea esta
   // función se llamara dos veces para el mismo cierre, la segunda no
-  // encuentra nada pendiente y no repite la frase.
-  const speakPendingIntroCta = (poi) => {
+  // encuentra nada pendiente y no repite la frase. El chequeo de myPlayId
+  // (mismo motivo que en maybeSpeakSponsorDemoOutro) va ANTES de tocar
+  // pendingIntroCta: una llamada huérfana de una narración vieja nunca debe
+  // poder consumir el cierre pendiente de una narración más nueva.
+  const speakPendingIntroCta = (poi, myPlayId) => {
+    if (!poi || STATE.audio.playId !== myPlayId) return;
     const pending = STATE.audio.pendingIntroCta;
     STATE.audio.pendingIntroCta = null;
-    if (!poi || !pending || pending.poiId !== poi.id) { STATE.audio.overrideText = null; return; }
+    if (!pending || pending.poiId !== poi.id) { STATE.audio.overrideText = null; return; }
     // Mismo criterio que maybeSpeakSponsorDemoOutro: si entretanto se saltó
     // a otro mensaje (profundiza más, una pregunta suelta...), este cierre
     // ya no pinta nada ahí -- solo tiene sentido justo tras SU resumen.
     const hist = aiHistoryFor(poi.id).filter((x) => x.role === 'assistant');
     if (!hist.length || !hist[hist.length - 1].isSummary) { STATE.audio.overrideText = null; return; }
     setTimeout(() => {
-      if (STATE.activePoiId !== poi.id || STATE.audio.playing) { STATE.audio.overrideText = null; return; }
+      if (STATE.activePoiId !== poi.id || STATE.audio.playing || STATE.audio.playId !== myPlayId) { STATE.audio.overrideText = null; return; }
       STATE.audio.overrideText = pending.text;
       SPEECH.speak(() => { STATE.audio.overrideText = null; });
     }, 300);
@@ -7567,7 +7607,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
   // Reproduce un audio ya resuelto de CLOUD_TTS. Comparte STATE.audio y
   // updateAudioUi con el camino de Web Speech: la barra de progreso no
   // sabe (ni le importa) qué motor está sonando.
-  const startCloudAudio = (url, silent) => {
+  const startCloudAudio = (url, silent, myPlayId) => {
     STATE.audio.engine = 'cloud';
     cloudAudioEl.onloadedmetadata = () => {
       if (isFinite(cloudAudioEl.duration)) STATE.audio.duration = cloudAudioEl.duration;
@@ -7582,7 +7622,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       if (!silent) showToast(t('audioguideCompleted'));
       if (STATE.mode === 'kids') maybeShowFirstKidsQuiz();
       const endedPoi = POIS.find((p) => p.id === STATE.activePoiId);
-      maybeSpeakSponsorDemoOutro(endedPoi, () => speakPendingIntroCta(endedPoi));
+      maybeSpeakSponsorDemoOutro(endedPoi, myPlayId, () => speakPendingIntroCta(endedPoi, myPlayId));
     };
     // Si el audio en caché falla al reproducir (blob corrupto, formato no
     // soportado, etc.) se reintenta ya mismo con Web Speech en vez de dejar
@@ -7608,6 +7648,13 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
   // recorta el texto por palabras hasta ese punto (ver su comentario).
   const startAudio = (isResume = false, silent = false, onSegmentEnd = null, seekRatio = null) => {
     if (!STATE.activePoiId) return;
+    // Identifica ESTA narración concreta (ver STATE.audio.playId): solo se
+    // renueva si es una narración de verdad nueva, no un resume tras pausa,
+    // para que maybeSpeakSponsorDemoOutro/speakPendingIntroCta puedan saber
+    // más tarde si, cuando les toque actuar, siguen hablando de la más
+    // reciente o ya quedaron huérfanas porque el usuario disparó otra encima.
+    if (!isResume) STATE.audio.playId = (STATE.audio.playId || 0) + 1;
+    const myPlayId = STATE.audio.playId;
     STATE.audio.playing = true;
     WAKE_LOCK.acquire();
     let segmentEndCb = onSegmentEnd;
@@ -7629,7 +7676,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     if (!isResume) {
       const textForCloud = SPEECH.getText();
       const cloudUrl = CLOUD_TTS.getReadyUrl(textForCloud);
-      if (cloudUrl) { startCloudAudio(cloudUrl, silent); return; }
+      if (cloudUrl) { startCloudAudio(cloudUrl, silent, myPlayId); return; }
       // Sin síntesis de voz del navegador (WebView de Capacitor en Android:
       // no existe window.speechSynthesis ahí) no hay ningún motor local al
       // que caer — sin este intento activo la audioguía se quedaría muda
@@ -7644,7 +7691,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
         updateAudioUi();
         CLOUD_TTS.fetchAndCache(textForCloud).then((url) => {
           if (url && STATE.activePoiId === poiId) {
-            startCloudAudio(url, silent);
+            startCloudAudio(url, silent, myPlayId);
           } else {
             STATE.audio.playing = false;
             updateAudioUi();
@@ -7686,7 +7733,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
           if (!silent) showToast(t('audioguideCompleted'));
           if (STATE.mode === 'kids') maybeShowFirstKidsQuiz();
           const endedPoi = POIS.find((p) => p.id === STATE.activePoiId);
-          maybeSpeakSponsorDemoOutro(endedPoi, () => speakPendingIntroCta(endedPoi));
+          maybeSpeakSponsorDemoOutro(endedPoi, myPlayId, () => speakPendingIntroCta(endedPoi, myPlayId));
           notifySegmentEnd();
           return;
         }
