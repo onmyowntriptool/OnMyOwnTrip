@@ -18,7 +18,6 @@
 // la app nativa, aunque en la web vayan bien.
 const ALLOWED_ORIGINS = [
   'https://onmyowntriptool.github.io',
-  'https://davidghenriquez.github.io',
   'http://localhost:8791',
   'https://localhost'
 ];
