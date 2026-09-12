@@ -16,7 +16,7 @@
 // Sube este número cuando cambies la lista SHELL_URLS de aquí abajo
 // (los propios archivos versionados con "?v=N" ya se cachean solos con
 // su nueva clave la primera vez que se piden, sin necesidad de tocar esto).
-const CACHE_VERSION = 'v240';
+const CACHE_VERSION = 'v241';
 const SHELL_CACHE = `omot-shell-${CACHE_VERSION}`;
 const IMAGE_CACHE = `omot-images-${CACHE_VERSION}`;
 // Contenido de ciudad servido por el Worker (POST /content, ver
@@ -96,6 +96,15 @@ const isImageRequest = (req) => req.destination === 'image';
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // admin/dashboard.html y patrocinador.html NUNCA forman parte del shell
+  // (no están en SHELL_URLS, se editan y despliegan sueltos, sin pasar por
+  // el número de versión de esta app) — pero sin este corte caían igual en
+  // el "shell" genérico de más abajo (stale-while-revalidate), así que un
+  // cambio recién publicado se veía viejo hasta forzar un refresco duro
+  // (Ctrl+F5). Dejarlas pasar sin tocar: la red decide, sin caché de este
+  // Service Worker de por medio.
+  if (url.pathname.includes('/admin/') || url.pathname.endsWith('/patrocinador.html')) return;
 
   // Contenido de ciudad (POST /content, gate de licencia — ver
   // worker/proxy.js): a diferencia del resto de peticiones POST de este
