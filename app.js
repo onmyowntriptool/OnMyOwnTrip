@@ -2882,7 +2882,8 @@
   const SPONSOR_ICON_SRC = {
     restaurant: 'assets/icons/sponsor-restaurant-icon.png',
     cafe: 'assets/icons/sponsor-cafe-icon.png',
-    hotel: 'assets/icons/sponsor-hotel-icon.png'
+    hotel: 'assets/icons/sponsor-hotel-icon.png',
+    experience: 'assets/icons/sponsor-experience-icon.png'
   };
   const sponsorIconUrl = (sponsor) => SPONSOR_ICON_SRC[sponsor.icon] || SPONSOR_ICON_SRC.restaurant;
 
@@ -3168,9 +3169,9 @@
   // una única frase fija ("si quieres hacer una pausa..."), que sonaba fría
   // de tanto repetirse Y encima daba por hecho que todo era sitio para
   // comer/beber -- un hotel terminaba invitando a "probar algo de la zona".
-  // Ahora hay una batería por tipo de negocio (comida/alojamiento, según
-  // sponsor.icon) que va rotando una distinta cada vez que ESE sponsor
-  // concreto habla, en vez de repetir siempre la primera.
+  // Ahora hay una batería por tipo de negocio (comida/alojamiento/
+  // experiencia, según sponsor.icon) que va rotando una distinta cada vez
+  // que ESE sponsor concreto habla, en vez de repetir siempre la primera.
   const SPONSOR_OUTRO_PHRASES = {
     food: {
       es: [
@@ -3203,6 +3204,25 @@
         (name, teaser, dist) => `${name} is just ${dist} away, great if you need accommodation nearby. ${teaser}`,
         (name, teaser, dist) => `If you need somewhere to rest, ${name} is ${dist} away. ${teaser}`
       ]
+    },
+    // Actividades/ocio (tirolina, escape room, realidad virtual...): tono de
+    // diversión y adrenalina, nada de "descanso" ni "alojamiento" -- lo que
+    // busca quien elige esto es vivir algo, no parar a comer o dormir.
+    experience: {
+      es: [
+        (name, teaser, dist) => `Si buscas algo de emoción, cerca tienes ${name}, a ${dist}. ${teaser}`,
+        (name, teaser, dist) => `Para una experiencia distinta, ${name} está a solo ${dist}. ${teaser}`,
+        (name, teaser, dist) => `A ${dist} de aquí tienes ${name}, por si te apetece vivir algo diferente. ${teaser}`,
+        (name, teaser, dist) => `¿Te animas a algo de aventura? ${name} lo tienes a ${dist}. ${teaser}`,
+        (name, teaser, dist) => `Muy cerca, a ${dist}, tienes ${name} para darle un plus de diversión al día. ${teaser}`
+      ],
+      en: [
+        (name, teaser, dist) => `If you're up for some excitement, nearby you have ${name}, ${dist} away. ${teaser}`,
+        (name, teaser, dist) => `For something different, ${name} is just ${dist} away. ${teaser}`,
+        (name, teaser, dist) => `${dist} from here you have ${name}, if you feel like trying something new. ${teaser}`,
+        (name, teaser, dist) => `Fancy a bit of adventure? ${name} is ${dist} away. ${teaser}`,
+        (name, teaser, dist) => `Just ${dist} away you have ${name}, to add some fun to the day. ${teaser}`
+      ]
     }
   };
   // Un contador por sponsor (no global): así dos patrocinadores distintos no
@@ -3224,7 +3244,7 @@
   };
 
   const buildSponsorOutroFallback = (sponsor, distance) => {
-    const category = sponsor.icon === 'hotel' ? 'hotel' : 'food';
+    const category = SPONSOR_OUTRO_PHRASES[sponsor.icon] ? sponsor.icon : 'food';
     const lang = STATE.lang === 'en' ? 'en' : 'es';
     const phrases = SPONSOR_OUTRO_PHRASES[category][lang];
     const idx = (sponsorOutroPhraseCounters[sponsor.id] || 0) % phrases.length;

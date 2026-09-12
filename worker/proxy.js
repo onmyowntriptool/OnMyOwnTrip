@@ -691,7 +691,7 @@ async function handleSponsorRank(request, env, headers) {
 // ============================================================
 
 const SPONSOR_TIERS = new Set(['bronce', 'plata', 'oro']);
-const SPONSOR_ICONS = new Set(['restaurant', 'cafe', 'hotel']);
+const SPONSOR_ICONS = new Set(['restaurant', 'cafe', 'hotel', 'experience']);
 // Límites propios (más cortos que los de sanitizeSponsorInput) para lo que
 // rellena el negocio en patrocinador.html: nadie revisa esto antes de
 // guardarlo en "pending:", así que el tope va aquí, no solo en el HTML del
