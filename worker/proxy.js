@@ -17,6 +17,7 @@
 // el chat, la audioguía y el control de licencias fallan solo dentro de
 // la app nativa, aunque en la web vayan bien.
 const ALLOWED_ORIGINS = [
+  'https://onmyowntriptool.github.io',
   'https://davidghenriquez.github.io',
   'http://localhost:8791',
   'https://localhost'

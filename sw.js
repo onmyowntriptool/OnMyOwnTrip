@@ -9,14 +9,14 @@
 //
 // Registrado con ruta relativa ('sw.js', no '/sw.js') a propósito: la
 // web se sirve bajo un subpath en GitHub Pages
-// (davidghenriquez.github.io/OnMyOwnTrip/), y el scope de un Service
+// (onmyowntriptool.github.io/OnMyOwnTrip/), y el scope de un Service
 // Worker no puede ser más amplio que la carpeta donde vive su script.
 // ============================================================
 
 // Sube este número cuando cambies la lista SHELL_URLS de aquí abajo
 // (los propios archivos versionados con "?v=N" ya se cachean solos con
 // su nueva clave la primera vez que se piden, sin necesidad de tocar esto).
-const CACHE_VERSION = 'v249';
+const CACHE_VERSION = 'v250';
 const SHELL_CACHE = `omot-shell-${CACHE_VERSION}`;
 const IMAGE_CACHE = `omot-images-${CACHE_VERSION}`;
 // Contenido de ciudad servido por el Worker (POST /content, ver
@@ -41,7 +41,7 @@ const SHELL_URLS = [
   './app.js?v=252',
   './data/core.js?v=35',
   './styles.css?v=126',
-  './manifest.json?v=1',
+  './manifest.json?v=2',
   './privacidad.html',
   './assets/icons/icon-192.png?v=1',
   './assets/icons/icon-512.png?v=1',

@@ -212,7 +212,7 @@ tarjeta, 100.000 peticiones/día):
 
 1. El navegador del visitante llama al Worker (no a Gemini directamente).
 2. El Worker comprueba que la petición viene del origen esperado
-   (`https://davidghenriquez.github.io` o `localhost:8791` en pruebas) —
+   (`https://onmyowntriptool.github.io` o `localhost:8791` en pruebas) —
    protección básica, no infalible, pero suficiente para un proyecto
    personal.
 3. El Worker añade la key real (guardada como **Secret** en su propio
@@ -264,7 +264,7 @@ Detalles relevantes:
 ## 12. Despliegue
 
 - **Web**: GitHub Pages, rama `main`, sin build step
-  (`https://davidghenriquez.github.io/OnMyOwnTrip/`).
+  (`https://onmyowntriptool.github.io/OnMyOwnTrip/`).
 - **Proxy de IA**: Cloudflare Workers, desplegado manualmente desde el
   panel web de Cloudflare (código en `worker/proxy.js`, guía paso a paso
   en `worker/README.md`).
