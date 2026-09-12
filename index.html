@@ -44,7 +44,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-  <link rel="stylesheet" href="styles.css?v=123" />
+  <link rel="stylesheet" href="styles.css?v=124" />
 </head>
 <body>
   <!-- PANTALLA DE ACCESO: se muestra ANTES que la de bienvenida cuando no
@@ -151,7 +151,7 @@
       </div>
     </div>
 
-    <span class="onboarding-version" id="appVersion">Beta V51</span>
+    <span class="onboarding-version" id="appVersion">Beta V52</span>
     <button type="button" class="onboarding-reset" id="obResetBtn">Reiniciar app</button>
     <a class="onboarding-legal" href="privacidad.html" id="obPrivacyLink">Privacidad y créditos</a>
   </div>
@@ -443,6 +443,15 @@
             <circle cx="12" cy="13" r="3.4"></circle>
           </svg>
         </button>
+        <!-- Buscar un POI por nombre (roadmap, ver poi-search-modal más abajo):
+             mismo estilo redondo que scan/locate, para que se lea como parte
+             del mismo grupo de herramientas del mapa. -->
+        <button type="button" class="locate-btn" id="searchBtn" aria-label="Buscar un lugar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+        </button>
         <button type="button" class="locate-btn" id="locateBtn" aria-label="Mostrar mi ubicación">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="3"></circle>
@@ -700,6 +709,32 @@
     </div>
   </div>
 
+  <!-- BUSCAR UN POI POR NOMBRE (roadmap, ver #searchBtn en .map-tools):
+       toca la lupa, escribe, y la lista de resultados se filtra en vivo
+       (ver wirePoiSearch en app.js) -- elegir un resultado hace lo mismo
+       que tocar su pin en el mapa (selectPoi con centerMap=true), así que
+       "Llévame" ya sale listo dentro de su ficha sin necesidad de un botón
+       de "ir allí" aparte. -->
+  <div class="poi-search-modal" id="poiSearchModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Buscar un punto de interés">
+    <div class="poi-search-card">
+      <div class="poi-search-head">
+        <svg class="poi-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m21 21-4.3-4.3"></path>
+        </svg>
+        <input type="text" class="poi-search-input" id="poiSearchInput" placeholder="Busca un lugar…" autocomplete="off" />
+        <button type="button" class="poi-search-close" id="poiSearchCloseBtn" aria-label="Cerrar búsqueda">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <ul class="poi-search-results" id="poiSearchResults"></ul>
+      <p class="poi-search-empty" id="poiSearchEmpty" hidden>No se encontró ningún lugar con ese nombre.</p>
+    </div>
+  </div>
+
   <!-- AVISO DE VERSIÓN NUEVA: aparece cuando el Service Worker detecta que
        hay una versión más reciente publicada que la que ya se está usando
        (ver el script de registro más abajo). No se autorrecarga sola para
@@ -742,7 +777,7 @@
   <!-- EXPERIMENTO TEMPORAL (rama experimento-patrocinios-demo) — BORRAR
        esta línea junto con data/sponsors-demo.js antes de fusionar a main. -->
   <script src="data/sponsors-demo.js?v=8"></script>
-  <script src="app.js?v=238"></script>
+  <script src="app.js?v=239"></script>
   <!-- Service Worker: cachea el shell de la app y las imágenes de POIs ya
        vistas, para que la audioguía siga funcionando con conexión
        intermitente (típico caminando por cascos históricos). Ruta relativa

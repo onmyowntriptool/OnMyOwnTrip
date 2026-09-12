@@ -1439,6 +1439,13 @@
     ariaRestrooms: { es: { adult: 'Mostrar aseos públicos', kids: 'Mostrar aseos públicos' }, en: { adult: 'Show public restrooms', kids: 'Show public restrooms' } },
     ariaScan: { es: { adult: 'Identificar lo que estoy viendo', kids: 'Identificar lo que estoy viendo' }, en: { adult: "Identify what I'm looking at", kids: "Identify what I'm looking at" } },
     ariaLocate: { es: { adult: 'Mostrar mi ubicación', kids: 'Mostrar mi ubicación' }, en: { adult: 'Show my location', kids: 'Show my location' } },
+    // Buscar un POI por nombre (roadmap, ver #searchBtn/#poiSearchModal en
+    // index.html y wirePoiSearch en app.js).
+    ariaSearch: { es: { adult: 'Buscar un lugar', kids: 'Buscar un lugar' }, en: { adult: 'Search for a place', kids: 'Search for a place' } },
+    ariaSearchModal: { es: { adult: 'Buscar un punto de interés', kids: 'Buscar un punto de interés' }, en: { adult: 'Search for a point of interest', kids: 'Search for a point of interest' } },
+    ariaSearchClose: { es: { adult: 'Cerrar búsqueda', kids: 'Cerrar búsqueda' }, en: { adult: 'Close search', kids: 'Close search' } },
+    searchPlaceholder: { es: { adult: 'Busca un lugar…', kids: 'Busca un lugar…' }, en: { adult: 'Search for a place…', kids: 'Search for a place…' } },
+    searchNoResults: { es: { adult: 'No se encontró ningún lugar con ese nombre.', kids: 'No se encontró ningún lugar con ese nombre.' }, en: { adult: 'No place found with that name.', kids: 'No place found with that name.' } },
     ariaSheet: { es: { adult: 'Información del punto de interés', kids: 'Información del punto de interés' }, en: { adult: 'Point of interest information', kids: 'Point of interest information' } },
     ariaSheetClose: { es: { adult: 'Cerrar ficha', kids: 'Cerrar ficha' }, en: { adult: 'Close card', kids: 'Close card' } },
     ariaSheetDirections: { es: { adult: 'Cómo llegar', kids: 'Cómo llegar' }, en: { adult: 'Directions', kids: 'Directions' } },
@@ -4081,34 +4088,41 @@
       text: { es: 'Este botón te lleva al menú principal para cambiar de ciudad o de modo, adultos o niños. Tranquilo: tu progreso no se borra al volver.', en: "This button takes you to the main menu to change city or mode, Adults or Kids. Don't worry: your progress isn't erased when you go back." }
     },
     {
-      target: '#filters',
-      title: { es: 'La barra de filtros', en: 'The filter bar' },
-      text: { es: 'Con estas pestañas filtras el mapa para ver solo lo que te interesa en cada momento. Repasemos cada opción:', en: "With these tabs you filter the map to see only what interests you at each moment. Let's go through each option:" }
+      // FIX (reportado: "el tutorial quedó desactualizado tras mover los
+      // iconos de lugar"): la barra de filtros ya no está siempre visible
+      // -- vive dentro de un panel que se despliega al tocar este botón
+      // (ver #filtersMenuSlot en index.html) -- así que el tutorial ahora
+      // empieza señalando el BOTÓN, no la barra en sí, y abre el panel de
+      // verdad (openMenu:'filters', ver showTutorialStep) para que las
+      // pastillas de los pasos siguientes existan de verdad en pantalla.
+      target: '#filtersToggleBtn',
+      openMenu: 'filters',
+      title: { es: 'La pestaña Filtros', en: 'The Filters tab' },
+      text: { es: 'Tócala para desplegar los filtros y ver solo lo que te interesa en cada momento. Repasemos cada opción:', en: "Tap it to open the filters and see only what interests you at each moment. Let's go through each option:" }
     },
     {
       target: '.pill[data-category="all"]',
+      openMenu: 'filters',
       title: { es: '«Todos»', en: '"All"' },
       text: { es: 'Muestra en el mapa todos los puntos de interés de la ciudad, sin ningún filtro aplicado.', en: "Shows every point of interest in the city on the map, with no filter applied." }
     },
     {
       target: '.pill[data-category="essential"]',
+      openMenu: 'filters',
       title: { es: '«Recomendaciones»', en: '"Highlights"' },
       text: { es: 'Son rutas temáticas: agrupan varias paradas en un recorrido con un orden sugerido, para centrarte en un itinerario concreto en vez de explorar sin rumbo.', en: 'These are themed routes: they group several stops into a route with a suggested order, so you can focus on a specific itinerary instead of exploring aimlessly.' }
     },
     {
       target: '.pill[data-category="rincones-ocultos"]',
-      title: { es: '«Interés»', en: '"Interest"' },
+      openMenu: 'filters',
+      title: { es: '«Puntos de interés»', en: '"Interest"' },
       text: { es: 'Rincones curiosos y menos conocidos: historias y detalles que se salen del recorrido turístico habitual.', en: 'Curious, lesser-known corners: stories and details that fall outside the usual tourist route.' }
     },
     {
       target: '.pill[data-category="historia"]',
+      openMenu: 'filters',
       title: { es: '«Museos»', en: '"Museums"' },
       text: { es: 'Los monumentos, museos y edificios históricos más relevantes de la ciudad.', en: "The city's most important monuments, museums and historic buildings." }
-    },
-    {
-      target: '.pill[data-category="gastronomia"]',
-      title: { es: '«Restauración»', en: '"Food & Drink"' },
-      text: { es: 'Recomendaciones gastronómicas: bares, restaurantes y sitios donde parar a comer, cerca de cada zona.', en: 'Food recommendations: bars, restaurants and places to stop for a bite, near each area.' }
     },
     {
       // Ilumina un único pin real (nunca una burbuja de agrupación, de ahí
@@ -4132,19 +4146,12 @@
       text: { es: 'Escribe tu duda, pulsa el micrófono para preguntarla en voz alta, o toca el icono de ondas para iniciar una llamada de voz completa con la guía.', en: 'Type your question, tap the microphone to ask it out loud, or tap the waves icon to start a full voice call with the guide.' }
     },
     {
+      // FIX (mismo motivo que #filtersToggleBtn más arriba): ya solo viven
+      // aquí identificar-con-cámara, buscar y ubicarme -- fuentes/aseos se
+      // mudaron al panel de Capas (ver el bloque nuevo más abajo).
       target: '#mapTools',
       title: { es: 'Herramientas del mapa', en: 'Map tools' },
-      text: { es: 'Abajo a la derecha tienes accesos rápidos para identificar lugares, encontrar agua, encontrar aseos o ubicarte. Vamos una a una:', en: "Bottom right you'll find quick access to identify places, find water, find restrooms, or locate yourself. Let's go one by one:" }
-    },
-    {
-      target: '#fountainsBtn',
-      title: { es: 'Fuentes de agua potable', en: 'Drinking water fountains' },
-      text: { es: 'Muestra en el mapa las fuentes más cercanas: útil para rellenar la botella mientras caminas.', en: 'Shows the nearest fountains on the map: handy for refilling your bottle as you walk.' }
-    },
-    {
-      target: '#restroomsBtn',
-      title: { es: 'Aseos públicos', en: 'Public restrooms' },
-      text: { es: 'Muestra en el mapa los aseos públicos más cercanos, con precio y accesibilidad.', en: 'Shows the nearest public restrooms on the map, with price and accessibility.' }
+      text: { es: 'Abajo a la derecha tienes accesos rápidos para identificar lugares, buscar uno por nombre, o ubicarte. Vamos una a una:', en: "Bottom right you'll find quick access to identify places, search for one by name, or locate yourself. Let's go one by one:" }
     },
     {
       target: '#scanBtn',
@@ -4152,9 +4159,58 @@
       text: { es: 'Apunta con la cámara a un monumento o edificio y la IA intentará identificarlo, aunque no sepas su nombre.', en: "Point the camera at a monument or building and the AI will try to identify it, even if you don't know its name." }
     },
     {
+      // Roadmap: "una lupita para buscar un lugar o un poi y que te lo
+      // señale en el mapa" -- ver #searchBtn/#poiSearchModal y
+      // wirePoiSearch en app.js.
+      target: '#searchBtn',
+      title: { es: 'Busca un lugar por su nombre', en: 'Search for a place by name' },
+      text: { es: 'Escribe el nombre de cualquier punto de interés y tócalo en los resultados: el mapa se centra en él y su ficha se abre lista, con el botón "Llévame" a mano.', en: 'Type the name of any point of interest and tap it in the results: the map centers on it and its card opens ready, with the "Take me" button close at hand.' }
+    },
+    {
       target: '#locateBtn',
       title: { es: 'Tu ubicación', en: 'Your location' },
       text: { es: 'Centra el mapa en tu posición actual en cualquier momento, para no perder la orientación.', en: 'Centers the map on your current position at any time, so you never lose your bearings.' }
+    },
+    {
+      // FIX (mismo motivo, capítulo Capas): fuentes/aseos vivían antes
+      // dentro de "Herramientas del mapa"; ahora son capas opcionales
+      // dentro de este panel, junto con comer-y-beber/hoteles/satélite,
+      // que no existían todavía cuando se escribió la versión anterior de
+      // este tutorial.
+      target: '#layersBtn',
+      openMenu: 'layers',
+      title: { es: 'La pestaña Capas', en: 'The Layers tab' },
+      text: { es: 'Aquí activas capas opcionales sobre el mapa. Repasemos cada una:', en: "Here you turn on optional layers over the map. Let's go through each one:" }
+    },
+    {
+      target: '#fountainsBtn',
+      openMenu: 'layers',
+      title: { es: 'Fuentes de agua potable', en: 'Drinking water fountains' },
+      text: { es: 'Muestra en el mapa las fuentes más cercanas: útil para rellenar la botella mientras caminas.', en: 'Shows the nearest fountains on the map: handy for refilling your bottle as you walk.' }
+    },
+    {
+      target: '#restroomsBtn',
+      openMenu: 'layers',
+      title: { es: 'Aseos públicos', en: 'Public restrooms' },
+      text: { es: 'Muestra en el mapa los aseos públicos más cercanos, con precio y accesibilidad.', en: 'Shows the nearest public restrooms on the map, with price and accessibility.' }
+    },
+    {
+      target: '#foodBtn',
+      openMenu: 'layers',
+      title: { es: 'Comer y beber cerca', en: 'Food & drink nearby' },
+      text: { es: 'Muestra restaurantes y cafeterías cerca de donde estés, para cuando te entre el hambre a media ruta.', en: "Shows restaurants and cafés near you, for when you get hungry halfway through the route." }
+    },
+    {
+      target: '#hotelsBtn',
+      openMenu: 'layers',
+      title: { es: 'Hoteles', en: 'Hotels' },
+      text: { es: 'Muestra alojamientos cerca de cada zona, por si te apetece quedarte más días por aquí.', en: 'Shows places to stay near each area, in case you feel like staying a few more days.' }
+    },
+    {
+      target: '#satelliteBtn',
+      openMenu: 'layers',
+      title: { es: 'Vista de satélite', en: 'Satellite view' },
+      text: { es: 'Cambia entre el mapa normal y una foto de satélite real de la zona.', en: 'Switches between the normal map and a real satellite photo of the area.' }
     }
   ];
   let tutorialSteps = KIDS_TUTORIAL_STEPS;
@@ -4203,6 +4259,11 @@
   // "pregunta a tu guía IA" del tutorial de adultos pueda mostrar la
   // interfaz real de una ficha ya rellena, en vez de solo describirla.
   let tutorialDemoSheetOpen = false;
+  // Qué panel (Filtros/Capas) mantiene abierto el propio tutorial ahora
+  // mismo (null si ninguno) -- ver el manejo de step.openMenu en
+  // showTutorialStep, mismo patrón que tutorialDemoSheetOpen de arriba
+  // pero para openAppMenu/closeAppMenu en vez de la ficha de ejemplo.
+  let tutorialOpenMenu = null;
   const fillTutorialDemoSheetContent = () => {
     if (!els.sheet) return;
     const thumb = $('.sheet-thumb', els.sheet);
@@ -4367,11 +4428,28 @@
     // entrar antes de medir su posición; si ya estaba abierta (dos pasos
     // seguidos dentro de ella) o no hace falta, se reposiciona al vuelo.
     const needsDemoSheet = !!step.demoSheet;
-    if (needsDemoSheet && !tutorialDemoSheetOpen) {
-      openTutorialDemoSheet();
+    const demoSheetJustOpened = needsDemoSheet && !tutorialDemoSheetOpen;
+    if (demoSheetJustOpened) openTutorialDemoSheet();
+    else if (!needsDemoSheet && tutorialDemoSheetOpen) closeTutorialDemoSheet();
+    // Mismo trato para los pasos dentro del panel Filtros/Capas (ver
+    // step.openMenu): esos elementos (pastillas, capas) solo existen "de
+    // verdad" en pantalla (tamaño > 0) mientras su panel está desplegado,
+    // así que el tutorial lo abre/cierra él mismo con openAppMenu/
+    // closeAppMenu en vez de esperar a que el usuario lo haga a mano.
+    const needsMenu = step.openMenu || null;
+    const menuJustChanged = needsMenu !== tutorialOpenMenu;
+    if (menuJustChanged) {
+      if (needsMenu) openAppMenu(needsMenu); else closeAppMenu();
+      tutorialOpenMenu = needsMenu;
+    }
+    if (demoSheetJustOpened) {
       setTimeout(positionTutorialSpotlight, 420);
+    } else if (menuJustChanged) {
+      // Misma duración que la transición de .app-menu-slot (0.28s, ver
+      // CSS): se espera a que el panel termine de desplegarse/colapsar
+      // antes de medir el rect del elemento a iluminar.
+      setTimeout(positionTutorialSpotlight, 380);
     } else {
-      if (!needsDemoSheet && tutorialDemoSheetOpen) closeTutorialDemoSheet();
       // Reposicionar después del próximo frame: si el paso anterior venía
       // de abrir la app recién ahora, el layout (mapa, cabecera) puede no
       // estar del todo asentado todavía en este mismo tick.
@@ -4387,6 +4465,10 @@
     if (overlay) overlay.hidden = true;
     stopTutorialSpeech();
     closeTutorialDemoSheet();
+    // Si el último paso visto dejó el panel Filtros o Capas abierto (ver
+    // step.openMenu en showTutorialStep), no debe quedarse desplegado
+    // solo una vez cerrado el propio tutorial.
+    if (tutorialOpenMenu) { closeAppMenu(); tutorialOpenMenu = null; }
     if (markSeen) {
       try { localStorage.setItem(tutorialSeenKey, '1'); } catch (_) {}
     }
@@ -4687,6 +4769,106 @@
     $('#cityIntroIcon')?.addEventListener('click', () => retryCityIntroPlayback());
   };
 
+  /* =========================================================
+   * BUSCAR UN POI POR NOMBRE (roadmap: "una lupita para buscar un lugar
+   * y que te lo señale en el mapa")
+   * Filtra POIS por nombre (ES/EN, adulto/niño) según se escribe, y elegir
+   * un resultado reutiliza selectPoi(id, centerMap=true) -- exactamente lo
+   * mismo que tocar su pin en el mapa -- así que el mapa se centra en él Y
+   * su ficha se abre ya con el botón "Llévame" listo, sin necesidad de un
+   * botón de "ir allí" aparte.
+   * =======================================================*/
+  // Quita acentos/diacríticos para que "plaza espana" encuentre "Plaza
+  // España" -- normalize('NFD') separa cada letra acentuada en
+  // letra+diacrítico combinante (̀-ͯ), que luego se descarta.
+  const normalizeSearchText = (s) => (s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+
+  // Todas las formas en que el nombre de un POI puede estar escrito
+  // (idioma × modo), para que el resultado no dependa de si STATE.lang/
+  // STATE.mode coincide con lo que el usuario recuerda del sitio.
+  const poiSearchHaystack = (poi) => {
+    const name = poi.name || {};
+    const forms = [];
+    ['es', 'en'].forEach((lang) => {
+      const byLang = name[lang];
+      if (!byLang) return;
+      if (byLang.adult) forms.push(byLang.adult);
+      if (byLang.kids) forms.push(byLang.kids);
+    });
+    if (!forms.length && typeof name === 'string') forms.push(name);
+    return normalizeSearchText(forms.join(' | '));
+  };
+
+  const renderPoiSearchResults = (query) => {
+    const list = $('#poiSearchResults');
+    const empty = $('#poiSearchEmpty');
+    if (!list || !empty) return;
+    const q = normalizeSearchText(query.trim());
+    if (!q) { list.innerHTML = ''; empty.hidden = true; return; }
+    const matches = POIS.filter((p) => poiSearchHaystack(p).includes(q)).slice(0, 30);
+    empty.hidden = matches.length > 0;
+    list.innerHTML = matches.map((p) => {
+      const meta = CATEGORY_META[p.category];
+      const catLabel = meta ? pickDual(meta.label) : '';
+      const thumb = p.image
+        ? `<img class="poi-search-result-thumb" src="${p.image}" alt="" loading="lazy" />`
+        : '<span class="poi-search-result-thumb" aria-hidden="true"></span>';
+      return `<li>
+        <button type="button" class="poi-search-result" data-poi="${p.id}">
+          ${thumb}
+          <span class="poi-search-result-text">
+            <span class="poi-search-result-name">${pickLang(p.name).adult}</span>
+            <span class="poi-search-result-cat">${catLabel}</span>
+          </span>
+        </button>
+      </li>`;
+    }).join('');
+    $$('.poi-search-result', list).forEach((btn) => {
+      btn.addEventListener('click', () => {
+        selectPoi(btn.dataset.poi, true);
+        closePoiSearch();
+      });
+    });
+  };
+
+  const openPoiSearch = () => {
+    const modal = $('#poiSearchModal');
+    const input = $('#poiSearchInput');
+    if (!modal) return;
+    modal.classList.add('-open');
+    modal.setAttribute('aria-hidden', 'false');
+    if (input) {
+      input.value = '';
+      renderPoiSearchResults('');
+      // El foco espera al frame siguiente: pedirlo en el mismo tick que
+      // "-open" empieza su transición de opacidad puede no llegar a
+      // funcionar en algunos navegadores móviles (el elemento todavía
+      // cuenta como no-visible mientras la transición no ha arrancado).
+      requestAnimationFrame(() => input.focus());
+    }
+  };
+  const closePoiSearch = () => {
+    const modal = $('#poiSearchModal');
+    if (!modal) return;
+    modal.classList.remove('-open');
+    modal.setAttribute('aria-hidden', 'true');
+    $('#poiSearchInput')?.blur();
+  };
+  const wirePoiSearch = () => {
+    $('#searchBtn')?.addEventListener('click', openPoiSearch);
+    $('#poiSearchCloseBtn')?.addEventListener('click', closePoiSearch);
+    $('#poiSearchModal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'poiSearchModal') closePoiSearch();
+    });
+    $('#poiSearchInput')?.addEventListener('input', (e) => renderPoiSearchResults(e.target.value));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && $('#poiSearchModal')?.classList.contains('-open')) closePoiSearch();
+    });
+  };
+
   const setStateMode = (mode) => {
     STATE.mode = mode === 'kids' ? 'kids' : 'adult';
     document.documentElement.dataset.mode = STATE.mode;
@@ -4763,6 +4945,10 @@
     if (aiCallEndEl) aiCallEndEl.textContent = t('callHangup');
     const lightboxRetryLabelEl = $('#lightboxRetryLabel');
     if (lightboxRetryLabelEl) lightboxRetryLabelEl.textContent = t('lightboxRetryLabel');
+    const poiSearchInputEl = $('#poiSearchInput');
+    if (poiSearchInputEl) poiSearchInputEl.placeholder = t('searchPlaceholder');
+    const poiSearchEmptyEl = $('#poiSearchEmpty');
+    if (poiSearchEmptyEl) poiSearchEmptyEl.textContent = t('searchNoResults');
     // Aria-labels y otros atributos estáticos (invisibles para un usuario
     // vidente, pero igual de importantes para lectores de pantalla).
     [
@@ -4798,7 +4984,10 @@
       ['#lightboxCloseBtn', 'aria-label', 'ariaLightboxClose'],
       ['.lightbox-retry', 'aria-label', 'ariaImageRetry'],
       ['#visitSummaryModal', 'aria-label', 'ariaVisitSummaryModal'],
-      ['#visitSummaryCloseBtn', 'aria-label', 'ariaVisitSummaryClose']
+      ['#visitSummaryCloseBtn', 'aria-label', 'ariaVisitSummaryClose'],
+      ['#searchBtn', 'aria-label', 'ariaSearch'],
+      ['#poiSearchModal', 'aria-label', 'ariaSearchModal'],
+      ['#poiSearchCloseBtn', 'aria-label', 'ariaSearchClose']
     ].forEach(([sel, attr, key]) => {
       const el = $(sel);
       if (el) el.setAttribute(attr, t(key));
@@ -7870,6 +8059,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     wireAiCallModal();
     wireTutorial();
     wireCityIntro();
+    wirePoiSearch();
 
     setStateMode(STATE.mode);
     updatePills();
