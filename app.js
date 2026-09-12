@@ -3504,7 +3504,16 @@
       // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
       // cierra el menú (Filtros/Capas) al tocar fuera de sus dos slots y de
       // sus dos botones disparadores.
-      if (isAppMenuOpen()) {
+      // FIX (bug real encontrado al añadir step.openMenu al tutorial, ver
+      // showTutorialStep): el tutorial abre este mismo menú a propósito
+      // para iluminar una pastilla/capa, pero su botón "Siguiente" vive
+      // FUERA de ambos slots y de ambos disparadores -- así que este mismo
+      // listener, al recibir ESE clic, lo trataba como "toque fuera" y
+      // cerraba el panel un instante después de que el tutorial lo abriera
+      // (el pill/capa del siguiente paso se quedaba sin iluminar de
+      // verdad). Los clics dentro de #tutorialOverlay quedan exentos: ese
+      // panel gestiona el menú él mismo (ver tutorialOpenMenu).
+      if (isAppMenuOpen() && !e.target.closest('#tutorialOverlay')) {
         const slots = [$('#filtersMenuSlot'), $('#layersMenuSlot')];
         const btns = [$(APP_MENU_TRIGGERS.filters), $(APP_MENU_TRIGGERS.layers)];
         const insideSlot = slots.some((s) => s && s.contains(e.target));
