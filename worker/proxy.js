@@ -749,12 +749,15 @@ function sanitizeSponsorInput(raw) {
   const ctaLabel = dualText(raw.ctaLabel);
   if (ctaLabel) sponsor.ctaLabel = ctaLabel;
 
+  // BUG (encontrado en pruebas 2026-09-12): antes audioMention solo se
+  // guardaba si TAMBIÉN venía una audioLine propia -- así que "mención por
+  // voz activada, pero usa la frase genérica" (ver la batería de
+  // SPONSOR_OUTRO_PHRASES en app.js) no se podía guardar nunca: audioLine
+  // es opcional, audioMention no debe depender de ella.
   if (raw.audioMention) {
+    sponsor.audioMention = true;
     const audioLine = dualText(raw.audioLine);
-    if (audioLine) {
-      sponsor.audioMention = true;
-      sponsor.audioLine = audioLine;
-    }
+    if (audioLine) sponsor.audioLine = audioLine;
   }
 
   const menuPdf = String(raw.menuPdf || '').trim().slice(0, 300);
