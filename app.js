@@ -3276,6 +3276,44 @@
     return phrases[idx](cleanName, pickLang(sponsor.teaser), formatDistanceSpoken(distance));
   };
 
+  // BUG REAL reportado (app de Play Store, 2026-09-12): en Puerta del Sol
+  // aparecían 3 patrocinadores pero NINGUNO llegaba a sonar tras la
+  // Introducción. Causa: maybeSpeakSponsorDemoOutro/speakPendingIntroCta
+  // llamaban a SPEECH.speak() directo, sin la misma red de seguridad que ya
+  // tiene la narración principal (ver startAudio) y el tutorial (ver
+  // speakTutorialStep) para Android empaquetado con Capacitor, cuya WebView
+  // NO implementa window.speechSynthesis -- ahí SPEECH.speak() no hace
+  // nada, sin avisar. Este helper reproduce el mismo patrón que
+  // speakTutorialStep: Web Speech si existe, si no CLOUD_TTS con un <audio>
+  // propio (no se reutiliza cloudAudioEl de la ficha para no heredar sus
+  // onended de la narración principal).
+  let sponsorAudioEl = null;
+  const speakOverrideText = (text, onDone) => {
+    const done = () => { if (typeof onDone === 'function') onDone(); };
+    STATE.audio.overrideText = text;
+    if (SPEECH.isSupported()) {
+      SPEECH.speak(() => { STATE.audio.overrideText = null; done(); });
+      return;
+    }
+    if (!CLOUD_TTS.isConfigured()) { STATE.audio.overrideText = null; done(); return; }
+    const playCloudUrl = (url) => {
+      if (!sponsorAudioEl) sponsorAudioEl = (typeof Audio !== 'undefined') ? new Audio() : null;
+      if (!sponsorAudioEl) { STATE.audio.overrideText = null; done(); return; }
+      sponsorAudioEl.onended = sponsorAudioEl.onerror = () => { STATE.audio.overrideText = null; done(); };
+      sponsorAudioEl.src = url;
+      sponsorAudioEl.currentTime = 0;
+      sponsorAudioEl.play().catch(() => { STATE.audio.overrideText = null; done(); });
+    };
+    const cachedUrl = CLOUD_TTS.getReadyUrl(text);
+    if (cachedUrl) { playCloudUrl(cachedUrl); return; }
+    CLOUD_TTS.fetchAndCache(text).then((url) => {
+      // Si mientras llegaba el audio ya se pasó a otra cosa, no sonar
+      // encima de lo nuevo (mismo criterio que speakTutorialStep).
+      if (url && STATE.audio.overrideText === text) playCloudUrl(url);
+      else { STATE.audio.overrideText = null; done(); }
+    });
+  };
+
   // "Plus" de nivel Oro (ver audioMention en data/sponsors-demo.js): al
   // terminar la audioguía del POI orgánico, si el sponsor que quedó
   // mostrado en su ficha pagó ese extra, se lee una frase corta con la
@@ -3326,10 +3364,10 @@
       // en admin/dashboard.html) tiene prioridad; si no la escribió, se
       // usa la batería genérica de arriba, ya adaptada a su tipo de
       // negocio (comida vs. alojamiento) y con distancia real.
-      STATE.audio.overrideText = match.sponsor.audioLine
+      const text = match.sponsor.audioLine
         ? pickLang(match.sponsor.audioLine)
         : buildSponsorOutroFallback(match.sponsor, match.distance);
-      SPEECH.speak(() => { STATE.audio.overrideText = null; done(); });
+      speakOverrideText(text, done);
     }, 300);
   };
 
@@ -3354,8 +3392,7 @@
     if (!hist.length || !hist[hist.length - 1].isSummary) { STATE.audio.overrideText = null; return; }
     setTimeout(() => {
       if (STATE.activePoiId !== poi.id || STATE.audio.playing || STATE.audio.playId !== myPlayId) { STATE.audio.overrideText = null; return; }
-      STATE.audio.overrideText = pending.text;
-      SPEECH.speak(() => { STATE.audio.overrideText = null; });
+      speakOverrideText(pending.text);
     }, 300);
   };
 
