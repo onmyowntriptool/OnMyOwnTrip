@@ -3209,6 +3209,20 @@
   // se "roban" turno entre sí, y visitar varias veces el mismo va sacando
   // frases distintas en vez de la primera de la lista siempre.
   const sponsorOutroPhraseCounters = {};
+  // Igual que formatDistance (arriba), pero deletreando la unidad entera:
+  // un sintetizador de voz lee "m"/"km" tal cual la letra ("260 eme" en vez
+  // de "260 metros") -- esto es solo para texto que se DICE en voz alta.
+  const formatDistanceSpoken = (meters) => {
+    if (STATE.lang === 'en') {
+      return meters < 1000
+        ? `${Math.round(meters / 10) * 10} meters`
+        : `${(meters / 1000).toFixed(1)} kilometers`;
+    }
+    return meters < 1000
+      ? `${Math.round(meters / 10) * 10} metros`
+      : `${(meters / 1000).toFixed(1)} kilómetros`;
+  };
+
   const buildSponsorOutroFallback = (sponsor, distance) => {
     const category = sponsor.icon === 'hotel' ? 'hotel' : 'food';
     const lang = STATE.lang === 'en' ? 'en' : 'es';
@@ -3216,7 +3230,7 @@
     const idx = (sponsorOutroPhraseCounters[sponsor.id] || 0) % phrases.length;
     sponsorOutroPhraseCounters[sponsor.id] = idx + 1;
     const cleanName = sponsor.name.replace(/\s*\(DEMO.*?\)\s*/i, '');
-    return phrases[idx](cleanName, pickLang(sponsor.teaser), formatDistance(distance));
+    return phrases[idx](cleanName, pickLang(sponsor.teaser), formatDistanceSpoken(distance));
   };
 
   // "Plus" de nivel Oro (ver audioMention en data/sponsors-demo.js): al
@@ -3244,6 +3258,10 @@
     // respuesta posterior, y ahí esta mención no debe sonar.
     const hist = aiHistoryFor(poi.id).filter((x) => x.role === 'assistant');
     if (!hist.length || !hist[hist.length - 1].isSummary) return done();
+    // FIX (feedback: el silencio de casi 1s entre el final de la narración y
+    // el anuncio se sentía como un corte en la experiencia, no como una
+    // pausa natural). Antes eran 900ms; esta pausa más breve sigue evitando
+    // que se pisen los dos audios, sin sonar a corte.
     setTimeout(() => {
       // Si mientras tanto se cerró la ficha o se abrió otro POI, no decimos
       // nada: sería una voz patrocinada sonando sobre una pantalla distinta.
@@ -3256,7 +3274,7 @@
         ? pickLang(match.sponsor.audioLine)
         : buildSponsorOutroFallback(match.sponsor, match.distance);
       SPEECH.speak(() => { STATE.audio.overrideText = null; done(); });
-    }, 900);
+    }, 350);
   };
 
   // Cierre de "Introducción" pospuesto (ver showFullIntro): se llama como
@@ -3278,7 +3296,7 @@
       if (STATE.activePoiId !== poi.id || STATE.audio.playing) { STATE.audio.overrideText = null; return; }
       STATE.audio.overrideText = pending.text;
       SPEECH.speak(() => { STATE.audio.overrideText = null; });
-    }, 500);
+    }, 350);
   };
 
   // EXPERIMENTO (rama experimento-vista-satelite): a diferencia de
