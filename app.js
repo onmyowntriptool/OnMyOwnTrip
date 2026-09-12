@@ -3163,6 +3163,62 @@
     el.hidden = false;
   };
 
+  // Frase genérica de la mención por voz cuando el patrocinador no escribió
+  // su propio audioLine (ver Gestión en admin/dashboard.html): antes era
+  // una única frase fija ("si quieres hacer una pausa..."), que sonaba fría
+  // de tanto repetirse Y encima daba por hecho que todo era sitio para
+  // comer/beber -- un hotel terminaba invitando a "probar algo de la zona".
+  // Ahora hay una batería por tipo de negocio (comida/alojamiento, según
+  // sponsor.icon) que va rotando una distinta cada vez que ESE sponsor
+  // concreto habla, en vez de repetir siempre la primera.
+  const SPONSOR_OUTRO_PHRASES = {
+    food: {
+      es: [
+        (name, teaser, dist) => `Si te apetece un descanso, cerca tienes ${name}, a ${dist}. ${teaser}`,
+        (name, teaser, dist) => `¿Te apetece comer algo rico por la zona? ${name} está a solo ${dist}. ${teaser}`,
+        (name, teaser, dist) => `Aprovecha para hacer una parada en ${name}, a ${dist} de aquí. ${teaser}`,
+        (name, teaser, dist) => `Muy cerca, a ${dist}, tienes ${name}, por si quieres probar algo de la zona. ${teaser}`,
+        (name, teaser, dist) => `Para recuperar fuerzas, ${name} está a ${dist}. ${teaser}`
+      ],
+      en: [
+        (name, teaser, dist) => `If you feel like a break, nearby you have ${name}, ${dist} away. ${teaser}`,
+        (name, teaser, dist) => `Fancy something tasty nearby? ${name} is just ${dist} away. ${teaser}`,
+        (name, teaser, dist) => `Worth a stop at ${name}, ${dist} from here. ${teaser}`,
+        (name, teaser, dist) => `Just ${dist} away you have ${name}, if you want to try something local. ${teaser}`,
+        (name, teaser, dist) => `To recharge, ${name} is ${dist} away. ${teaser}`
+      ]
+    },
+    hotel: {
+      es: [
+        (name, teaser, dist) => `Si estás pensando dónde alojarte, ${name} está a ${dist}. ${teaser}`,
+        (name, teaser, dist) => `Para seguir explorando mañana, cerca tienes ${name}, a ${dist}. ${teaser}`,
+        (name, teaser, dist) => `A ${dist} de aquí tienes ${name}, por si buscas dónde quedarte. ${teaser}`,
+        (name, teaser, dist) => `${name} está a solo ${dist}, ideal si necesitas alojamiento por la zona. ${teaser}`,
+        (name, teaser, dist) => `Si te hace falta un sitio donde descansar, ${name} lo tienes a ${dist}. ${teaser}`
+      ],
+      en: [
+        (name, teaser, dist) => `If you're thinking about where to stay, ${name} is ${dist} away. ${teaser}`,
+        (name, teaser, dist) => `To keep exploring tomorrow, nearby you have ${name}, ${dist} away. ${teaser}`,
+        (name, teaser, dist) => `${dist} from here you have ${name}, if you're looking for a place to stay. ${teaser}`,
+        (name, teaser, dist) => `${name} is just ${dist} away, great if you need accommodation nearby. ${teaser}`,
+        (name, teaser, dist) => `If you need somewhere to rest, ${name} is ${dist} away. ${teaser}`
+      ]
+    }
+  };
+  // Un contador por sponsor (no global): así dos patrocinadores distintos no
+  // se "roban" turno entre sí, y visitar varias veces el mismo va sacando
+  // frases distintas en vez de la primera de la lista siempre.
+  const sponsorOutroPhraseCounters = {};
+  const buildSponsorOutroFallback = (sponsor, distance) => {
+    const category = sponsor.icon === 'hotel' ? 'hotel' : 'food';
+    const lang = STATE.lang === 'en' ? 'en' : 'es';
+    const phrases = SPONSOR_OUTRO_PHRASES[category][lang];
+    const idx = (sponsorOutroPhraseCounters[sponsor.id] || 0) % phrases.length;
+    sponsorOutroPhraseCounters[sponsor.id] = idx + 1;
+    const cleanName = sponsor.name.replace(/\s*\(DEMO.*?\)\s*/i, '');
+    return phrases[idx](cleanName, pickLang(sponsor.teaser), formatDistance(distance));
+  };
+
   // "Plus" de nivel Oro (ver audioMention en data/sponsors-demo.js): al
   // terminar la audioguía del POI orgánico, si el sponsor que quedó
   // mostrado en su ficha pagó ese extra, se lee una frase corta con la
@@ -3192,17 +3248,13 @@
       // Si mientras tanto se cerró la ficha o se abrió otro POI, no decimos
       // nada: sería una voz patrocinada sonando sobre una pantalla distinta.
       if (STATE.activePoiId !== poi.id || STATE.audio.playing) return done();
-      const cleanName = match.sponsor.name.replace(/\s*\(DEMO.*?\)\s*/i, '');
-      // audioLine: frase a medida por sponsor (ver data/sponsors-demo.js) --
-      // la genérica de abajo está pensada para un sitio donde parar a
-      // comer/beber, no encaja igual para un hotel u otro tipo de negocio.
-      // Ambas (audioLine y la genérica) van en { es, en } / según idioma:
-      // ver el fix de idioma en data/sponsors-demo.js.
+      // audioLine: frase a medida escrita por el patrocinador (ver Gestión
+      // en admin/dashboard.html) tiene prioridad; si no la escribió, se
+      // usa la batería genérica de arriba, ya adaptada a su tipo de
+      // negocio (comida vs. alojamiento) y con distancia real.
       STATE.audio.overrideText = match.sponsor.audioLine
         ? pickLang(match.sponsor.audioLine)
-        : (STATE.lang === 'en'
-          ? `If you feel like a break to catch your breath and try something local, nearby you have ${cleanName}. ${pickLang(match.sponsor.teaser)}`
-          : `Si quieres hacer una pausa para recuperar aliento y probar algo de la zona, cerca tienes ${cleanName}. ${pickLang(match.sponsor.teaser)}`);
+        : buildSponsorOutroFallback(match.sponsor, match.distance);
       SPEECH.speak(() => { STATE.audio.overrideText = null; done(); });
     }, 900);
   };
