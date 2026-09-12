@@ -958,6 +958,11 @@
       // pregunta del quiz), en vez del resumen inicial. Se limpia cada vez
       // que se abre una ficha para que el audio inicial vuelva a sonar.
       overrideText: null,
+      // Cierre de "Introducción" pospuesto hasta después del posible anuncio
+      // de patrocinador (ver showFullIntro/speakPendingIntroCta): quien va a
+      // pulsar "Profundiza más"/"entradas" en cuanto lo oiga, así ya ha
+      // escuchado antes la mención en vez de taparla sin querer.
+      pendingIntroCta: null,
       // Callback pendiente de "este segmento ha terminado" del startAudio
       // en curso (lo usa queueDeepenWithFillers para saber cuándo pedir
       // el siguiente párrafo) — seekAudioTo lo relee para no perderlo al
@@ -3164,10 +3169,16 @@
   // misma voz — reutiliza el mecanismo de "texto puntual" (overrideText)
   // que ya usan el tutorial y "cómo llegar" (ver más abajo, STATE.audio.
   // overrideText), así que no hace falta ningún motor de voz nuevo.
-  const maybeSpeakSponsorDemoOutro = (poi) => {
-    if (!poi || STATE.mode === 'kids') return;
+  //
+  // onDone (opcional): se llama SIEMPRE que esta función decide no sonar o
+  // en cuanto termina de sonar el anuncio — lo usa showFullIntro para
+  // encadenar el cierre pospuesto ("Profundiza más"/"entradas", ver
+  // speakPendingIntroCta) justo después, en vez de simultáneo o antes.
+  const maybeSpeakSponsorDemoOutro = (poi, onDone) => {
+    const done = () => { if (typeof onDone === 'function') onDone(); };
+    if (!poi || STATE.mode === 'kids') return done();
     const match = activeSponsorDemoMatch;
-    if (!match || match.poiId !== poi.id || !match.sponsor.audioMention) return;
+    if (!match || match.poiId !== poi.id || !match.sponsor.audioMention) return done();
     // FIX (reportado: la mención sonaba al terminar CUALQUIER audio -- un
     // chip de tema, "profundiza más", una pregunta escrita -- no solo la
     // presentación principal del POI). En modo adulto SPEECH.getText()
@@ -3176,11 +3187,11 @@
     // precisamente el resumen inicial (isSummary): cualquier otro es una
     // respuesta posterior, y ahí esta mención no debe sonar.
     const hist = aiHistoryFor(poi.id).filter((x) => x.role === 'assistant');
-    if (!hist.length || !hist[hist.length - 1].isSummary) return;
+    if (!hist.length || !hist[hist.length - 1].isSummary) return done();
     setTimeout(() => {
       // Si mientras tanto se cerró la ficha o se abrió otro POI, no decimos
       // nada: sería una voz patrocinada sonando sobre una pantalla distinta.
-      if (STATE.activePoiId !== poi.id || STATE.audio.playing) return;
+      if (STATE.activePoiId !== poi.id || STATE.audio.playing) return done();
       const cleanName = match.sponsor.name.replace(/\s*\(DEMO.*?\)\s*/i, '');
       // audioLine: frase a medida por sponsor (ver data/sponsors-demo.js) --
       // la genérica de abajo está pensada para un sitio donde parar a
@@ -3192,8 +3203,30 @@
         : (STATE.lang === 'en'
           ? `If you feel like a break to catch your breath and try something local, nearby you have ${cleanName}. ${pickLang(match.sponsor.teaser)}`
           : `Si quieres hacer una pausa para recuperar aliento y probar algo de la zona, cerca tienes ${cleanName}. ${pickLang(match.sponsor.teaser)}`);
-      SPEECH.speak(() => { STATE.audio.overrideText = null; });
+      SPEECH.speak(() => { STATE.audio.overrideText = null; done(); });
     }, 900);
+  };
+
+  // Cierre de "Introducción" pospuesto (ver showFullIntro): se llama como
+  // "onDone" de maybeSpeakSponsorDemoOutro, así que suena SIEMPRE después
+  // del posible anuncio (o justo tras la narración si no hubo ninguno).
+  // pendingIntroCta se consume una sola vez -- si por lo que sea esta
+  // función se llamara dos veces para el mismo cierre, la segunda no
+  // encuentra nada pendiente y no repite la frase.
+  const speakPendingIntroCta = (poi) => {
+    const pending = STATE.audio.pendingIntroCta;
+    STATE.audio.pendingIntroCta = null;
+    if (!poi || !pending || pending.poiId !== poi.id) { STATE.audio.overrideText = null; return; }
+    // Mismo criterio que maybeSpeakSponsorDemoOutro: si entretanto se saltó
+    // a otro mensaje (profundiza más, una pregunta suelta...), este cierre
+    // ya no pinta nada ahí -- solo tiene sentido justo tras SU resumen.
+    const hist = aiHistoryFor(poi.id).filter((x) => x.role === 'assistant');
+    if (!hist.length || !hist[hist.length - 1].isSummary) { STATE.audio.overrideText = null; return; }
+    setTimeout(() => {
+      if (STATE.activePoiId !== poi.id || STATE.audio.playing) { STATE.audio.overrideText = null; return; }
+      STATE.audio.overrideText = pending.text;
+      SPEECH.speak(() => { STATE.audio.overrideText = null; });
+    }, 500);
   };
 
   // EXPERIMENTO (rama experimento-vista-satelite): a diferencia de
@@ -5209,7 +5242,11 @@
     return /[.!?…"'”)]$/.test(trimmed) ? trimmed : `${trimmed}.`;
   };
 
-  const buildIntroText = (poi, mode, includeOpener = true) => {
+  // Separado en { main, cta } (en vez de un único string) para que
+  // showFullIntro pueda posponer el cta hasta después del posible anuncio de
+  // patrocinador (ver speakPendingIntroCta) sin tocar el texto que se
+  // guarda/muestra en el chat, que sigue siendo main+cta de siempre.
+  const buildIntroTextParts = (poi, mode, includeOpener = true) => {
     const isEn = STATE.lang === 'en';
     const historyFull = ensureSentenceEnd(pickDual(poi.tabs.history) || '');
     const legends = poi.tabs.legends ? ensureSentenceEnd(pickDual(poi.tabs.legends)) : '';
@@ -5259,8 +5296,14 @@
         ? (poi.quiz ? ' Escucha bien, que cuando termine te voy a hacer una pregunta para ver cuánto se te ha quedado.' : '')
         : ' Si quieres profundizar en algún tema, tienes el botón "Profundiza más" aquí abajo. Y si buscas el horario y el precio exactos, ahí tienes el botón de entradas.');
 
-    const body = `${historyFull}${legendBridge}${archBridge}${visitLine}${cta}`;
-    return opener ? `${opener} ${body}` : body;
+    const mainBody = `${historyFull}${legendBridge}${archBridge}${visitLine}`;
+    const main = opener ? `${opener} ${mainBody}` : mainBody;
+    return { main, cta };
+  };
+
+  const buildIntroText = (poi, mode, includeOpener = true) => {
+    const { main, cta } = buildIntroTextParts(poi, mode, includeOpener);
+    return main + cta;
   };
 
   const ensureAiPanelInitialGreet = (poi) => {
@@ -5724,7 +5767,9 @@
   const showFullIntro = (poi) => {
     if (!poi) return;
     const hist = aiHistoryFor(poi.id);
-    hist.push({ role: 'assistant', text: buildIntroText(poi, STATE.mode, STATE.mode === 'kids'), isSummary: true });
+    const isKids = STATE.mode === 'kids';
+    const { main, cta } = buildIntroTextParts(poi, STATE.mode, isKids);
+    hist.push({ role: 'assistant', text: main + cta, isSummary: true });
     renderAiMessages();
     scrollAiToBottom();
     saveState();
@@ -5734,7 +5779,23 @@
     // overrideText anterior interrumpido con SPEECH.cancel() no se limpia
     // solo, así que buildNarrativeText seguía devolviendo ese texto viejo.
     STATE.audio.overrideText = null;
-    if (STATE.activePoiId === poi.id) startAudio(false, true);
+    STATE.audio.pendingIntroCta = null;
+    if (STATE.activePoiId === poi.id) {
+      // En adultos, el cierre ("Profundiza más"/"entradas") se pospone hasta
+      // después del posible anuncio de patrocinador (ver
+      // speakPendingIntroCta, encadenado tras maybeSpeakSponsorDemoOutro):
+      // si no, quien va a pulsar un botón en cuanto oiga esa frase nunca
+      // llega a escuchar la mención, que sonaría justo después tapada por
+      // su propio toque. El texto guardado/mostrado en el chat (arriba) no
+      // cambia — sigue siendo main+cta de siempre — solo se narra distinto.
+      // En niños no hay anuncios (maybeSpeakSponsorDemoOutro los descarta),
+      // así que ahí se narra todo junto, como siempre.
+      if (!isKids && cta) {
+        STATE.audio.pendingIntroCta = { poiId: poi.id, text: cta };
+        STATE.audio.overrideText = main;
+      }
+      startAudio(false, true);
+    }
   };
 
   // "Cómo llegar": aviso previo antes de saltar a Google Maps, para que
@@ -7430,7 +7491,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       stopAudio();
       if (!silent) showToast(t('audioguideCompleted'));
       if (STATE.mode === 'kids') maybeShowFirstKidsQuiz();
-      maybeSpeakSponsorDemoOutro(POIS.find((p) => p.id === STATE.activePoiId));
+      const endedPoi = POIS.find((p) => p.id === STATE.activePoiId);
+      maybeSpeakSponsorDemoOutro(endedPoi, () => speakPendingIntroCta(endedPoi));
     };
     // Si el audio en caché falla al reproducir (blob corrupto, formato no
     // soportado, etc.) se reintenta ya mismo con Web Speech en vez de dejar
@@ -7533,7 +7595,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
           updateAudioUi();
           if (!silent) showToast(t('audioguideCompleted'));
           if (STATE.mode === 'kids') maybeShowFirstKidsQuiz();
-          maybeSpeakSponsorDemoOutro(POIS.find((p) => p.id === STATE.activePoiId));
+          const endedPoi = POIS.find((p) => p.id === STATE.activePoiId);
+          maybeSpeakSponsorDemoOutro(endedPoi, () => speakPendingIntroCta(endedPoi));
           notifySegmentEnd();
           return;
         }
