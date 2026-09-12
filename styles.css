@@ -3542,10 +3542,9 @@ html[data-mode="kids"] .ai-input-wrap {
 .tutorial-next:active { transform: scale(0.96); }
 
 /* ============================================================
-   EXPERIMENTO TEMPORAL — patrocinios demo (rama
-   experimento-patrocinios-demo). Va con data/sponsors-demo.js y el
-   bloque marcado "PATROCINIOS DEMO" en app.js. BORRAR los tres antes
-   de fusionar nada de esta rama a main.
+   Patrocinios: pin de mapa, tarjeta en la ficha del POI y modal de
+   carta/precios. Los datos de cada patrocinador se gestionan desde
+   admin/dashboard.html (pestaña "Gestión"), ver PATROCINIOS en app.js.
    ============================================================ */
 .sponsor-demo-pin {
   width: 28px;

@@ -1263,10 +1263,10 @@
   // (datos abiertos de OpenStreetMap), patrocinen o no. BORRAR junto con
   // data/layers/hotels-*.js si se retira el experimento.
   let hotelsLayer = null, hotelsVisible = false;
-  // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo).
   // Capa de pines patrocinados (solo nivel Oro pone pin permanente en el
   // mapa; Bronce/Plata solo aparecen dentro de la ficha, ver
-  // renderSponsorDemoInsert). BORRAR junto con data/sponsors-demo.js.
+  // renderSponsorDemoInsert). Datos por ciudad en SPONSORS_BY_CITY (ver
+  // loadSponsorsForCity más abajo).
   let sponsorsLayer = null;
   // EXPERIMENTO (rama experimento-vista-satelite): capa base alternativa de
   // imagen satelital en vez del mapa de calles de siempre. A diferencia de
@@ -1861,15 +1861,16 @@
         if (map && hotelsLayer) hotelsLayer.addTo(map);
       });
     }
-    // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo):
-    // capa siempre visible (sin toggle propio, a diferencia de fuentes/aseos)
-    // porque para este ejercicio interesa ver el pin Oro sin un paso extra.
-    // BORRAR junto con data/sponsors-demo.js.
+    // Capa siempre visible (sin toggle propio, a diferencia de fuentes/aseos):
+    // el pin Oro se ve sin un paso extra.
     sponsorsLayer = L.layerGroup().addTo(map);
     map.on('zoom', updatePinScale);
     updatePinScale();
     renderMarkers();
     renderSponsorsDemo();
+    if (!SPONSORS_BY_CITY[STATE.cityId]) {
+      loadSponsorsForCity(STATE.cityId).then(() => renderSponsorsDemo());
+    }
   };
   const isRouteMode = () => STATE.category === 'essential';
   // Rutas imprescindibles de la ciudad activa; las ciudades sin `routes` propio
@@ -2591,6 +2592,32 @@
 
   const CONTENT_BASE_URL = (typeof window !== 'undefined' && window.LLM_CONFIG && window.LLM_CONFIG.baseUrl) || '';
   const CONTENT_ENDPOINT = CONTENT_BASE_URL ? `${CONTENT_BASE_URL.replace(/\/$/, '')}/content` : '';
+  // Patrocinadores por ciudad (ver worker/README.md, "Gestión de
+  // patrocinadores"): reemplaza el antiguo data/sponsors-demo.js estático.
+  // Ruta pública, sin gate de licencia (a diferencia de /content): un
+  // patrocinio es publicidad, no contenido de pago.
+  const SPONSORS_ENDPOINT = CONTENT_BASE_URL ? `${CONTENT_BASE_URL.replace(/\/$/, '')}/sponsors/list` : '';
+  const SPONSORS_BY_CITY = {};
+  const loadedSponsorCities = new Set();
+  const loadSponsorsForCity = async (cityId) => {
+    if (loadedSponsorCities.has(cityId) || !SPONSORS_ENDPOINT) return;
+    // Se marca como "intentado" antes de esperar la red: un fallo puntual no
+    // debe reintentar en bucle cada vez que se vuelve a esta ciudad, igual
+    // que loadedCityScripts para el contenido normal.
+    loadedSponsorCities.add(cityId);
+    try {
+      const res = await fetch(SPONSORS_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cityId })
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      SPONSORS_BY_CITY[cityId] = Array.isArray(data.sponsors) ? data.sponsors : [];
+    } catch (e) {
+      // Decorativo: un fallo de red aquí nunca debe romper el mapa ni la ficha.
+    }
+  };
 
   // Usado por loadWaterFountains/loadRestrooms (capas opcionales, siguen
   // siendo ficheros estáticos del repo, no llevan gate de licencia).
@@ -2833,18 +2860,16 @@
   };
 
   /* =========================================================
-   * EXPERIMENTO TEMPORAL — PATROCINIOS DEMO
-   * (rama experimento-patrocinios-demo, NO fusionar a main)
+   * PATROCINIOS
    *
-   * Ejercicio de monetización: 3 restaurantes ficticios (ver
-   * data/sponsors-demo.js) prueban los 3 niveles de cuota:
+   * Sistema de monetización con 3 niveles de cuota:
    *   - Bronce: mención de texto en la ficha del POI cercano.
    *   - Plata:  mención + botón "Ver en el mapa" (pin temporal).
    *   - Oro:    pin permanente en el mapa + tarjeta con foto en la ficha.
-   * BORRAR todo este bloque, la capa `sponsorsLayer` de arriba, la
-   * llamada a renderSponsorDemoInsert en populateSheetContent,
-   * data/sponsors-demo.js y su <script> en index.html antes de
-   * fusionar cualquier cosa de esta rama a main.
+   * Los datos de cada patrocinador se gestionan desde admin/dashboard.html
+   * (pestaña "Gestión") y viven en el KV "SPONSORS" del Worker (ver
+   * worker/README.md) — SPONSORS_BY_CITY (arriba) se rellena por ciudad vía
+   * loadSponsorsForCity, ya no desde el antiguo data/sponsors-demo.js.
    * =======================================================*/
   // Iconos reales (no emoji, para que se lea igual de "en serio" que el
   // resto de la ficha en modo adulto) recortados a partir de los dos PNG
@@ -2903,7 +2928,7 @@
   const renderSponsorsDemo = () => {
     if (!sponsorsLayer) return;
     sponsorsLayer.clearLayers();
-    const list = (typeof SPONSORS_DEMO !== 'undefined' ? SPONSORS_DEMO : []).filter((s) => s.city === STATE.cityId && s.tier === 'oro');
+    const list = (SPONSORS_BY_CITY[STATE.cityId] || []).filter((s) => s.tier === 'oro');
     list.forEach((s) => {
       const marker = L.marker(s.coords, { icon: makeSponsorDemoIcon(s) });
       marker.bindPopup(`<strong>${s.name}</strong><br>${pickLang(s.teaser)}<br><em>${sd('sponsoredMapPopup')}</em>`);
@@ -3037,8 +3062,7 @@
   const sponsorRotationCounters = {}; // { [poiId]: siguiente índice a mostrar }
   const findNearbySponsorDemo = (poi) => {
     if (!poi || !poi.coords) return null;
-    const candidates = (typeof SPONSORS_DEMO !== 'undefined' ? SPONSORS_DEMO : [])
-      .filter((s) => s.city === STATE.cityId)
+    const candidates = (SPONSORS_BY_CITY[STATE.cityId] || [])
       .map((s) => ({ sponsor: s, distance: haversineMeters(poi.coords, s.coords) }))
       .filter((c) => c.distance <= c.sponsor.radius);
     if (!candidates.length) return null;
@@ -6604,8 +6628,6 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     // siempre (ver abandonDeepenFlow).
     if (STATE.ai.deepenBusy) abandonDeepenFlow();
     cleanupAdHocScanIfNeeded(STATE.activePoiId);
-    // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO: BORRAR esta línea junto con
-    // flushSponsorDemoMetrics más arriba.
     flushSponsorDemoMetrics();
     STATE.sheet = 'closed';
     STATE.activePoiId = null;
@@ -6792,8 +6814,6 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     $('.sheet-title', els.sheet).textContent = pickDual(poi.name);
     $('.sheet-sub', els.sheet).textContent = pickDual(poi.subtitle);
     updateSheetDistance(id);
-    // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo).
-    // BORRAR esta llamada junto con el bloque de funciones más arriba.
     renderSponsorDemoInsert(poi);
 
     // EXPERIMENTO (rama experimento-diseno-editorial): "Cómo llegar" ya no
@@ -7410,8 +7430,6 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       stopAudio();
       if (!silent) showToast(t('audioguideCompleted'));
       if (STATE.mode === 'kids') maybeShowFirstKidsQuiz();
-      // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO: BORRAR esta línea junto con
-      // maybeSpeakSponsorDemoOutro más arriba.
       maybeSpeakSponsorDemoOutro(POIS.find((p) => p.id === STATE.activePoiId));
     };
     // Si el audio en caché falla al reproducir (blob corrupto, formato no
@@ -7515,8 +7533,6 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
           updateAudioUi();
           if (!silent) showToast(t('audioguideCompleted'));
           if (STATE.mode === 'kids') maybeShowFirstKidsQuiz();
-          // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO: BORRAR esta línea junto
-          // con maybeSpeakSponsorDemoOutro más arriba.
           maybeSpeakSponsorDemoOutro(POIS.find((p) => p.id === STATE.activePoiId));
           notifySegmentEnd();
           return;

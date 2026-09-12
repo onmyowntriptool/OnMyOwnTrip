@@ -80,6 +80,39 @@
   }
   .tab-btn.-active { color: var(--accent); border-bottom-color: var(--accent); }
   .tab-panel[hidden] { display: none; }
+
+  /* Pestaña "Gestión": alta/edición/baja de patrocinadores contra el KV
+     "SPONSORS" (ver worker/README.md) -- formulario + tabla + import JSON. */
+  .form-card { background: var(--surface); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+  .form-card h3 { font-size: 14px; margin: 0 0 14px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-bottom: 14px; }
+  @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.-span2 { grid-column: 1 / -1; }
+  .field label { font-size: 12px; color: var(--text-soft); font-weight: 600; }
+  .field input, .field select, .field textarea {
+    border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2);
+    color: var(--text); padding: 8px 10px; font-size: 13px; font-family: inherit;
+  }
+  .field textarea { resize: vertical; min-height: 54px; }
+  .field.-checkbox { flex-direction: row; align-items: center; gap: 8px; }
+  .field.-checkbox label { font-size: 13px; color: var(--text); font-weight: 400; }
+  .hint-small { color: var(--text-soft); font-size: 12px; margin: -6px 0 14px; }
+  .menu-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .menu-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 8px; align-items: center; }
+  @media (max-width: 640px) { .menu-row { grid-template-columns: 1fr 1fr; } }
+  .small-btn {
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+    border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  }
+  .small-btn.-danger { border-color: #7F1D1D; color: #FCA5A5; }
+  .form-actions { display: flex; gap: 10px; margin-top: 6px; }
+  .status-pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .status-pill.-active { background: #14532D; color: #86EFAC; }
+  .status-pill.-scheduled { background: #78350F; color: #FCD34D; }
+  .status-pill.-expired { background: #374151; color: #9CA3AF; }
+  .row-actions { display: flex; gap: 6px; }
+  .import-card textarea { width: 100%; min-height: 110px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -107,6 +140,7 @@
     <div class="tabs" role="tablist">
       <button type="button" class="tab-btn -active" id="tabBtnAccess" role="tab" aria-selected="true">Accesos</button>
       <button type="button" class="tab-btn" id="tabBtnSponsors" role="tab" aria-selected="false">Patrocinios</button>
+      <button type="button" class="tab-btn" id="tabBtnManage" role="tab" aria-selected="false">Gestión</button>
     </div>
 
     <div class="tab-panel" id="tabAccess" role="tabpanel">
@@ -131,17 +165,151 @@
       </section>
     </div>
 
-    <!-- EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo).
-         BORRAR esta sección entera antes de fusionar nada de esta rama a main. -->
     <div class="tab-panel" id="tabSponsors" role="tabpanel" hidden>
       <section>
-        <h2>Ranking de patrocinios (demo) — por patrocinador, no por usuario</h2>
+        <h2>Ranking de patrocinios — por patrocinador, no por usuario</h2>
         <p class="hint" style="margin-top:-6px">Ordenado por interés real ("Ver la carta" + "Cómo llegar" juntos), no por impresiones. Incluye restaurantes, cafeterías y hoteles.</p>
         <div class="table-wrap">
           <table id="sponsorRankTable">
             <thead><tr><th>Patrocinador</th><th>Impresiones</th><th>Ver la carta</th><th>Cómo llegar</th><th>Interés</th></tr></thead>
             <tbody></tbody>
           </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- Gestión de patrocinadores: alta/edición/baja contra el KV "SPONSORS"
+         (ver worker/README.md, sección "Gestión de patrocinadores"). -->
+    <div class="tab-panel" id="tabManage" role="tabpanel" hidden>
+      <section>
+        <h2>Patrocinadores</h2>
+        <div class="table-wrap">
+          <table id="sponsorsManageTable">
+            <thead><tr><th>Nombre</th><th>Ciudad</th><th>Nivel</th><th>Fechas</th><th>Estado</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <div class="form-card">
+          <h3 id="sponsorFormTitle">Nuevo patrocinador</h3>
+          <div class="form-grid">
+            <div class="field">
+              <label for="spId">ID único</label>
+              <input type="text" id="spId" placeholder="p.ej. churreria-farolillos" autocapitalize="off" spellcheck="false">
+            </div>
+            <div class="field">
+              <label for="spName">Nombre</label>
+              <input type="text" id="spName" placeholder="Nombre del negocio">
+            </div>
+            <div class="field">
+              <label for="spCity">Ciudad</label>
+              <input type="text" id="spCity" list="spCityList" placeholder="p.ej. madrid" autocapitalize="off" spellcheck="false">
+              <datalist id="spCityList">
+                <option value="madrid"></option>
+                <option value="estambul"></option>
+                <option value="segovia"></option>
+              </datalist>
+            </div>
+            <div class="field">
+              <label for="spTier">Nivel</label>
+              <select id="spTier">
+                <option value="bronce">Bronce (150 m, solo mención)</option>
+                <option value="plata">Plata (300 m, mención + botón)</option>
+                <option value="oro">Oro (500 m, tarjeta + pin + voz)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="spIcon">Icono</label>
+              <select id="spIcon">
+                <option value="restaurant">Restaurante</option>
+                <option value="cafe">Cafetería</option>
+                <option value="hotel">Hotel</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="spRadius">Radio (metros)</label>
+              <input type="number" id="spRadius" min="50" max="2000" step="10" value="150">
+            </div>
+            <div class="field">
+              <label for="spLat">Latitud</label>
+              <input type="number" id="spLat" step="0.0001" placeholder="40.4142">
+            </div>
+            <div class="field">
+              <label for="spLng">Longitud</label>
+              <input type="number" id="spLng" step="0.0001" placeholder="-3.7082">
+            </div>
+            <div class="field">
+              <label for="spStartDate">Fecha inicio (opcional)</label>
+              <input type="date" id="spStartDate">
+            </div>
+            <div class="field">
+              <label for="spEndDate">Fecha fin (opcional)</label>
+              <input type="date" id="spEndDate">
+            </div>
+          </div>
+          <p class="hint-small">Sin fechas, el patrocinio está activo siempre. Con ellas, desaparece solo de la app al pasar la fecha de fin.</p>
+
+          <div class="form-grid">
+            <div class="field -span2">
+              <label for="spTeaserEs">Teaser (ES)</label>
+              <textarea id="spTeaserEs" placeholder="Frase corta que aparece en la ficha del POI cercano."></textarea>
+            </div>
+            <div class="field -span2">
+              <label for="spTeaserEn">Teaser (EN)</label>
+              <textarea id="spTeaserEn" placeholder="Same short line, in English."></textarea>
+            </div>
+            <div class="field">
+              <label for="spCtaEs">Texto del botón (ES, opcional)</label>
+              <input type="text" id="spCtaEs" placeholder="Ver la carta (por defecto)">
+            </div>
+            <div class="field">
+              <label for="spCtaEn">Texto del botón (EN, opcional)</label>
+              <input type="text" id="spCtaEn" placeholder="See the menu (default)">
+            </div>
+            <div class="field -span2">
+              <label for="spMenuPdf">PDF de la carta (URL, opcional)</label>
+              <input type="text" id="spMenuPdf" placeholder="assets/demo/carta.pdf o URL completa">
+            </div>
+          </div>
+
+          <div class="field -checkbox" style="margin-bottom:14px">
+            <input type="checkbox" id="spAudioMention">
+            <label for="spAudioMention">Mención por voz al terminar la audioguía (solo tiene efecto real en nivel Oro)</label>
+          </div>
+          <div class="form-grid" id="spAudioLineFields" hidden>
+            <div class="field -span2">
+              <label for="spAudioLineEs">Frase de la mención (ES)</label>
+              <textarea id="spAudioLineEs" placeholder="Frase exacta que se lee en voz."></textarea>
+            </div>
+            <div class="field -span2">
+              <label for="spAudioLineEn">Frase de la mención (EN)</label>
+              <textarea id="spAudioLineEn" placeholder="Exact line read out loud, in English."></textarea>
+            </div>
+          </div>
+
+          <h3 style="margin-top:18px">Carta / precios (opcional, en vez de o además del PDF)</h3>
+          <div class="menu-rows" id="spMenuRows"></div>
+          <button type="button" class="small-btn" id="spAddMenuRow">+ Añadir línea</button>
+
+          <div class="form-actions" style="margin-top:18px">
+            <button type="button" class="refresh-btn" id="spSaveBtn">Guardar patrocinador</button>
+            <button type="button" class="small-btn" id="spCancelBtn">Cancelar edición</button>
+            <span class="error" id="spFormError" hidden></span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="form-card import-card">
+          <h3>Importar varios de una vez (JSON)</h3>
+          <p class="hint-small" style="margin-top:-6px">Pega un array con la misma forma que tenía data/sponsors-demo.js. Solo hace falta para la migración inicial.</p>
+          <textarea id="spImportJson" placeholder="[ { &quot;id&quot;: ..., &quot;name&quot;: ..., ... } ]"></textarea>
+          <div class="form-actions" style="margin-top:10px">
+            <button type="button" class="refresh-btn" id="spImportBtn">Importar</button>
+            <span class="error" id="spImportError" hidden></span>
+          </div>
         </div>
       </section>
     </div>
@@ -199,11 +367,9 @@
     });
   };
 
-  // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo).
-  // BORRAR esta función y su llamada en loadDashboard antes de fusionar nada
-  // de esta rama a main. Un fallo aquí (endpoint sin desplegar todavía,
-  // namespace SPONSOR_METRICS sin configurar) no debe romper el resto del
-  // panel — por eso no toca la variable "err" del gate ni el flujo normal.
+  // Un fallo aquí (namespace SPONSOR_METRICS sin configurar todavía) no debe
+  // romper el resto del panel — por eso no toca la variable "err" del gate
+  // ni el flujo normal.
   const renderSponsorRanking = (ranking) => {
     const tbody = $('#sponsorRankTable tbody');
     if (!tbody) return;
@@ -312,26 +478,301 @@
     }
   });
 
-  // Pestañas Accesos/Patrocinios: "Borrar historial" solo tiene sentido en
-  // la de Accesos (borra licencias/visitas, no el ranking de patrocinios),
-  // así que se oculta al cambiar a la otra. "Actualizar" se deja siempre
-  // visible: loadDashboard ya trae ambos juegos de datos de una sola vez.
+  // Pestañas Accesos/Patrocinios/Gestión: "Borrar historial" solo tiene
+  // sentido en la de Accesos (borra licencias/visitas, no patrocinadores),
+  // así que se oculta en las otras dos. "Actualizar" se deja siempre
+  // visible: loadDashboard ya trae accesos+ranking de una sola vez; la
+  // pestaña Gestión carga su propia lista al entrar (ver showTab).
   const tabBtnAccess = $('#tabBtnAccess');
   const tabBtnSponsors = $('#tabBtnSponsors');
+  const tabBtnManage = $('#tabBtnManage');
   const tabAccess = $('#tabAccess');
   const tabSponsors = $('#tabSponsors');
+  const tabManage = $('#tabManage');
   const showTab = (name) => {
-    const isAccess = name === 'access';
-    tabAccess.hidden = !isAccess;
-    tabSponsors.hidden = isAccess;
-    tabBtnAccess.classList.toggle('-active', isAccess);
-    tabBtnAccess.setAttribute('aria-selected', String(isAccess));
-    tabBtnSponsors.classList.toggle('-active', !isAccess);
-    tabBtnSponsors.setAttribute('aria-selected', String(!isAccess));
-    clearBtn.hidden = !isAccess;
+    tabAccess.hidden = name !== 'access';
+    tabSponsors.hidden = name !== 'sponsors';
+    tabManage.hidden = name !== 'manage';
+    tabBtnAccess.classList.toggle('-active', name === 'access');
+    tabBtnAccess.setAttribute('aria-selected', String(name === 'access'));
+    tabBtnSponsors.classList.toggle('-active', name === 'sponsors');
+    tabBtnSponsors.setAttribute('aria-selected', String(name === 'sponsors'));
+    tabBtnManage.classList.toggle('-active', name === 'manage');
+    tabBtnManage.setAttribute('aria-selected', String(name === 'manage'));
+    clearBtn.hidden = name !== 'access';
+    if (name === 'manage') loadSponsorsAdmin();
   };
   tabBtnAccess.addEventListener('click', () => showTab('access'));
   tabBtnSponsors.addEventListener('click', () => showTab('sponsors'));
+  tabBtnManage.addEventListener('click', () => showTab('manage'));
+
+  // ============================================================
+  // Gestión de patrocinadores (KV "SPONSORS", ver worker/README.md).
+  // Reemplaza la edición a mano de data/sponsors-demo.js: alta, edición,
+  // baja e importación masiva desde este formulario, sin tocar código.
+  // ============================================================
+  let sponsorsCache = [];
+  let editingSponsorId = null;
+
+  const todayISO = () => new Date().toISOString().slice(0, 10);
+
+  const sponsorStatus = (s) => {
+    const today = todayISO();
+    if (s.startDate && today < s.startDate) return { cls: '-scheduled', label: 'Programado' };
+    if (s.endDate && today > s.endDate) return { cls: '-expired', label: 'Caducado' };
+    return { cls: '-active', label: 'Activo' };
+  };
+
+  const fmtSponsorDates = (s) => {
+    if (!s.startDate && !s.endDate) return 'Siempre';
+    return `${s.startDate || '…'} → ${s.endDate || '…'}`;
+  };
+
+  const renderSponsorsManageTable = (sponsors) => {
+    const tbody = $('#sponsorsManageTable tbody');
+    tbody.innerHTML = '';
+    if (!sponsors.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">Sin patrocinadores dados de alta todavía.</td></tr>';
+      return;
+    }
+    const tierLabel = { bronce: 'Bronce', plata: 'Plata', oro: 'Oro' };
+    sponsors
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .forEach((s) => {
+        const status = sponsorStatus(s);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(s.name)}</td>
+          <td>${escapeHtml(s.city)}</td>
+          <td>${tierLabel[s.tier] || escapeHtml(s.tier)}</td>
+          <td>${escapeHtml(fmtSponsorDates(s))}</td>
+          <td><span class="status-pill ${status.cls}">${status.label}</span></td>
+          <td class="row-actions">
+            <button type="button" class="small-btn" data-edit="${escapeHtml(s.id)}">Editar</button>
+            <button type="button" class="small-btn -danger" data-delete="${escapeHtml(s.id)}">Borrar</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+    tbody.querySelectorAll('[data-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const sponsor = sponsorsCache.find((s) => s.id === btn.dataset.edit);
+        if (sponsor) fillSponsorForm(sponsor);
+      });
+    });
+    tbody.querySelectorAll('[data-delete]').forEach((btn) => {
+      btn.addEventListener('click', () => deleteSponsor(btn.dataset.delete));
+    });
+  };
+
+  const loadSponsorsAdmin = async () => {
+    try {
+      const res = await fetch(`${WORKER_BASE}/sponsors/admin/list`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey })
+      });
+      if (!res.ok) {
+        renderSponsorsManageTable([]);
+        return;
+      }
+      const data = await res.json();
+      sponsorsCache = data.sponsors || [];
+      renderSponsorsManageTable(sponsorsCache);
+    } catch (e) {
+      renderSponsorsManageTable([]);
+    }
+  };
+
+  // Filas dinámicas de "item / precio" (carta): cada fila son 4 inputs
+  // (item ES/EN, precio ES/EN) + un botón para quitarla.
+  const addMenuRow = (item = { es: '', en: '' }, price = { es: '', en: '' }) => {
+    const row = document.createElement('div');
+    row.className = 'menu-row';
+    row.innerHTML = `
+      <input type="text" placeholder="Plato (ES)" class="mrItemEs" value="${escapeHtml(item.es || '')}">
+      <input type="text" placeholder="Dish (EN)" class="mrItemEn" value="${escapeHtml(item.en || '')}">
+      <input type="text" placeholder="Precio (ES)" class="mrPriceEs" value="${escapeHtml(price.es || '')}">
+      <input type="text" placeholder="Price (EN)" class="mrPriceEn" value="${escapeHtml(price.en || '')}">
+      <button type="button" class="small-btn -danger">✕</button>
+    `;
+    row.querySelector('button').addEventListener('click', () => row.remove());
+    $('#spMenuRows').appendChild(row);
+  };
+  $('#spAddMenuRow').addEventListener('click', () => addMenuRow());
+
+  $('#spAudioMention').addEventListener('change', (e) => {
+    $('#spAudioLineFields').hidden = !e.target.checked;
+  });
+
+  const resetSponsorForm = () => {
+    editingSponsorId = null;
+    $('#sponsorFormTitle').textContent = 'Nuevo patrocinador';
+    ['spId', 'spName', 'spCity', 'spLat', 'spLng', 'spStartDate', 'spEndDate',
+      'spTeaserEs', 'spTeaserEn', 'spCtaEs', 'spCtaEn', 'spMenuPdf', 'spAudioLineEs', 'spAudioLineEn']
+      .forEach((id) => { $('#' + id).value = ''; });
+    $('#spTier').value = 'bronce';
+    $('#spIcon').value = 'restaurant';
+    $('#spRadius').value = 150;
+    $('#spAudioMention').checked = false;
+    $('#spAudioLineFields').hidden = true;
+    $('#spId').disabled = false;
+    $('#spMenuRows').innerHTML = '';
+    $('#spFormError').hidden = true;
+  };
+
+  const fillSponsorForm = (s) => {
+    editingSponsorId = s.id;
+    $('#sponsorFormTitle').textContent = 'Editando: ' + s.name;
+    $('#spId').value = s.id;
+    $('#spId').disabled = true; // el id es la clave en KV: no se cambia al editar, solo al crear
+    $('#spName').value = s.name || '';
+    $('#spCity').value = s.city || '';
+    $('#spTier').value = s.tier || 'bronce';
+    $('#spIcon').value = s.icon || 'restaurant';
+    $('#spRadius').value = s.radius || 150;
+    $('#spLat').value = (s.coords && s.coords[0]) || '';
+    $('#spLng').value = (s.coords && s.coords[1]) || '';
+    $('#spStartDate').value = s.startDate || '';
+    $('#spEndDate').value = s.endDate || '';
+    $('#spTeaserEs').value = (s.teaser && s.teaser.es) || '';
+    $('#spTeaserEn').value = (s.teaser && s.teaser.en) || '';
+    $('#spCtaEs').value = (s.ctaLabel && s.ctaLabel.es) || '';
+    $('#spCtaEn').value = (s.ctaLabel && s.ctaLabel.en) || '';
+    $('#spMenuPdf').value = s.menuPdf || '';
+    $('#spAudioMention').checked = !!s.audioMention;
+    $('#spAudioLineFields').hidden = !s.audioMention;
+    $('#spAudioLineEs').value = (s.audioLine && s.audioLine.es) || '';
+    $('#spAudioLineEn').value = (s.audioLine && s.audioLine.en) || '';
+    $('#spMenuRows').innerHTML = '';
+    (s.menu || []).forEach((row) => addMenuRow(row.item, row.price));
+    $('#spFormError').hidden = true;
+    $('#tabManage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  $('#spCancelBtn').addEventListener('click', resetSponsorForm);
+
+  const collectSponsorForm = () => {
+    const menu = Array.from($('#spMenuRows').children).map((row) => ({
+      item: { es: row.querySelector('.mrItemEs').value.trim(), en: row.querySelector('.mrItemEn').value.trim() },
+      price: { es: row.querySelector('.mrPriceEs').value.trim(), en: row.querySelector('.mrPriceEn').value.trim() }
+    })).filter((row) => row.item.es || row.item.en);
+
+    const sponsor = {
+      id: $('#spId').value.trim(),
+      name: $('#spName').value.trim(),
+      city: $('#spCity').value.trim(),
+      tier: $('#spTier').value,
+      icon: $('#spIcon').value,
+      radius: parseInt($('#spRadius').value, 10) || 150,
+      coords: [parseFloat($('#spLat').value), parseFloat($('#spLng').value)],
+      teaser: { es: $('#spTeaserEs').value.trim(), en: $('#spTeaserEn').value.trim() },
+      startDate: $('#spStartDate').value || undefined,
+      endDate: $('#spEndDate').value || undefined
+    };
+    const ctaEs = $('#spCtaEs').value.trim();
+    const ctaEn = $('#spCtaEn').value.trim();
+    if (ctaEs || ctaEn) sponsor.ctaLabel = { es: ctaEs, en: ctaEn };
+    const menuPdf = $('#spMenuPdf').value.trim();
+    if (menuPdf) sponsor.menuPdf = menuPdf;
+    if ($('#spAudioMention').checked) {
+      sponsor.audioMention = true;
+      sponsor.audioLine = { es: $('#spAudioLineEs').value.trim(), en: $('#spAudioLineEn').value.trim() };
+    }
+    if (menu.length) sponsor.menu = menu;
+    return sponsor;
+  };
+
+  const upsertSponsor = async (sponsor) => {
+    const res = await fetch(`${WORKER_BASE}/sponsors/upsert`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminKey, sponsor })
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.reason || ('código ' + res.status));
+    }
+  };
+
+  $('#spSaveBtn').addEventListener('click', async () => {
+    const err = $('#spFormError');
+    err.hidden = true;
+    const sponsor = collectSponsorForm();
+    if (!sponsor.id || !sponsor.name || !sponsor.city || !Number.isFinite(sponsor.coords[0]) || !Number.isFinite(sponsor.coords[1]) || !sponsor.teaser.es) {
+      err.hidden = false;
+      err.textContent = 'Faltan campos obligatorios: ID, nombre, ciudad, coordenadas y teaser (ES).';
+      return;
+    }
+    const btn = $('#spSaveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    try {
+      await upsertSponsor(sponsor);
+      resetSponsorForm();
+      await loadSponsorsAdmin();
+    } catch (e) {
+      err.hidden = false;
+      err.textContent = 'No se pudo guardar: ' + e.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Guardar patrocinador';
+    }
+  });
+
+  const deleteSponsor = async (id) => {
+    const sponsor = sponsorsCache.find((s) => s.id === id);
+    if (!confirm(`¿Borrar el patrocinador "${sponsor ? sponsor.name : id}"? No se puede deshacer.`)) return;
+    try {
+      const res = await fetch(`${WORKER_BASE}/sponsors/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey, id })
+      });
+      if (!res.ok) throw new Error('código ' + res.status);
+      if (editingSponsorId === id) resetSponsorForm();
+      await loadSponsorsAdmin();
+    } catch (e) {
+      alert('No se pudo borrar: ' + e.message);
+    }
+  };
+
+  // Importación masiva: pensada solo para migrar de golpe los patrocinadores
+  // que antes vivían en data/sponsors-demo.js, pegando el mismo array tal
+  // cual (misma forma exacta que espera sanitizeSponsorInput en proxy.js).
+  $('#spImportBtn').addEventListener('click', async () => {
+    const err = $('#spImportError');
+    err.hidden = true;
+    let list;
+    try {
+      list = JSON.parse($('#spImportJson').value);
+      if (!Array.isArray(list)) throw new Error('El JSON debe ser un array');
+    } catch (e) {
+      err.hidden = false;
+      err.textContent = 'JSON inválido: ' + e.message;
+      return;
+    }
+    const btn = $('#spImportBtn');
+    btn.disabled = true;
+    btn.textContent = 'Importando…';
+    let done = 0;
+    try {
+      for (const sponsor of list) {
+        await upsertSponsor(sponsor);
+        done += 1;
+      }
+      $('#spImportJson').value = '';
+      await loadSponsorsAdmin();
+    } catch (e) {
+      err.hidden = false;
+      err.textContent = `Importados ${done} de ${list.length}, luego falló: ${e.message}`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Importar';
+    }
+  });
 </script>
 </body>
 </html>

@@ -61,14 +61,22 @@ export default {
     const isDashboard = url.pathname.endsWith('/license/dashboard');
     const isDashboardClear = url.pathname.endsWith('/license/dashboard/clear');
     const isContent = url.pathname.endsWith('/content');
-    // EXPERIMENTO TEMPORAL — PATROCINIOS DEMO (rama experimento-patrocinios-demo).
-    // BORRAR estas dos rutas, sus "if" de despacho de abajo, y las funciones
-    // handleSponsorTrack/handleSponsorRank más abajo, antes de fusionar nada
-    // de esta rama a main.
+    // Ranking de patrocinios (ver admin/dashboard.html, pestaña "Patrocinios"):
+    // cuenta impresiones/clics por patrocinador vía el KV SPONSOR_METRICS.
     const isSponsorTrack = url.pathname.endsWith('/sponsor/track');
     const isSponsorRank = url.pathname.endsWith('/sponsor/rank');
+    // Gestión de patrocinadores (ver admin/dashboard.html, pestaña "Gestión"):
+    // a diferencia de SPONSOR_METRICS (solo contadores), este KV namespace
+    // ("SPONSORS") guarda la ficha completa de cada patrocinador — lo que
+    // antes vivía a mano en data/sponsors-demo.js. /sponsors/list es la única
+    // ruta pública (la app la llama en vez de cargar ese script estático);
+    // las otras tres exigen ADMIN_KEY igual que /license/dashboard.
+    const isSponsorsList = url.pathname.endsWith('/sponsors/list');
+    const isSponsorsAdminList = url.pathname.endsWith('/sponsors/admin/list');
+    const isSponsorsUpsert = url.pathname.endsWith('/sponsors/upsert');
+    const isSponsorsDelete = url.pathname.endsWith('/sponsors/delete');
 
-    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank)) {
+    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete)) {
       return new Response(JSON.stringify({ error: 'not found' }), {
         status: 404,
         headers: { ...headers, 'Content-Type': 'application/json' }
@@ -94,6 +102,10 @@ export default {
     if (isContent) return handleContent(request, env, headers);
     if (isSponsorTrack) return handleSponsorTrack(request, env, headers);
     if (isSponsorRank) return handleSponsorRank(request, env, headers);
+    if (isSponsorsList) return handleSponsorsList(request, env, headers);
+    if (isSponsorsAdminList) return handleSponsorsAdminList(request, env, headers);
+    if (isSponsorsUpsert) return handleSponsorsUpsert(request, env, headers);
+    if (isSponsorsDelete) return handleSponsorsDelete(request, env, headers);
 
     // Rate limiting por IP (binding "RATE_LIMITER", configurado en el panel
     // de Cloudflare → pestaña "Bindings" → Add binding → Rate Limiting).
@@ -548,10 +560,9 @@ async function handleContent(request, env, headers) {
 }
 
 // ============================================================
-// EXPERIMENTO TEMPORAL — PATROCINIOS DEMO
-// (rama experimento-patrocinios-demo, NO fusionar a main)
+// RANKING DE PATROCINIOS
 //
-// Cuenta impresiones/clics por RESTAURANTE (nunca por usuario — no hay
+// Cuenta impresiones/clics por PATROCINADOR (nunca por usuario — no hay
 // ningún dato personal aquí, solo un contador por sponsorId) para poder
 // rankear qué patrocinado se lleva más "Ver la carta"/"Cómo llegar". Vive
 // en su propio KV namespace (SPONSOR_METRICS) precisamente para poder
@@ -654,6 +665,203 @@ async function handleSponsorRank(request, env, headers) {
   ranking.sort((a, b) => (b.menu + b.directions) - (a.menu + a.directions));
 
   return new Response(JSON.stringify({ ranking }), {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+}
+
+// ============================================================
+// GESTIÓN DE PATROCINADORES (ver admin/dashboard.html, pestaña "Gestión")
+//
+// KV namespace propio ("SPONSORS", distinto de SPONSOR_METRICS): guarda la
+// ficha completa de cada patrocinador, lo que antes vivía a mano en
+// data/sponsors-demo.js. app.js la consulta con /sponsors/list en vez de
+// cargar ese script estático (ver loadSponsorsForCity en app.js).
+// ============================================================
+
+const SPONSOR_TIERS = new Set(['bronce', 'plata', 'oro']);
+const SPONSOR_ICONS = new Set(['restaurant', 'cafe', 'hotel']);
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// Misma fecha en ambos límites: activo todo ese día (comparación de strings
+// YYYY-MM-DD, no hace falta parsear a Date).
+function isSponsorActive(sponsor, dateStr) {
+  if (sponsor.startDate && dateStr < sponsor.startDate) return false;
+  if (sponsor.endDate && dateStr > sponsor.endDate) return false;
+  return true;
+}
+
+function dualText(value) {
+  if (!value || typeof value !== 'object') return null;
+  const es = String(value.es || '').trim().slice(0, 400);
+  const en = String(value.en || '').trim().slice(0, 400);
+  if (!es && !en) return null;
+  return { es, en };
+}
+
+// Valida y recorta el objeto que llega del formulario de admin/dashboard.html
+// a la forma exacta que espera renderSponsorsDemo/findNearbySponsorDemo en
+// app.js — igual que handleSponsorTrack recorta longitudes/clampa números,
+// para que un dato mal formado desde el panel nunca llegue a romper la
+// ficha de un POI en la app pública.
+function sanitizeSponsorInput(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+
+  const id = String(raw.id || '').trim().slice(0, 80);
+  const name = String(raw.name || '').trim().slice(0, 120);
+  const city = String(raw.city || '').trim().slice(0, 60);
+  const tier = SPONSOR_TIERS.has(raw.tier) ? raw.tier : null;
+  const icon = SPONSOR_ICONS.has(raw.icon) ? raw.icon : null;
+  const lat = Number(raw.coords && raw.coords[0]);
+  const lng = Number(raw.coords && raw.coords[1]);
+  const teaser = dualText(raw.teaser);
+  if (!id || !name || !city || !tier || !icon || !teaser || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  const sponsor = {
+    id, name, city, tier, icon, teaser,
+    coords: [lat, lng],
+    radius: Math.min(2000, Math.max(50, parseInt(raw.radius, 10) || 150))
+  };
+
+  const ctaLabel = dualText(raw.ctaLabel);
+  if (ctaLabel) sponsor.ctaLabel = ctaLabel;
+
+  if (raw.audioMention) {
+    const audioLine = dualText(raw.audioLine);
+    if (audioLine) {
+      sponsor.audioMention = true;
+      sponsor.audioLine = audioLine;
+    }
+  }
+
+  const menuPdf = String(raw.menuPdf || '').trim().slice(0, 300);
+  if (menuPdf) sponsor.menuPdf = menuPdf;
+
+  if (Array.isArray(raw.menu)) {
+    const menu = raw.menu
+      .slice(0, 30)
+      .map((row) => ({ item: dualText(row && row.item), price: dualText(row && row.price) }))
+      .filter((row) => row.item && row.price);
+    if (menu.length) sponsor.menu = menu;
+  }
+
+  const startDate = String(raw.startDate || '').trim().slice(0, 10);
+  const endDate = String(raw.endDate || '').trim().slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(startDate)) sponsor.startDate = startDate;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(endDate)) sponsor.endDate = endDate;
+
+  return sponsor;
+}
+
+// Ruta pública (sin ADMIN_KEY): la app la llama para pintar los patrocinios
+// de la ciudad activa, igual que antes leía el SPONSORS_DEMO estático. Solo
+// devuelve los que están dentro de su ventana startDate/endDate (si la
+// tienen) — un patrocinio caducado desaparece solo, sin tocar nada a mano.
+async function handleSponsorsList(request, env, headers) {
+  let payload;
+  try {
+    payload = await request.json();
+  } catch (e) {
+    return new Response(JSON.stringify({ sponsors: [] }), {
+      status: 400,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  const cityId = String((payload && payload.cityId) || '').trim();
+  if (!cityId || !env.SPONSORS) {
+    return new Response(JSON.stringify({ sponsors: [] }), {
+      status: 200,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (env.RATE_LIMITER) {
+    const { success } = await env.RATE_LIMITER.limit({ key: `sponsors-list:${ip}` });
+    if (!success) {
+      return new Response(JSON.stringify({ sponsors: [] }), {
+        status: 429,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
+  const list = await env.SPONSORS.list({ prefix: 'sponsor:' });
+  const today = todayISO();
+  const sponsors = (await Promise.all(list.keys.map(async (k) => {
+    try { return JSON.parse(await env.SPONSORS.get(k.name)); } catch (_) { return null; }
+  })))
+    .filter((s) => s && s.city === cityId && isSponsorActive(s, today));
+
+  return new Response(JSON.stringify({ sponsors }), {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+}
+
+// Lista SIN filtrar (todas las ciudades, activos o no) para la tabla de
+// gestión del panel — a diferencia de /sponsors/list, esta sí exige
+// ADMIN_KEY: expone datos que aún no han empezado o ya caducaron.
+async function handleSponsorsAdminList(request, env, headers) {
+  const { error } = await checkAdminAccess(request, env, headers, 'SPONSORS');
+  if (error) return error;
+
+  const list = await env.SPONSORS.list({ prefix: 'sponsor:' });
+  const sponsors = (await Promise.all(list.keys.map(async (k) => {
+    try { return JSON.parse(await env.SPONSORS.get(k.name)); } catch (_) { return null; }
+  }))).filter(Boolean);
+
+  return new Response(JSON.stringify({ sponsors }), {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+}
+
+// Crea o actualiza un patrocinador (mismo "id" = actualiza). checkAdminAccess
+// ya ha leído el body como JSON, así que el propio payload (con la clave
+// "sponsor" además de "adminKey") llega en { payload }.
+async function handleSponsorsUpsert(request, env, headers) {
+  const { error, payload } = await checkAdminAccess(request, env, headers, 'SPONSORS');
+  if (error) return error;
+
+  const sponsor = sanitizeSponsorInput(payload && payload.sponsor);
+  if (!sponsor) {
+    return new Response(JSON.stringify({ ok: false, reason: 'bad-request' }), {
+      status: 400,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  await env.SPONSORS.put(`sponsor:${sponsor.id}`, JSON.stringify(sponsor));
+
+  return new Response(JSON.stringify({ ok: true, sponsor }), {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+}
+
+// Borra un patrocinador por id.
+async function handleSponsorsDelete(request, env, headers) {
+  const { error, payload } = await checkAdminAccess(request, env, headers, 'SPONSORS');
+  if (error) return error;
+
+  const id = String((payload && payload.id) || '').trim().slice(0, 80);
+  if (!id) {
+    return new Response(JSON.stringify({ ok: false, reason: 'bad-request' }), {
+      status: 400,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  await env.SPONSORS.delete(`sponsor:${id}`);
+
+  return new Response(JSON.stringify({ ok: true }), {
     status: 200,
     headers: { ...headers, 'Content-Type': 'application/json' }
   });

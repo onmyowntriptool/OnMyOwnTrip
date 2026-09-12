@@ -184,19 +184,16 @@ el historial simplemente no se guardan (el resto de la app sigue
 funcionando igual) — es una capa informativa opcional, no un requisito
 para que el control de acceso funcione.
 
-## EXPERIMENTO TEMPORAL — Ranking de patrocinios (rama experimento-patrocinios-demo)
+## Ranking de patrocinios
 
-**Borrar esta sección entera, el KV namespace y las rutas `/sponsor/track`
-y `/sponsor/rank` de `proxy.js` antes de fusionar nada de esta rama a
-main.** Cuenta impresiones/clics ("Ver la carta", "Cómo llegar") por
-RESTAURANTE — nunca por usuario, es un ejercicio de qué patrocinador
+Cuenta impresiones/clics ("Ver la carta", "Cómo llegar") por
+PATROCINADOR — nunca por usuario, es una métrica de qué patrocinador
 funciona mejor, no de seguimiento de personas.
 
 ### Configurarlo
 
 1. **Storage & databases → Workers KV → Create Instance**. Nómbralo, por
-   ejemplo, `omot-sponsor-metrics-demo` (el prefijo "demo" ayuda a
-   recordar que hay que borrarlo luego).
+   ejemplo, `omot-sponsor-metrics`.
 2. En tu Worker → pestaña **Bindings** → **Add binding** → tipo **KV
    Namespace**. Variable: `SPONSOR_METRICS` (tiene que llamarse exactamente
    así). Selecciona el namespace del paso 1.
@@ -206,9 +203,9 @@ funciona mejor, no de seguimiento de personas.
 ### Cómo verlo
 
 Es la misma clave de administrador que abre `admin/dashboard.html`: ahí
-aparece una tabla nueva "Ranking de patrocinios (demo)" con impresiones,
-"Ver la carta" y "Cómo llegar" por restaurante, ordenada por quién se
-lleva más interés real (carta + cómo llegar juntos).
+aparece una tabla "Ranking de patrocinios" con impresiones, "Ver la
+carta" y "Cómo llegar" por patrocinador, ordenada por quién se lleva más
+interés real (carta + cómo llegar juntos).
 
 ### Por qué en lotes y no una escritura por clic
 
@@ -220,6 +217,51 @@ acceso real. Por eso `app.js` acumula los eventos en el propio móvil y
 los manda en un solo lote agregado al cerrar la ficha (o cada 2 minutos
 si se queda abierta) — un restaurante visto y tocado varias veces en una
 sesión sigue siendo 1 sola escritura, no una por evento.
+
+## Gestión de patrocinadores (alta/edición/baja desde el panel)
+
+Reemplaza el fichero estático `data/sponsors-demo.js` (que había que editar
+a mano y hacer commit para cambiar un solo patrocinador) por un KV
+namespace propio, gestionable desde una pestaña nueva "Gestión" en
+`admin/dashboard.html`, sin tocar código ni hacer commits. Es un namespace
+DISTINTO de `SPONSOR_METRICS` (ese solo guarda contadores de clics; este
+guarda la ficha completa: nombre, ubicación, textos, fechas...).
+
+### Configurarlo
+
+1. **Storage & databases → Workers KV → Create Instance**. Nómbralo, por
+   ejemplo, `omot-sponsors`.
+2. En tu Worker → pestaña **Bindings** → **Add binding** → tipo **KV
+   Namespace**. Variable: `SPONSORS` (tiene que llamarse exactamente así,
+   es el nombre que usa `proxy.js`). Selecciona el namespace del paso 1.
+3. Guarda/Deploy. Reutiliza el mismo secret `ADMIN_KEY` que ya tengas
+   configurado para el panel de accesos — no hace falta crear otro.
+
+### Usarlo
+
+En `admin/dashboard.html`, pestaña **Gestión**: una tabla con todos los
+patrocinadores dados de alta (nombre, ciudad, nivel, fechas) con botones
+Editar/Borrar, un formulario para crear o editar uno, y una caja para
+pegar de golpe un JSON con varios patrocinadores (útil solo para la
+migración inicial desde `data/sponsors-demo.js`, no hace falta para el
+día a día).
+
+Campos con fecha de inicio/fin son opcionales: sin ellas, el patrocinio
+está activo siempre; con ellas, desaparece solo de la app (sin volver a
+tocar nada) en cuanto pasa la fecha de fin — `/sponsors/list` (la ruta
+pública que consulta `app.js`) filtra por la fecha de hoy antes de
+devolver nada.
+
+### Cómo funciona por dentro
+
+- `POST /sponsors/list`: pública (sin `adminKey`), la llama `app.js` al
+  entrar en una ciudad — solo con activos por fecha.
+- `POST /sponsors/admin/list`: igual pero sin filtrar por fecha, para que
+  la tabla de gestión también vea los que aún no han empezado o ya
+  caducaron. Exige `adminKey`.
+- `POST /sponsors/upsert`: crea o actualiza (mismo `id` = actualiza).
+  Exige `adminKey`.
+- `POST /sponsors/delete`: borra por `id`. Exige `adminKey`.
 
 ## Rate limiting por IP (opcional, recomendado)
 
