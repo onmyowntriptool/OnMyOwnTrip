@@ -4422,14 +4422,29 @@
     $('#tutorialNext').textContent = isLast ? t('tutorialGo') : t('tutorialNext');
     const backBtn = $('#tutorialBack');
     if (backBtn) backBtn.dataset.hidden = tutorialStepIndex === 0 ? 'true' : 'false';
+    // FIX (reportado en iPhone real: el botón "Siguiente" salía
+    // desplazado fuera de la pantalla): un punto por paso funcionaba con
+    // los ~15 pasos de antes, pero el tutorial de adultos ahora tiene 20
+    // (con el bloque nuevo de Filtros/Capas) -- 20 puntos + separación no
+    // caben en una fila junto a "Atrás"/"Siguiente" en un móvil estrecho.
+    // A partir de cierto número de pasos se usa un contador de texto
+    // ("3 / 20"), de ancho fijo pase lo que pase cuántos pasos haya; por
+    // debajo de ese umbral (el tutorial de niños, 4 pasos) se mantienen
+    // los puntos, más vistosos para ese modo.
     const dots = $('#tutorialDots');
     if (dots) {
-      dots.innerHTML = '';
-      tutorialSteps.forEach((_, i) => {
-        const dot = document.createElement('span');
-        if (i === tutorialStepIndex) dot.className = '-active';
-        dots.appendChild(dot);
-      });
+      const useCounter = tutorialSteps.length > 8;
+      dots.classList.toggle('-counter', useCounter);
+      if (useCounter) {
+        dots.textContent = `${tutorialStepIndex + 1} / ${tutorialSteps.length}`;
+      } else {
+        dots.innerHTML = '';
+        tutorialSteps.forEach((_, i) => {
+          const dot = document.createElement('span');
+          if (i === tutorialStepIndex) dot.className = '-active';
+          dots.appendChild(dot);
+        });
+      }
     }
     // La ficha de ejemplo (pasos demoSheet) se abre/cierra según la
     // necesite el paso, con el mismo desplazamiento (0.38s) que una ficha

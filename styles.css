@@ -3461,9 +3461,11 @@ html[data-mode="kids"] .ai-input-wrap {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   margin-top: 14px;
 }
 .tutorial-back {
+  flex-shrink: 0;
   border: 0;
   background: transparent;
   color: var(--color-text-soft);
@@ -3477,15 +3479,39 @@ html[data-mode="kids"] .ai-input-wrap {
    display) para que los puntos y "Siguiente" no salten de sitio al
    aparecer/desaparecer entre pasos (ver showTutorialStep en app.js). */
 .tutorial-back[data-hidden="true"] { visibility: hidden; }
-.tutorial-dots { display: flex; gap: 6px; }
+/* FIX (reportado en iPhone real: "Siguiente" se salía de la pantalla):
+   con 20 pasos (tutorial de adultos, desde que se añadió el bloque de
+   Filtros/Capas) 20 puntos ya no caben en esta fila junto a Atrás/
+   Siguiente en un móvil estrecho. flex:1+min-width:0+overflow:hidden es
+   la red de seguridad para la versión de puntos (tutorial de niños, solo
+   4 pasos); la versión .-counter (ver showTutorialStep en app.js) es la
+   que realmente evita el problema, con un ancho fijo pequeño pase lo que
+   pase cuántos pasos haya. */
+.tutorial-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
 .tutorial-dots span {
+  flex-shrink: 0;
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--color-border);
 }
 .tutorial-dots span.-active { background: #F5B942; }
+.tutorial-dots.-counter {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-soft);
+  font-variant-numeric: tabular-nums;
+}
 .tutorial-next {
+  flex-shrink: 0;
   border: 0;
   background: #F5B942;
   color: #1a1300;
