@@ -89,8 +89,14 @@ export default {
     // PREMIUM. Pública (sin ADMIN_KEY) porque la prueba real de que la
     // compra es genuina la hace Google, no una clave compartida.
     const isPremiumVerify = url.pathname.endsWith('/premium/verify-purchase');
+    // Acceso premium manual (ver admin/dashboard.html, pestaña "Gestión"):
+    // para regalar "sin publicidad" a unos contactos sin que pasen por
+    // Google Play -- mismas tres rutas admin-gated que ya usa Sponsors.
+    const isPremiumGrant = url.pathname.endsWith('/premium/grant');
+    const isPremiumRevoke = url.pathname.endsWith('/premium/revoke');
+    const isPremiumAdminList = url.pathname.endsWith('/premium/admin/list');
 
-    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify)) {
+    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify && !isPremiumGrant && !isPremiumRevoke && !isPremiumAdminList)) {
       return new Response(JSON.stringify({ error: 'not found' }), {
         status: 404,
         headers: { ...headers, 'Content-Type': 'application/json' }
@@ -124,6 +130,9 @@ export default {
     if (isSponsorsPendingList) return handleSponsorsPendingList(request, env, headers);
     if (isSponsorsPendingDelete) return handleSponsorsPendingDelete(request, env, headers);
     if (isPremiumVerify) return handlePremiumVerifyPurchase(request, env, headers);
+    if (isPremiumGrant) return handlePremiumGrant(request, env, headers);
+    if (isPremiumRevoke) return handlePremiumRevoke(request, env, headers);
+    if (isPremiumAdminList) return handlePremiumAdminList(request, env, headers);
 
     // Rate limiting por IP (binding "RATE_LIMITER", configurado en el panel
     // de Cloudflare → pestaña "Bindings" → Add binding → Rate Limiting).
@@ -1304,6 +1313,98 @@ async function handlePremiumVerifyPurchase(request, env, headers) {
   await env.PREMIUM.put(`user:${username}`, JSON.stringify(data));
 
   return new Response(JSON.stringify({ ok: true, premiumCities: data.all ? ALL_CITY_IDS : data.cities }), {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+}
+
+// ============================================================
+// ACCESO PREMIUM MANUAL (ver admin/dashboard.html, pestaña "Gestión")
+//
+// Para regalar "sin publicidad" a algún contacto sin que pase por Google
+// Play — mismo patrón admin-gated (checkAdminAccess) que ya usa Sponsors.
+// A diferencia de /premium/verify-purchase, aquí NO hay ninguna prueba de
+// pago: es una decisión tuya, protegida solo por tu ADMIN_KEY.
+// ============================================================
+
+// Da de alta (o actualiza) el acceso premium de un username a mano. Mismo
+// "id" (username) = actualiza -- repetir la llamada con otras ciudades
+// simplemente las añade a lo que ya tuviera (no las sustituye), salvo que
+// se pida "all", que sustituye cualquier lista de ciudades sueltas.
+async function handlePremiumGrant(request, env, headers) {
+  const { error, payload } = await checkAdminAccess(request, env, headers, 'PREMIUM');
+  if (error) return error;
+
+  const username = String((payload && payload.username) || '').trim();
+  const all = !!(payload && payload.all);
+  const requestedCities = Array.isArray(payload && payload.cities)
+    ? payload.cities.filter((c) => ALL_CITY_IDS.includes(c))
+    : [];
+  if (!username || (!all && !requestedCities.length)) {
+    return new Response(JSON.stringify({ ok: false, reason: 'bad-request' }), {
+      status: 400,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  let data;
+  try {
+    const raw = await env.PREMIUM.get(`user:${username}`);
+    data = raw ? JSON.parse(raw) : { cities: [], all: false };
+  } catch (_) { data = { cities: [], all: false }; }
+
+  if (all) {
+    data = { cities: [], all: true };
+  } else if (!data.all) {
+    data.cities = Array.from(new Set([...(data.cities || []), ...requestedCities]));
+  }
+  await env.PREMIUM.put(`user:${username}`, JSON.stringify(data));
+
+  return new Response(JSON.stringify({ ok: true, username, premiumCities: data.all ? ALL_CITY_IDS : data.cities }), {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+}
+
+// Quita TODO el acceso premium manual/comprado de un username de golpe
+// (borra la entrada entera, no ciudad a ciudad -- para revocar una sola
+// ciudad, usa "Dar acceso" de nuevo con las que sí deba conservar).
+async function handlePremiumRevoke(request, env, headers) {
+  const { error, payload } = await checkAdminAccess(request, env, headers, 'PREMIUM');
+  if (error) return error;
+
+  const username = String((payload && payload.username) || '').trim();
+  if (!username) {
+    return new Response(JSON.stringify({ ok: false, reason: 'bad-request' }), {
+      status: 400,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  await env.PREMIUM.delete(`user:${username}`);
+
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+}
+
+// Lista todos los usernames con algo de acceso premium (regalado o
+// comprado — este KV no distingue el origen, solo el resultado final) para
+// pintar la tabla del panel.
+async function handlePremiumAdminList(request, env, headers) {
+  const { error } = await checkAdminAccess(request, env, headers, 'PREMIUM');
+  if (error) return error;
+
+  const list = await env.PREMIUM.list({ prefix: 'user:' });
+  const grants = (await Promise.all(list.keys.map(async (k) => {
+    try {
+      const data = JSON.parse(await env.PREMIUM.get(k.name));
+      return { username: k.name.slice('user:'.length), cities: data.all ? ALL_CITY_IDS : (data.cities || []), all: !!data.all };
+    } catch (_) { return null; }
+  }))).filter(Boolean);
+
+  return new Response(JSON.stringify({ grants }), {
     status: 200,
     headers: { ...headers, 'Content-Type': 'application/json' }
   });

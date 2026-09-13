@@ -372,6 +372,25 @@ Sin el binding `GOOGLE_PLAY_SERVICE_ACCOUNT_KEY`/`PREMIUM` configurados,
 más de la app — es una capa opcional, igual que el resto de KV bindings
 de este Worker.
 
+### Regalar acceso premium a mano (sin pasar por Google Play)
+
+Para dar "sin publicidad" a algún contacto sin cobrarle nada: pestaña
+**Gestión** del panel → sección **Acceso premium** → escribe su username,
+elige ciudades sueltas o "todas", y **Dar acceso**. No hace falta ningún
+paso extra en Cloudflare (usa el mismo KV `PREMIUM` y el mismo `ADMIN_KEY`
+de siempre) — solo necesitas tener ya el binding `PREMIUM` creado (ver
+arriba).
+
+- `POST /premium/grant`: da de alta o amplía el acceso de un `username`
+  (mismo username = actualiza, añadiendo ciudades a lo que ya tuviera; pedir
+  "todas" sustituye cualquier lista suelta). Exige `adminKey`.
+- `POST /premium/revoke`: quita TODO el acceso premium de un `username` de
+  golpe (para dejarle solo alguna ciudad, usa "Dar acceso" de nuevo con las
+  que sí deba conservar). Exige `adminKey`.
+- `POST /premium/admin/list`: lista todos los usernames con algo de acceso
+  premium (regalado o comprado — este KV no distingue el origen). Exige
+  `adminKey`.
+
 ## Rate limiting por IP (opcional, recomendado)
 
 Importante: como este Worker vive en un subdominio `workers.dev` (no en un

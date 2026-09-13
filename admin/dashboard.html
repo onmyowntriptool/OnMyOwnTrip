@@ -135,6 +135,8 @@
   .status-pill.-expired { background: #374151; color: #9CA3AF; }
   .row-actions { display: flex; gap: 6px; }
   .import-card textarea { width: 100%; min-height: 110px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  .premium-city-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px 12px; margin-bottom: 4px; }
+  .premium-city-checkboxes label { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); font-weight: 400; }
 </style>
 </head>
 <body>
@@ -366,6 +368,41 @@
           </div>
         </div>
       </section>
+
+      <!-- EXPERIMENTAL (rama experimento-premium-sin-publicidad): acceso
+           "sin publicidad" regalado a mano, sin pasar por Google Play --
+           ver /premium/grant en worker/proxy.js. -->
+      <section>
+        <h2>Acceso premium (sin publicidad)</h2>
+        <p class="hint" style="margin-top:-6px">Regala "sin publicidad" a un contacto sin que pague — mismo efecto que si comprara desde la app.</p>
+        <div class="table-wrap">
+          <table id="premiumGrantsTable">
+            <thead><tr><th>Usuario</th><th>Ciudades</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <div class="form-card">
+          <h3>Dar acceso premium</h3>
+          <div class="form-grid">
+            <div class="field -span2">
+              <label for="premUsername">Username</label>
+              <input type="text" id="premUsername" placeholder="el mismo que usa para entrar a la app" autocapitalize="off" spellcheck="false">
+            </div>
+          </div>
+          <div class="field -checkbox" style="margin-bottom:14px">
+            <input type="checkbox" id="premAllCities">
+            <label for="premAllCities">Todas las ciudades</label>
+          </div>
+          <div id="premCityCheckboxes" class="premium-city-checkboxes"></div>
+          <div class="form-actions" style="margin-top:14px">
+            <button type="button" class="refresh-btn" id="premGrantBtn">Dar acceso</button>
+            <span class="error" id="premGrantError" hidden></span>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -557,6 +594,7 @@
     if (name === 'manage') {
       loadSponsorsAdmin();
       loadSponsorsPending();
+      loadPremiumGrants();
     }
   };
   tabBtnAccess.addEventListener('click', () => showTab('access'));
@@ -1027,6 +1065,134 @@
     } finally {
       btn.disabled = false;
       btn.textContent = 'Importar';
+    }
+  });
+
+  // ============================================================
+  // EXPERIMENTAL (rama experimento-premium-sin-publicidad): acceso "sin
+  // publicidad" regalado a mano -- ver /premium/grant|revoke|admin/list en
+  // worker/proxy.js. Mismo KV (PREMIUM) que usan las compras reales de la
+  // app, este panel solo escribe en él directamente con tu ADMIN_KEY.
+  // ============================================================
+  // Misma lista que ALL_CITY_IDS en worker/proxy.js (y las claves de
+  // CITIES en data/core.js) -- si se añade una ciudad nueva a la app, hay
+  // que añadirla aquí también para poder regalarle acceso.
+  const PREMIUM_CITIES = [
+    { id: 'toledo', name: 'Toledo' },
+    { id: 'madrid', name: 'Madrid Centro' },
+    { id: 'alcala-de-henares', name: 'Alcalá de Henares' },
+    { id: 'buitrago-del-lozoya', name: 'Buitrago del Lozoya' },
+    { id: 'peniscola', name: 'Peñíscola' },
+    { id: 'cdmx', name: 'Ciudad de México' },
+    { id: 'berlin', name: 'Berlín' },
+    { id: 'roma', name: 'Roma' },
+    { id: 'vaticano', name: 'Vaticano' },
+    { id: 'estambul', name: 'Estambul' },
+    { id: 'segovia', name: 'Segovia' }
+  ];
+
+  let premiumGrantsCache = [];
+
+  const renderPremiumCityCheckboxes = () => {
+    const box = $('#premCityCheckboxes');
+    if (!box || box.children.length) return; // se pinta una sola vez
+    box.innerHTML = PREMIUM_CITIES.map((c) => `
+      <label><input type="checkbox" class="premCityCheckbox" value="${c.id}"> ${c.name}</label>
+    `).join('');
+  };
+
+  const renderPremiumGrantsTable = (grants) => {
+    const tbody = $('#premiumGrantsTable tbody');
+    tbody.innerHTML = '';
+    if (!grants.length) {
+      tbody.innerHTML = '<tr><td colspan="3" class="empty">Nadie tiene acceso premium todavía.</td></tr>';
+      return;
+    }
+    grants.forEach((g) => {
+      const citiesLabel = g.all ? 'Todas' : g.cities.map((id) => (PREMIUM_CITIES.find((c) => c.id === id) || { name: id }).name).join(', ');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(g.username)}</td>
+        <td>${escapeHtml(citiesLabel)}</td>
+        <td class="row-actions"><button type="button" class="small-btn -danger" data-revoke="${escapeHtml(g.username)}">Revocar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('[data-revoke]').forEach((btn) => {
+      btn.addEventListener('click', () => revokePremium(btn.dataset.revoke));
+    });
+  };
+
+  const loadPremiumGrants = async () => {
+    renderPremiumCityCheckboxes();
+    try {
+      const res = await fetch(`${WORKER_BASE}/premium/admin/list`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey })
+      });
+      if (!res.ok) { renderPremiumGrantsTable([]); return; }
+      const data = await res.json();
+      premiumGrantsCache = data.grants || [];
+      renderPremiumGrantsTable(premiumGrantsCache);
+    } catch (e) {
+      renderPremiumGrantsTable([]);
+    }
+  };
+
+  const revokePremium = async (username) => {
+    if (!confirm(`¿Quitar TODO el acceso premium de "${username}"? No se puede deshacer.`)) return;
+    try {
+      const res = await fetch(`${WORKER_BASE}/premium/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey, username })
+      });
+      if (!res.ok) throw new Error('código ' + res.status);
+      await loadPremiumGrants();
+    } catch (e) {
+      alert('No se pudo revocar: ' + e.message);
+    }
+  };
+
+  $('#premAllCities').addEventListener('change', (e) => {
+    $('#premCityCheckboxes').querySelectorAll('.premCityCheckbox').forEach((cb) => { cb.disabled = e.target.checked; });
+  });
+
+  $('#premGrantBtn').addEventListener('click', async () => {
+    const err = $('#premGrantError');
+    err.hidden = true;
+    const username = $('#premUsername').value.trim();
+    const all = $('#premAllCities').checked;
+    const cities = Array.from($('#premCityCheckboxes').querySelectorAll('.premCityCheckbox:checked')).map((cb) => cb.value);
+    if (!username || (!all && !cities.length)) {
+      err.hidden = false;
+      err.textContent = 'Falta el username y al menos una ciudad (o marca "Todas las ciudades").';
+      return;
+    }
+    const btn = $('#premGrantBtn');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    try {
+      const res = await fetch(`${WORKER_BASE}/premium/grant`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey, username, cities, all })
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.reason || ('código ' + res.status));
+      }
+      $('#premUsername').value = '';
+      $('#premAllCities').checked = false;
+      $('#premCityCheckboxes').querySelectorAll('.premCityCheckbox').forEach((cb) => { cb.checked = false; cb.disabled = false; });
+      await loadPremiumGrants();
+    } catch (e) {
+      err.hidden = false;
+      err.textContent = 'No se pudo guardar: ' + e.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Dar acceso';
     }
   });
 </script>
