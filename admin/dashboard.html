@@ -165,6 +165,7 @@
       <button type="button" class="tab-btn -active" id="tabBtnAccess" role="tab" aria-selected="true">Accesos</button>
       <button type="button" class="tab-btn" id="tabBtnSponsors" role="tab" aria-selected="false">Patrocinios</button>
       <button type="button" class="tab-btn" id="tabBtnManage" role="tab" aria-selected="false">Gestión</button>
+      <button type="button" class="tab-btn" id="tabBtnPremium" role="tab" aria-selected="false">Acceso premium</button>
     </div>
 
     <div class="tab-panel" id="tabAccess" role="tabpanel">
@@ -369,9 +370,12 @@
         </div>
       </section>
 
-      <!-- EXPERIMENTAL (rama experimento-premium-sin-publicidad): acceso
-           "sin publicidad" regalado a mano, sin pasar por Google Play --
-           ver /premium/grant en worker/proxy.js. -->
+    </div>
+
+    <!-- EXPERIMENTAL (rama experimento-premium-sin-publicidad): acceso
+         "sin publicidad" regalado a mano, sin pasar por Google Play --
+         ver /premium/grant en worker/proxy.js. -->
+    <div class="tab-panel" id="tabPremium" role="tabpanel" hidden>
       <section>
         <h2>Acceso premium (sin publicidad)</h2>
         <p class="hint" style="margin-top:-6px">Regala "sin publicidad" a un contacto sin que pague — mismo efecto que si comprara desde la app.</p>
@@ -577,29 +581,37 @@
   const tabBtnAccess = $('#tabBtnAccess');
   const tabBtnSponsors = $('#tabBtnSponsors');
   const tabBtnManage = $('#tabBtnManage');
+  const tabBtnPremium = $('#tabBtnPremium');
   const tabAccess = $('#tabAccess');
   const tabSponsors = $('#tabSponsors');
   const tabManage = $('#tabManage');
+  const tabPremium = $('#tabPremium');
   const showTab = (name) => {
     tabAccess.hidden = name !== 'access';
     tabSponsors.hidden = name !== 'sponsors';
     tabManage.hidden = name !== 'manage';
+    tabPremium.hidden = name !== 'premium';
     tabBtnAccess.classList.toggle('-active', name === 'access');
     tabBtnAccess.setAttribute('aria-selected', String(name === 'access'));
     tabBtnSponsors.classList.toggle('-active', name === 'sponsors');
     tabBtnSponsors.setAttribute('aria-selected', String(name === 'sponsors'));
     tabBtnManage.classList.toggle('-active', name === 'manage');
     tabBtnManage.setAttribute('aria-selected', String(name === 'manage'));
+    tabBtnPremium.classList.toggle('-active', name === 'premium');
+    tabBtnPremium.setAttribute('aria-selected', String(name === 'premium'));
     clearBtn.hidden = name !== 'access';
     if (name === 'manage') {
       loadSponsorsAdmin();
       loadSponsorsPending();
+    }
+    if (name === 'premium') {
       loadPremiumGrants();
     }
   };
   tabBtnAccess.addEventListener('click', () => showTab('access'));
   tabBtnSponsors.addEventListener('click', () => showTab('sponsors'));
   tabBtnManage.addEventListener('click', () => showTab('manage'));
+  tabBtnPremium.addEventListener('click', () => showTab('premium'));
 
   // ============================================================
   // Gestión de patrocinadores (KV "SPONSORS", ver worker/README.md).
