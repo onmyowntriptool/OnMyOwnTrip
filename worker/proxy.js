@@ -83,8 +83,14 @@ export default {
     const isSponsorsSubmit = url.pathname.endsWith('/sponsors/submit');
     const isSponsorsPendingList = url.pathname.endsWith('/sponsors/pending/list');
     const isSponsorsPendingDelete = url.pathname.endsWith('/sponsors/pending/delete');
+    // Compra "sin publicidad" por ciudad (ver PREMIUM_PRODUCTS más abajo):
+    // verifica la compra directamente contra la API de Google Play (sin
+    // RevenueCat ni otro servicio externo), y guarda el resultado en el KV
+    // PREMIUM. Pública (sin ADMIN_KEY) porque la prueba real de que la
+    // compra es genuina la hace Google, no una clave compartida.
+    const isPremiumVerify = url.pathname.endsWith('/premium/verify-purchase');
 
-    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete)) {
+    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify)) {
       return new Response(JSON.stringify({ error: 'not found' }), {
         status: 404,
         headers: { ...headers, 'Content-Type': 'application/json' }
@@ -117,6 +123,7 @@ export default {
     if (isSponsorsSubmit) return handleSponsorsSubmit(request, env, headers);
     if (isSponsorsPendingList) return handleSponsorsPendingList(request, env, headers);
     if (isSponsorsPendingDelete) return handleSponsorsPendingDelete(request, env, headers);
+    if (isPremiumVerify) return handlePremiumVerifyPurchase(request, env, headers);
 
     // Rate limiting por IP (binding "RATE_LIMITER", configurado en el panel
     // de Cloudflare → pestaña "Bindings" → Add binding → Rate Limiting).
@@ -328,6 +335,11 @@ async function handleLicenseCheck(request, env, headers) {
   if (!username) return respond({ ok: false, reason: 'not-found' });
 
   const result = await checkLicenseValidity(env, username);
+  // Ciudades sin publicidad ya compradas (ver PREMIUM más abajo): se
+  // adjuntan aquí para que se refresquen solas con el mismo vigilante
+  // periódico que ya revisa la licencia (LICENSE.startWatching en app.js),
+  // sin necesitar una llamada aparte.
+  if (result.ok) result.premiumCities = await getPremiumCities(env, username);
   return respond(result);
 }
 
@@ -1031,6 +1043,267 @@ async function handleSponsorsPendingDelete(request, env, headers) {
   await env.SPONSORS.delete(`pending:${id}`);
 
   return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+}
+
+// ============================================================
+// COMPRA "SIN PUBLICIDAD" POR CIUDAD (Google Play Billing)
+//
+// Verificación directa contra la Android Publisher API de Google, sin
+// RevenueCat ni ningún otro servicio externo: el Worker firma un JWT con
+// una cuenta de servicio de Google (secret GOOGLE_PLAY_SERVICE_ACCOUNT_KEY,
+// el JSON completo tal cual lo da Google Cloud), lo canjea por un token de
+// acceso, y confirma cada compra contra Google antes de marcar nada como
+// premium en el KV PREMIUM — así el cliente nunca puede "decir que pagó"
+// sin que Google lo confirme de verdad. Ver worker/README.md para el paso
+// a paso de Play Console / Google Cloud.
+// ============================================================
+
+const ANDROID_PACKAGE_NAME = 'com.onmyowntrip';
+
+// Todas las ciudades reales (mismas claves que CITIES en data/core.js) --
+// se usa para expandir la compra "todas las ciudades" a la lista completa.
+// Si se añade una ciudad nueva a la app, hay que añadirla aquí también
+// (y darla de alta como producto en Play Console) para que el bundle la
+// incluya.
+const ALL_CITY_IDS = [
+  'toledo', 'madrid', 'alcala-de-henares', 'buitrago-del-lozoya',
+  'peniscola', 'cdmx', 'berlin', 'roma', 'vaticano', 'estambul', 'segovia'
+];
+
+// productId de Play Console -> cityId. Los ids de producto son a propósito
+// solo minúsculas/guion-bajo (formato que acepta Play Console sin líos) --
+// al crear cada producto ahí, tiene que llamarse EXACTAMENTE así.
+const PREMIUM_PRODUCT_TO_CITY = {
+  ads_free_toledo: 'toledo',
+  ads_free_madrid: 'madrid',
+  ads_free_alcala_de_henares: 'alcala-de-henares',
+  ads_free_buitrago_del_lozoya: 'buitrago-del-lozoya',
+  ads_free_peniscola: 'peniscola',
+  ads_free_cdmx: 'cdmx',
+  ads_free_berlin: 'berlin',
+  ads_free_roma: 'roma',
+  ads_free_vaticano: 'vaticano',
+  ads_free_estambul: 'estambul',
+  ads_free_segovia: 'segovia'
+};
+// Caso especial: desbloquea TODAS las de ALL_CITY_IDS de golpe, en vez de
+// una sola ciudad -- no aparece en PREMIUM_PRODUCT_TO_CITY a propósito.
+const PREMIUM_ALL_CITIES_PRODUCT = 'ads_free_all_cities';
+
+// Ciudades sin publicidad para este username, ya expandidas (si compró el
+// bundle, devuelve la lista completa en vez de un flag "all" suelto) --
+// así app.js solo necesita comprobar si su ciudad activa está en la lista,
+// sin saber nada de cómo se compró.
+async function getPremiumCities(env, username) {
+  if (!env.PREMIUM) return [];
+  try {
+    const raw = await env.PREMIUM.get(`user:${username}`);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    if (data.all) return ALL_CITY_IDS.slice();
+    return Array.isArray(data.cities) ? data.cities : [];
+  } catch (_) { return []; }
+}
+
+// Convierte una cadena base64 estándar en base64url (sin relleno) — formato
+// que exige JWT tanto en la cabecera/claims como en la firma.
+const toBase64Url = (base64) => base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+// Firma un JWT RS256 con la cuenta de servicio y lo canjea por un access
+// token de Google (flujo estándar OAuth2 "JWT bearer" para cuentas de
+// servicio: https://developers.google.com/identity/protocols/oauth2/service-account).
+// Cloudflare Workers no tiene la librería "googleapis" de Node, pero sí Web
+// Crypto, que es todo lo que hace falta para firmar el JWT a mano.
+// Se cachea en memoria de ESTA instancia del Worker mientras dure (los
+// access token de Google duran 1h) para no firmar uno nuevo en cada compra.
+let cachedGoogleToken = null; // { token, expiresAt }
+async function getGooglePlayAccessToken(env) {
+  if (cachedGoogleToken && cachedGoogleToken.expiresAt > Date.now() + 60000) {
+    return cachedGoogleToken.token;
+  }
+  if (!env.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY) return null;
+
+  let creds;
+  try { creds = JSON.parse(env.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY); } catch (_) { return null; }
+
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const now = Math.floor(Date.now() / 1000);
+  const claims = {
+    iss: creds.client_email,
+    scope: 'https://www.googleapis.com/auth/androidpublisher',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600
+  };
+  const enc = new TextEncoder();
+  const unsigned = `${toBase64Url(btoa(JSON.stringify(header)))}.${toBase64Url(btoa(JSON.stringify(claims)))}`;
+
+  // La clave privada llega en PEM (con cabeceras -----BEGIN/END-----); Web
+  // Crypto la quiere como bytes DER, así que se decodifica el contenido
+  // base64 de en medio, sin las cabeceras ni los saltos de línea.
+  let signature;
+  try {
+    const pemBody = creds.private_key
+      .replace(/-----BEGIN PRIVATE KEY-----/, '')
+      .replace(/-----END PRIVATE KEY-----/, '')
+      .replace(/\s+/g, '');
+    const der = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
+    const key = await crypto.subtle.importKey(
+      'pkcs8', der.buffer, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']
+    );
+    const sigBuffer = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, enc.encode(unsigned));
+    signature = toBase64Url(btoa(String.fromCharCode(...new Uint8Array(sigBuffer))));
+  } catch (_) { return null; }
+
+  const jwt = `${unsigned}.${signature}`;
+
+  let res;
+  try {
+    res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `grant_type=${encodeURIComponent('urn:ietf:params:oauth:grant-type:jwt-bearer')}&assertion=${encodeURIComponent(jwt)}`
+    });
+  } catch (_) { return null; }
+  if (!res.ok) return null;
+  const data = await res.json().catch(() => null);
+  if (!data || !data.access_token) return null;
+
+  cachedGoogleToken = { token: data.access_token, expiresAt: Date.now() + (data.expires_in || 3600) * 1000 };
+  return data.access_token;
+}
+
+// Confirma contra Google que ESTE purchaseToken es real, corresponde a ESTE
+// producto, y no está cancelado/reembolsado. purchaseState: 0 = comprado,
+// 1 = cancelado, 2 = pendiente. acknowledgementState: 0 = sin confirmar
+// (ver acknowledgeGooglePlayPurchase), 1 = ya confirmada. Devuelve null si
+// la petición falla (token inválido, producto inexistente, etc.).
+async function verifyGooglePlayPurchase(accessToken, productId, purchaseToken) {
+  const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${ANDROID_PACKAGE_NAME}/purchases/products/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}`;
+  try {
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (_) { return null; }
+}
+
+// Google reembolsa sola cualquier compra sin "confirmar" (acknowledge)
+// pasados 3 días desde que se hizo — se llama en el mismo request que la
+// primera verificación válida, nunca se deja para un paso posterior que
+// podría no llegar a darse nunca.
+async function acknowledgeGooglePlayPurchase(accessToken, productId, purchaseToken) {
+  const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${ANDROID_PACKAGE_NAME}/purchases/products/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}:acknowledge`;
+  try {
+    await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } });
+  } catch (_) { /* si falla, la compra sigue siendo válida; solo se pierde la confirmación automática */ }
+}
+
+// Ruta llamada por la app justo después de que Google Play confirme la
+// compra en el dispositivo (ver el plugin de Billing en app.js/Capacitor):
+// recibe el justificante de esa compra y decide de verdad si es real.
+async function handlePremiumVerifyPurchase(request, env, headers) {
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (env.RATE_LIMITER) {
+    const { success } = await env.RATE_LIMITER.limit({ key: `premium:${ip}` });
+    if (!success) {
+      return new Response(JSON.stringify({ ok: false, reason: 'rate-limited' }), {
+        status: 429,
+        headers: { ...headers, 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
+  if (!env.PREMIUM || !env.LICENSES || !env.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY) {
+    return new Response(JSON.stringify({ ok: false, reason: 'not-configured' }), {
+      status: 501,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  let payload;
+  try {
+    payload = await request.json();
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, reason: 'bad-request' }), {
+      status: 400,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  const username = String((payload && payload.username) || '').trim();
+  const productId = String((payload && payload.productId) || '').trim();
+  const purchaseToken = String((payload && payload.purchaseToken) || '').trim();
+
+  const isAllCities = productId === PREMIUM_ALL_CITIES_PRODUCT;
+  const cityId = isAllCities ? null : PREMIUM_PRODUCT_TO_CITY[productId];
+  if (!username || !purchaseToken || (!isAllCities && !cityId)) {
+    return new Response(JSON.stringify({ ok: false, reason: 'bad-request' }), {
+      status: 400,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Solo quien ya tiene una licencia válida puede desbloquear ciudades --
+  // evita gastar cuota de verificación de Google en usernames inventados.
+  const license = await checkLicenseValidity(env, username);
+  if (!license.ok) {
+    return new Response(JSON.stringify({ ok: false, reason: 'invalid-license' }), {
+      status: 403,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Un mismo justificante de compra no se puede canjear dos veces desde
+  // usernames distintos -- evita que un purchaseToken filtrado/compartido
+  // se reutilice para "regalar" el desbloqueo a otra cuenta. Reclamarlo de
+  // nuevo desde el MISMO username (p.ej. "Restaurar compras") es idempotente.
+  const tokenKey = `token:${purchaseToken}`;
+  const alreadyClaimedBy = await env.PREMIUM.get(tokenKey);
+  if (alreadyClaimedBy && alreadyClaimedBy !== username) {
+    return new Response(JSON.stringify({ ok: false, reason: 'token-already-claimed' }), {
+      status: 409,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  const accessToken = await getGooglePlayAccessToken(env);
+  if (!accessToken) {
+    return new Response(JSON.stringify({ ok: false, reason: 'google-auth-failed' }), {
+      status: 502,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  const purchase = await verifyGooglePlayPurchase(accessToken, productId, purchaseToken);
+  if (!purchase || purchase.purchaseState !== 0) {
+    return new Response(JSON.stringify({ ok: false, reason: 'purchase-not-valid' }), {
+      status: 402,
+      headers: { ...headers, 'Content-Type': 'application/json' }
+    });
+  }
+
+  if (purchase.acknowledgementState === 0) {
+    await acknowledgeGooglePlayPurchase(accessToken, productId, purchaseToken);
+  }
+
+  await env.PREMIUM.put(tokenKey, username);
+
+  const currentRaw = await env.PREMIUM.get(`user:${username}`);
+  let data;
+  try { data = currentRaw ? JSON.parse(currentRaw) : { cities: [], all: false }; }
+  catch (_) { data = { cities: [], all: false }; }
+
+  if (isAllCities) {
+    data = { cities: [], all: true };
+  } else if (!data.all && !data.cities.includes(cityId)) {
+    data.cities.push(cityId);
+  }
+  await env.PREMIUM.put(`user:${username}`, JSON.stringify(data));
+
+  return new Response(JSON.stringify({ ok: true, premiumCities: data.all ? ALL_CITY_IDS : data.cities }), {
     status: 200,
     headers: { ...headers, 'Content-Type': 'application/json' }
   });

@@ -3809,6 +3809,113 @@ html[data-mode="kids"] .ai-input-wrap {
   color: #B0A98E;
 }
 
+/* Enlace discreto bajo la tarjeta de patrocinio (ver renderSponsorDemoInsert
+   en app.js) -- solo se pinta dentro de la app nativa Android, que es la
+   única plataforma donde la compra funciona (política de Google Play). */
+.sponsor-remove-ads-link {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 10px;
+  text-decoration: underline;
+  color: var(--color-text-soft);
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Modal "Quitar publicidad" (ver PREMIUM_PURCHASE en app.js) -- mismo
+   patrón de overlay que .poi-search-modal, centrado en vez de pegado
+   arriba porque aquí no hay teclado que dejar sitio debajo. */
+.premium-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 5600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(5, 7, 13, 0.92);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+}
+.premium-modal.-open { opacity: 1; visibility: visible; }
+.premium-card {
+  width: min(92vw, 420px);
+  max-height: min(85vh, 85dvh);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  padding: 18px;
+  overflow-y: auto;
+}
+.premium-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.premium-head h3 { margin: 0; font-size: 16px; color: var(--color-text); }
+.premium-close {
+  border: none;
+  background: none;
+  color: var(--color-text-soft);
+  cursor: pointer;
+  padding: 4px;
+  line-height: 0;
+}
+.premium-hint { margin: 0 0 14px; font-size: 12.5px; color: var(--color-text-soft); line-height: 1.4; }
+.premium-city-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.premium-city-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--color-surface);
+  font-size: 13px;
+  color: var(--color-text);
+}
+.premium-buy-btn, .premium-all-btn, .premium-restore-btn {
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 12px;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  background: transparent;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.premium-all-btn {
+  display: block;
+  width: 100%;
+  background: var(--color-primary);
+  color: #1C1300;
+  margin-bottom: 8px;
+  padding: 10px;
+  font-size: 13px;
+}
+.premium-restore-btn {
+  display: block;
+  width: 100%;
+  border-color: var(--color-border);
+  color: var(--color-text-soft);
+}
+.premium-active-badge { font-size: 11px; font-weight: 700; color: #4ADE80; }
+.premium-error { margin: 10px 0 0; font-size: 12px; color: #F87171; text-align: center; }
+.premium-unavailable { font-size: 12.5px; color: var(--color-text-soft); text-align: center; padding: 20px 0; }
+
 /* reduce motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

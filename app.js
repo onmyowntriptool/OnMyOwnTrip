@@ -945,6 +945,12 @@
     // un alcance aparte todavía sin abordar.
     lang: 'es',
     cityId: null,
+    // Ciudades sin publicidad ya compradas por este username (ver
+    // premium/verify-purchase en worker/proxy.js) -- se rellena al validar
+    // la licencia (LICENSE.check) y se refresca sola con el mismo
+    // vigilante en segundo plano que ya revisa si la licencia sigue siendo
+    // válida (ver LICENSE.startWatching). Vacío = publicidad en todas.
+    premiumCities: [],
     category: CATEGORIES.ALL,
     activeRoute: null, // id de la ruta imprescindible activa (para ciudades con varios circuitos)
     activePoiId: null,
@@ -1234,7 +1240,8 @@
       const recheck = async () => {
         const result = await check(username, 'watch');
         if (result.ok) {
-          writeStored({ username, expires: result.expires });
+          writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [] });
+          STATE.premiumCities = result.premiumCities || [];
         } else if (result.reason !== 'offline') {
           stopWatching();
           clearStored();
@@ -2949,9 +2956,122 @@
     iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -26]
   });
 
+  // Quien compró "sin publicidad" para esta ciudad (ver STATE.premiumCities
+  // más arriba) no ve NINGUNA salida del sistema de patrocinios -- se
+  // comprueba aquí y en renderSponsorDemoInsert, los dos únicos puntos de
+  // entrada; la mención por voz (maybeSpeakSponsorDemoOutro) y el pin del
+  // mapa dependen de lo que estos dos ya decidan, así que no hace falta
+  // repetir el chequeo en cada sitio.
+  const isCityPremium = (cityId) => STATE.premiumCities.includes(cityId);
+
+  // ============================================================
+  // EXPERIMENTAL (rama experimento-premium-sin-publicidad) — COMPRA "SIN
+  // PUBLICIDAD" POR CIUDAD, vía Google Play Billing.
+  //
+  // Solo funciona dentro de la app nativa Android: Capacitor solo inyecta
+  // window.Capacitor ahí, así que su ausencia ya sirve para detectar "esto
+  // es la web" sin comprobar nada más (en la web no hay forma de comprar
+  // esto — política de Google, las compras digitales dentro de una app de
+  // Play Store tienen que pasar por su propio sistema de cobro).
+  //
+  // El plugin (NativePurchases) solo habla con la tienda del dispositivo;
+  // nunca decide por su cuenta si el desbloqueo es válido — eso lo hace
+  // SIEMPRE el Worker, verificando contra la propia API de Google (ver
+  // handlePremiumVerifyPurchase en worker/proxy.js). autoAcknowledgePurchases
+  // va a false a propósito: si el móvil confirmara la compra antes de que
+  // el servidor la verifique, alguien podría cortar la conexión justo ahí
+  // y quedarse con el desbloqueo sin que el Worker llegara a comprobar nada.
+  // ============================================================
+  const isNativeBillingAvailable = () => {
+    try {
+      return typeof Capacitor !== 'undefined' &&
+        !!(Capacitor.isNativePlatform && Capacitor.isNativePlatform()) &&
+        !!(Capacitor.Plugins && Capacitor.Plugins.NativePurchases);
+    } catch (_) { return false; }
+  };
+
+  // productId de Play Console -> tiene que coincidir EXACTAMENTE con
+  // PREMIUM_PRODUCT_TO_CITY en worker/proxy.js (ahí está también la lista
+  // completa comentada).
+  const premiumProductIdForCity = (cityId) => `ads_free_${cityId.replace(/-/g, '_')}`;
+  const PREMIUM_ALL_CITIES_PRODUCT = 'ads_free_all_cities';
+  const PREMIUM_VERIFY_ENDPOINT = CONTENT_BASE_URL ? `${CONTENT_BASE_URL.replace(/\/$/, '')}/premium/verify-purchase` : '';
+
+  // Manda el justificante de una compra ya hecha en el dispositivo al
+  // Worker, que es quien de verdad decide si es válida -- nunca nos fiamos
+  // de que el propio plugin diga "comprado". Actualiza STATE/localStorage
+  // en cuanto el Worker confirma, para que la publicidad desaparezca sin
+  // esperar al próximo chequeo periódico de la licencia.
+  const verifyPremiumPurchaseWithServer = async (productId, purchaseToken) => {
+    const stored = LICENSE.readStored();
+    const username = stored && stored.username;
+    if (!username || !PREMIUM_VERIFY_ENDPOINT || !purchaseToken) return { ok: false, reason: 'not-ready' };
+    try {
+      const res = await fetch(PREMIUM_VERIFY_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, productId, purchaseToken })
+      });
+      const data = await res.json().catch(() => ({ ok: false }));
+      if (data.ok && Array.isArray(data.premiumCities)) {
+        STATE.premiumCities = data.premiumCities;
+        LICENSE.writeStored({ username, expires: (stored && stored.expires) ?? null, premiumCities: data.premiumCities });
+      }
+      return data;
+    } catch (e) {
+      return { ok: false, reason: 'offline' };
+    }
+  };
+
+  // Compra una ciudad concreta o el pack de todas -- mismo flujo, solo
+  // cambia el productId.
+  const purchasePremiumProduct = async (productId) => {
+    if (!isNativeBillingAvailable()) return { ok: false, reason: 'not-native' };
+    const { NativePurchases } = Capacitor.Plugins;
+    try {
+      const transaction = await NativePurchases.purchaseProduct({
+        productIdentifier: productId,
+        productType: 'inapp',
+        autoAcknowledgePurchases: false
+      });
+      if (!transaction || !transaction.purchaseToken) return { ok: false, reason: 'no-token' };
+      return await verifyPremiumPurchaseWithServer(productId, transaction.purchaseToken);
+    } catch (e) {
+      // El propio plugin rechaza la promesa si el usuario cierra el diálogo
+      // nativo de compra sin completarla -- no es un error real, solo "no
+      // llegó a comprar".
+      return { ok: false, reason: 'cancelled' };
+    }
+  };
+
+  // "Restaurar compras" (obligatorio por política de Google): relee el
+  // historial de compras del dispositivo y reenvía cada justificante al
+  // Worker -- cubre reinstalar la app o cambiar de móvil con la misma
+  // cuenta de Google. Reclamar un token ya canjeado por el MISMO username
+  // es idempotente (ver handlePremiumVerifyPurchase), así que no hace daño
+  // llamarlo con compras que ya estaban confirmadas de antes.
+  const restorePremiumPurchases = async () => {
+    if (!isNativeBillingAvailable()) return { ok: false, reason: 'not-native' };
+    const { NativePurchases } = Capacitor.Plugins;
+    try {
+      await NativePurchases.restorePurchases();
+      const { purchases } = await NativePurchases.getPurchases({ productType: 'inapp' });
+      if (!purchases || !purchases.length) return { ok: true, premiumCities: STATE.premiumCities };
+      let lastResult = { ok: true, premiumCities: STATE.premiumCities };
+      for (const purchase of purchases) {
+        if (!purchase.purchaseToken) continue;
+        lastResult = await verifyPremiumPurchaseWithServer(purchase.productIdentifier, purchase.purchaseToken);
+      }
+      return lastResult;
+    } catch (e) {
+      return { ok: false, reason: 'offline' };
+    }
+  };
+
   const renderSponsorsDemo = () => {
     if (!sponsorsLayer) return;
     sponsorsLayer.clearLayers();
+    if (isCityPremium(STATE.cityId)) return;
     const list = (SPONSORS_BY_CITY[STATE.cityId] || []).filter((s) => s.tier === 'oro');
     list.forEach((s) => {
       const marker = L.marker(s.coords, { icon: makeSponsorDemoIcon(s) });
@@ -3118,7 +3238,7 @@
 
   const renderSponsorDemoInsert = (poi) => {
     const el = ensureSponsorDemoEl();
-    const match = findNearbySponsorDemo(poi);
+    const match = isCityPremium(STATE.cityId) ? null : findNearbySponsorDemo(poi);
     activeSponsorDemoMatch = match ? { poiId: poi.id, ...match } : null;
     if (!match) { el.hidden = true; el.className = ''; el.innerHTML = ''; return; }
     const { sponsor, distance } = match;
@@ -3183,6 +3303,14 @@
         trackSponsorDemoEvent(sponsor, 'directions');
         flyToSponsorDemo(sponsor);
       });
+    }
+    // EXPERIMENTAL (rama experimento-premium-sin-publicidad): mismo enlace
+    // para los 3 niveles, común a bronce/plata/oro -- solo se pinta dentro
+    // de la app nativa Android, la única plataforma donde la compra
+    // funciona de verdad (ver isNativeBillingAvailable más arriba).
+    if (isNativeBillingAvailable()) {
+      el.insertAdjacentHTML('beforeend', '<button type="button" class="sponsor-remove-ads-link" id="sponsorRemoveAdsBtn">Quitar publicidad en esta ciudad</button>');
+      $('#sponsorRemoveAdsBtn', el)?.addEventListener('click', openPremiumModal);
     }
     el.hidden = false;
   };
@@ -5150,6 +5278,128 @@
     $('#poiSearchInput')?.addEventListener('input', (e) => renderPoiSearchResults(e.target.value));
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && $('#poiSearchModal')?.classList.contains('-open')) closePoiSearch();
+    });
+  };
+
+  // EXPERIMENTAL (rama experimento-premium-sin-publicidad): modal "Quitar
+  // publicidad" -- se abre desde el enlace bajo la tarjeta de patrocinio
+  // (ver renderSponsorDemoInsert) o, si algún día hace falta, desde
+  // cualquier otro sitio con solo llamar a openPremiumModal().
+  const openPremiumModal = () => {
+    renderPremiumModalContent();
+    $('#premiumModal')?.classList.add('-open');
+    $('#premiumModal')?.setAttribute('aria-hidden', 'false');
+  };
+  const closePremiumModal = () => {
+    $('#premiumModal')?.classList.remove('-open');
+    $('#premiumModal')?.setAttribute('aria-hidden', 'true');
+  };
+
+  const setPremiumError = (msg) => {
+    const el = $('#premiumError');
+    if (!el) return;
+    el.hidden = !msg;
+    el.textContent = msg || '';
+  };
+
+  // Reconstruye la lista de ciudades (y el estado de los botones) cada vez
+  // que se abre el modal -- así una compra recién hecha se refleja aunque
+  // el modal ya estuviera montado en el DOM de antes.
+  const renderPremiumModalContent = () => {
+    const listEl = $('#premiumCityList');
+    const allBtn = $('#premiumAllBtn');
+    const restoreBtn = $('#premiumRestoreBtn');
+    const hintEl = $('#premiumHint');
+    if (!listEl) return;
+
+    if (!isNativeBillingAvailable()) {
+      listEl.innerHTML = '<li class="premium-unavailable">Disponible solo desde la app de OnMyOwnTrip para Android.</li>';
+      if (allBtn) allBtn.hidden = true;
+      if (restoreBtn) restoreBtn.hidden = true;
+      if (hintEl) hintEl.hidden = true;
+      return;
+    }
+    if (hintEl) hintEl.hidden = false;
+    if (allBtn) allBtn.hidden = false;
+    if (restoreBtn) restoreBtn.hidden = false;
+
+    // El Worker ya expande la compra "todas las ciudades" a la lista
+    // completa (ver getPremiumCities en proxy.js) antes de mandarla aquí,
+    // así que basta con comprobar que TODAS están en STATE.premiumCities.
+    const allUnlocked = Object.keys(CITIES).every((id) => isCityPremium(id));
+    listEl.innerHTML = Object.keys(CITIES).map((id) => {
+      const city = CITIES[id];
+      const name = (city && city.name) || id;
+      if (isCityPremium(id)) {
+        return `<li><span>${name}</span><span class="premium-active-badge">✓ Activo</span></li>`;
+      }
+      return `<li><span>${name}</span><button type="button" class="premium-buy-btn" data-city="${id}">3,99 €</button></li>`;
+    }).join('');
+
+    if (allBtn) {
+      allBtn.disabled = allUnlocked;
+      allBtn.textContent = allUnlocked ? 'Todas las ciudades — ya activo' : 'Todas las ciudades — 14,99 €';
+    }
+  };
+
+  const wirePremiumModal = () => {
+    $('#premiumCloseBtn')?.addEventListener('click', closePremiumModal);
+    $('#premiumModal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'premiumModal') closePremiumModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && $('#premiumModal')?.classList.contains('-open')) closePremiumModal();
+    });
+
+    $('#premiumCityList')?.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.premium-buy-btn');
+      if (!btn || btn.disabled) return;
+      setPremiumError(null);
+      btn.disabled = true;
+      btn.textContent = '…';
+      const result = await purchasePremiumProduct(premiumProductIdForCity(btn.dataset.city));
+      if (result.ok) {
+        renderPremiumModalContent();
+      } else if (result.reason !== 'cancelled') {
+        setPremiumError('No se pudo completar la compra. Inténtalo de nuevo.');
+        btn.disabled = false;
+        btn.textContent = '3,99 €';
+      } else {
+        btn.disabled = false;
+        btn.textContent = '3,99 €';
+      }
+    });
+
+    $('#premiumAllBtn')?.addEventListener('click', async () => {
+      const btn = $('#premiumAllBtn');
+      setPremiumError(null);
+      btn.disabled = true;
+      const prevText = btn.textContent;
+      btn.textContent = '…';
+      const result = await purchasePremiumProduct(PREMIUM_ALL_CITIES_PRODUCT);
+      if (result.ok) {
+        renderPremiumModalContent();
+      } else if (result.reason !== 'cancelled') {
+        setPremiumError('No se pudo completar la compra. Inténtalo de nuevo.');
+        btn.disabled = false;
+        btn.textContent = prevText;
+      } else {
+        btn.disabled = false;
+        btn.textContent = prevText;
+      }
+    });
+
+    $('#premiumRestoreBtn')?.addEventListener('click', async () => {
+      const btn = $('#premiumRestoreBtn');
+      setPremiumError(null);
+      btn.disabled = true;
+      const prevText = btn.textContent;
+      btn.textContent = 'Restaurando…';
+      const result = await restorePremiumPurchases();
+      btn.disabled = false;
+      btn.textContent = prevText;
+      if (result.ok) renderPremiumModalContent();
+      else setPremiumError('No se pudieron restaurar las compras. Inténtalo de nuevo.');
     });
   };
 
@@ -8391,6 +8641,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     wireTutorial();
     wireCityIntro();
     wirePoiSearch();
+    wirePremiumModal();
 
     setStateMode(STATE.mode);
     updatePills();
@@ -8524,7 +8775,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       submit.disabled = false;
       submit.textContent = 'Entrar';
       if (result.ok) {
-        LICENSE.writeStored({ username, expires: result.expires });
+        LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [] });
+        STATE.premiumCities = result.premiumCities || [];
         hideLicenseGate();
         revealApp(); // no-op si la app ya se había revelado antes de un bloqueo
         LICENSE.startWatching(username, lockApp);
@@ -8559,6 +8811,11 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
 
     const cached = LICENSE.checkStoredValidOffline();
     if (cached) {
+      // Se rellena con lo cacheado ANTES de revealApp(): si no, la primera
+      // ficha con patrocinio que se abriera (antes de que responda el
+      // Worker) podría mostrar publicidad a alguien que ya la había
+      // comprado, un instante hasta que llegue la revalidación de abajo.
+      STATE.premiumCities = cached.premiumCities || [];
       revealApp();
       // Revalidación contra el Worker real: si ya no es válido, bloquea de
       // inmediato en vez de esperar a la siguiente apertura de la app. Si
@@ -8567,7 +8824,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       // app sigue abierta.
       LICENSE.check(cached.username).then((result) => {
         if (result.ok) {
-          LICENSE.writeStored({ username: cached.username, expires: result.expires });
+          LICENSE.writeStored({ username: cached.username, expires: result.expires, premiumCities: result.premiumCities || [] });
+          STATE.premiumCities = result.premiumCities || [];
           LICENSE.startWatching(cached.username, lockApp);
           LICENSE.recordVisit(cached.username);
         } else if (result.reason !== 'offline') {

@@ -289,6 +289,89 @@ rellenes) y, al guardar, borra la solicitud automáticamente. El botón
 - `POST /sponsors/pending/delete`: borra una solicitud por `id` (al
   descartarla, o justo después de importarla). Exige `adminKey`.
 
+## Compra "sin publicidad" por ciudad (Google Play Billing)
+
+**EXPERIMENTAL** (rama `experimento-premium-sin-publicidad`, no la fusiones
+a `main` hasta que hayas probado una compra real de principio a fin).
+
+Pago único no consumible: 3,99 € por quitar la publicidad de una ciudad
+concreta, o 14,99 € por todas de golpe. La app solo se ofrece desde la app
+nativa de Android (Google exige pasar por su propio sistema de cobro para
+esto, no se puede hacer desde la web). La verificación de cada compra es
+**directa contra la API de Google Play**, sin RevenueCat ni ningún otro
+servicio externo — encaja con que todo lo demás de este proyecto vive ya
+en tu propio Cloudflare.
+
+### Configurarlo (una sola vez)
+
+1. **Google Cloud Console** (console.cloud.google.com), mismo proyecto que
+   uses o uno nuevo:
+   - **APIs y servicios → Biblioteca** → busca **"Google Play Android
+     Developer API"** → Habilitar.
+   - **IAM y administración → Cuentas de servicio → Crear cuenta de
+     servicio**. No hace falta darle ningún rol de IAM aquí (el permiso
+     real se da desde Play Console, paso siguiente).
+   - Dentro de esa cuenta de servicio → **Claves → Agregar clave → Crear
+     clave nueva → JSON**. Se descarga un fichero `.json` — es un secreto,
+     no lo subas al repo ni me lo pegues a mí.
+2. **Play Console → Configuración → Acceso a la API**:
+   - Vincula el proyecto de Google Cloud del paso 1 (si no aparece solo,
+     usa "Vincular proyecto existente" con el mismo ID de proyecto).
+   - Busca la cuenta de servicio recién creada → **Administrar acceso de
+     Play Console** → dale permiso de **Finanzas → Ver datos financieros,
+     órdenes y transacciones** (es lo que necesita para consultar compras).
+3. En tu Worker → **Settings → Variables and Secrets → Add**:
+   - Nombre: `GOOGLE_PLAY_SERVICE_ACCOUNT_KEY`
+   - Tipo: **Secret**
+   - Valor: el contenido COMPLETO del `.json` descargado en el paso 1,
+     pegado tal cual (es un único bloque JSON, no lo reformatees).
+4. **Storage & databases → Workers KV → Create Instance**. Nómbralo, por
+   ejemplo, `omot-premium`.
+5. En tu Worker → pestaña **Bindings** → **Add binding** → tipo **KV
+   Namespace**. Variable: `PREMIUM` (tiene que llamarse exactamente así).
+   Selecciona el namespace del paso 4.
+6. **Play Console → Monetización → Productos → Productos integrados en la
+   aplicación → Crear producto**: uno no consumible por cada ciudad, con
+   el ID exacto (en minúsculas y guion bajo) que espera `proxy.js` — ver
+   `PREMIUM_PRODUCT_TO_CITY` ahí mismo para la lista completa (p.ej.
+   `ads_free_madrid`, `ads_free_toledo`...) — más uno `ads_free_all_cities`
+   para el pack de todas. Precio: 3,99 € cada ciudad, 14,99 € el pack.
+7. **Play Console → Configuración → Prueba de licencias**: añade tu propia
+   cuenta de Google (o la de quien vaya a probar) como *tester licenciado*,
+   para poder completar compras de prueba sin que cobren de verdad.
+8. Guarda/Deploy el Worker con el código actualizado.
+
+Si añades una ciudad nueva a la app en el futuro, hay que repetir el paso 6
+para esa ciudad y añadirla también a `ALL_CITY_IDS`/`PREMIUM_PRODUCT_TO_CITY`
+en `proxy.js` — si no, el bundle "todas las ciudades" no la incluirá.
+
+### Cómo funciona por dentro
+
+- `POST /premium/verify-purchase`: pública (sin `adminKey` — la prueba real
+  de que la compra es genuina la hace la propia API de Google, no una
+  clave compartida), con rate limiting propio. Recibe
+  `{username, productId, purchaseToken}` desde la app justo después de que
+  el usuario complete la compra nativa. Comprueba que `username` tiene una
+  licencia válida, firma un JWT con la cuenta de servicio para conseguir un
+  token de acceso de Google, confirma la compra contra la Android Publisher
+  API, la "confirma" (`acknowledge`, obligatorio en 3 días o Google la
+  reembolsa sola), y guarda el resultado en `PREMIUM` bajo `user:<username>`.
+- Un mismo justificante de compra (`purchaseToken`) no se puede reclamar
+  dos veces desde usernames distintos (se guarda en `PREMIUM` bajo
+  `token:<purchaseToken>`) — sí es idempotente reclamarlo otra vez desde el
+  MISMO username (lo que hace "Restaurar compras" en la app).
+- `POST /license/check` (la comprobación de licencia normal, incluido el
+  vigilante en segundo plano) ahora también devuelve `premiumCities` — la
+  app la usa para saber en qué ciudades ocultar la publicidad, sin una
+  llamada aparte.
+
+### Límite real de esto
+
+Sin el binding `GOOGLE_PLAY_SERVICE_ACCOUNT_KEY`/`PREMIUM` configurados,
+`/premium/verify-purchase` responde `not-configured` (501) sin romper nada
+más de la app — es una capa opcional, igual que el resto de KV bindings
+de este Worker.
+
 ## Rate limiting por IP (opcional, recomendado)
 
 Importante: como este Worker vive en un subdominio `workers.dev` (no en un

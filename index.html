@@ -742,6 +742,30 @@
     </div>
   </div>
 
+  <!-- EXPERIMENTAL (rama experimento-premium-sin-publicidad): compra "sin
+       publicidad" por ciudad vía Google Play Billing -- ver PREMIUM_PURCHASE
+       en app.js. Solo funciona dentro de la app nativa Android (Google
+       exige su propio sistema de cobro para esto dentro de una app de Play
+       Store); en la web el enlace que abre este modal ni se pinta. -->
+  <div class="premium-modal" id="premiumModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Quitar publicidad">
+    <div class="premium-card">
+      <div class="premium-head">
+        <h3>Quitar publicidad</h3>
+        <button type="button" class="premium-close" id="premiumCloseBtn" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="20" height="20">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <p class="premium-hint" id="premiumHint">Elige una ciudad, o quítala de todas de una vez.</p>
+      <ul class="premium-city-list" id="premiumCityList"></ul>
+      <button type="button" class="premium-all-btn" id="premiumAllBtn">Todas las ciudades — 14,99 €</button>
+      <button type="button" class="premium-restore-btn" id="premiumRestoreBtn">Restaurar compras</button>
+      <p class="premium-error" id="premiumError" hidden></p>
+    </div>
+  </div>
+
   <!-- AVISO DE VERSIÓN NUEVA: aparece cuando el Service Worker detecta que
        hay una versión más reciente publicada que la que ya se está usando
        (ver el script de registro más abajo). No se autorrecarga sola para
