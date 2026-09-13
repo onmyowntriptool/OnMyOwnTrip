@@ -5723,7 +5723,7 @@
     return main + cta;
   };
 
-  const ensureAiPanelInitialGreet = (poi) => {
+  const ensureAiPanelInitialGreet = (poi, forceSpeak = false) => {
     if (!poi) return;
     const history = aiHistoryFor(poi.id);
     // FIX (2026-09-10): si este POI ya tiene historial pero se generó en el
@@ -5776,6 +5776,19 @@
       // viejo en vez de la suya.
       STATE.audio.overrideText = null;
       if ((SPEECH.isSupported() || CLOUD_TTS.isConfigured()) && !STATE.audio.playing) startAudio(false, true);
+    } else if (forceSpeak) {
+      // El usuario pidió que el saludo/teaser de bienvenida siempre se diga
+      // al entrar en un punto, no solo la primera vez: se repite el mismo
+      // texto como "texto puntual" (overrideText, mismo mecanismo que la
+      // revelación del quiz en renderKidsQuizCard), sin volver a añadirlo al
+      // historial guardado -- ese sigue siendo la conversación real desde la
+      // primera visita.
+      const openingText = STATE.mode === 'kids' ? buildIntroText(poi, STATE.mode) : buildOpeningGreeting(poi, STATE.mode);
+      if (SPEECH.isSupported() || CLOUD_TTS.isConfigured()) {
+        STATE.audio.overrideText = openingText;
+        stopAudio();
+        startAudio(false, true);
+      }
     }
     renderAiMessages();
     scrollAiToBottom();
@@ -7081,7 +7094,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     setSelectedMarker(id);
     populateSheetContent(id);
     resetAudio(poi.audio.duration);
-    ensureAiPanelInitialGreet(poi);
+    ensureAiPanelInitialGreet(poi, true);
     openSheet();
     if (centerMap && map) map.flyTo([poi.coords[0] - 0.0015, poi.coords[1]], 16.5, { duration: 0.7 });
     // El audio del resumen se autorreproduce cuando llega (ver queueAiMessage),
