@@ -8626,6 +8626,21 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     };
 
     const pickCityBtn = $('#obPickCity');
+    // Alto máximo real del desplegable: un porcentaje fijo en CSS no puede
+    // acertar siempre porque este botón puede quedar más arriba o más abajo
+    // según cuánto haya bajado la tarjeta (idioma/ciudad/modo van todos en
+    // la misma tarjeta con scroll) -- se mide el hueco real hasta abajo cada
+    // vez que se abre, en vez de adivinar. var(--safe-area-inset-bottom) (lo
+    // pone el plugin nativo en <html>, ver SystemBars) en vez de
+    // env(safe-area-inset-bottom): este último no devuelve nada dentro del
+    // WebView de Capacitor.
+    const sizeCityList = () => {
+      if (!cityList) return;
+      const btnRect = pickCityBtn.getBoundingClientRect();
+      const safeBottom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-bottom')) || 0;
+      const available = window.innerHeight - btnRect.bottom - safeBottom - 18;
+      cityList.style.maxHeight = Math.max(120, available) + 'px';
+    };
     pickCityBtn?.addEventListener('click', (e) => {
       if (!cityList) return;
       const willExpand = cityList.hidden;
@@ -8633,6 +8648,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       cityList.hidden = !willExpand;
       e.currentTarget.setAttribute('aria-expanded', String(willExpand));
       e.stopPropagation();
+      if (willExpand) sizeCityList();
     });
 
     document.addEventListener('click', (e) => {
