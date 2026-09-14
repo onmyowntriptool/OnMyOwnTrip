@@ -155,7 +155,7 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
 .onboarding-version {
   position: absolute;
   right: 14px;
-  bottom: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
   z-index: 2;
   padding: 10px;
   margin: -10px;
@@ -169,7 +169,7 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
 .onboarding-reset {
   position: absolute;
   left: 14px;
-  bottom: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
   z-index: 2;
   padding: 10px;
   margin: -10px;
@@ -186,7 +186,7 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
 .onboarding-legal {
   position: absolute;
   left: 50%;
-  bottom: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   z-index: 2;
   padding: 10px;
