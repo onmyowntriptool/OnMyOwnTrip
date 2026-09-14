@@ -343,6 +343,21 @@ async function handleLicenseCheck(request, env, headers) {
 
   if (!username) return respond({ ok: false, reason: 'not-found' });
 
+  // App nativa (Play Store) = acceso libre automático: quien la instaló ya
+  // pasó el único filtro que nos importa ahí. 'https://localhost' es el
+  // origen fijo del WebView de Capacitor (ver ALLOWED_ORIGINS arriba) — lo
+  // pone el propio WebView, no algo que la app pueda declarar en el body,
+  // así que un visitante web no puede fingirlo para saltarse la clave de
+  // acceso real (esa sigue exactamente igual, sin tocar). Si el código
+  // (generado solo por la app, ver getDeviceCode en app.js) no tiene aún
+  // entrada en LICENSES, se crea aquí una vez como "libre" -- las próximas
+  // veces ya la encuentra checkLicenseValidity y no vuelve a escribir nada.
+  const origin = request.headers.get('Origin') || '';
+  if (origin === 'https://localhost') {
+    const existing = await env.LICENSES.get(username);
+    if (existing == null) await env.LICENSES.put(username, 'libre');
+  }
+
   const result = await checkLicenseValidity(env, username);
   // Ciudades sin publicidad ya compradas (ver PREMIUM más abajo): se
   // adjuntan aquí para que se refresquen solas con el mismo vigilante

@@ -2982,12 +2982,45 @@
   // el servidor la verifique, alguien podría cortar la conexión justo ahí
   // y quedarse con el desbloqueo sin que el Worker llegara a comprobar nada.
   // ============================================================
+  // App empaquetada con Capacitor (Android/iOS), sea cual sea el estado del
+  // plugin de compras -- isNativeBillingAvailable de abajo exige además el
+  // plugin cargado, pero para saltarse la pantalla de acceso (ver
+  // attemptNativeAutoLogin/init) basta con saber que es la app nativa: da
+  // igual si el plugin de compras tardó en cargar o falló.
+  const isNativeApp = () => {
+    try {
+      return typeof Capacitor !== 'undefined' && !!(Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+    } catch (_) { return false; }
+  };
   const isNativeBillingAvailable = () => {
     try {
-      return typeof Capacitor !== 'undefined' &&
-        !!(Capacitor.isNativePlatform && Capacitor.isNativePlatform()) &&
-        !!(Capacitor.Plugins && Capacitor.Plugins.NativePurchases);
+      return isNativeApp() && !!(Capacitor.Plugins && Capacitor.Plugins.NativePurchases);
     } catch (_) { return false; }
+  };
+
+  // Código anónimo del dispositivo: solo se usa dentro de la app nativa,
+  // como "username" de cara al Worker (ver checkLicenseValidity/
+  // handleLicenseCheck en worker/proxy.js -- si la petición viene del
+  // origen 'https://localhost' de la app empaquetada, el Worker le da acceso
+  // libre automático la primera vez que ve este código, sin que nadie tenga
+  // que escribir nada). Se guarda aparte del caché de LICENSE para que
+  // sobreviva aunque ese caché se limpie por cualquier motivo -- así un
+  // regalo de acceso premium hecho a mano (ver /premium/grant) sigue
+  // apuntando al mismo dispositivo. Se revela solo con el gesto oculto de
+  // wireDeviceCodeReveal, nunca en un botón visible.
+  const DEVICE_CODE_KEY = 'omot_device_code_v1';
+  const getDeviceCode = () => {
+    try {
+      let code = localStorage.getItem(DEVICE_CODE_KEY);
+      if (code) return code;
+      // Sin 0/O/1/I/L: se puede confundir al dictarlo o copiarlo a mano.
+      const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+      code = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+      localStorage.setItem(DEVICE_CODE_KEY, code);
+      return code;
+    } catch (_) {
+      return 'ANONIMO';
+    }
   };
 
   // productId de Play Console -> tiene que coincidir EXACTAMENTE con
@@ -8655,6 +8688,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     wireCityIntro();
     wirePoiSearch();
     wirePremiumModal();
+    wireDeviceCodeReveal();
 
     setStateMode(STATE.mode);
     updatePills();
@@ -8808,6 +8842,66 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') attempt(); });
   };
 
+  // App nativa (descargada de Play Store): entra sola, sin pedir ninguna
+  // clave -- ver getDeviceCode arriba y el bloque de auto-alta en
+  // handleLicenseCheck (worker/proxy.js). Devuelve true si consiguió
+  // entrar; false solo si de verdad no hay forma (sin red la primera vez
+  // que se abre, por ejemplo), en cuyo caso init() cae al gate normal como
+  // red de seguridad.
+  const attemptNativeAutoLogin = async () => {
+    const username = getDeviceCode();
+    const result = await LICENSE.check(username);
+    if (!result.ok) return false;
+    LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [] });
+    STATE.premiumCities = result.premiumCities || [];
+    revealApp();
+    LICENSE.startWatching(username, lockApp);
+    LICENSE.recordVisit(username);
+    return true;
+  };
+
+  // Gesto oculto para ver el código de este dispositivo (ver getDeviceCode):
+  // 5 toques seguidos en el icono de la cabecera, en menos de 2 segundos.
+  // A propósito no hay ningún botón visible -- es solo para cuando el propio
+  // dueño de la app le pide a alguien de confianza "toca 5 veces el icono"
+  // para regalarle acceso sin publicidad a mano (ver /premium/grant).
+  const wireDeviceCodeReveal = () => {
+    const icon = $('#brandIcon');
+    const modal = $('#deviceCodeModal');
+    const valueEl = $('#deviceCodeValue');
+    const closeBtn = $('#deviceCodeCloseBtn');
+    const copyBtn = $('#deviceCodeCopyBtn');
+    if (!icon || !modal) return;
+    let tapCount = 0;
+    let resetTimer = null;
+    const closeModal = () => {
+      modal.classList.remove('-open');
+      modal.setAttribute('aria-hidden', 'true');
+    };
+    icon.addEventListener('click', () => {
+      tapCount++;
+      if (resetTimer) clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => { tapCount = 0; }, 2000);
+      if (tapCount >= 5) {
+        tapCount = 0;
+        clearTimeout(resetTimer);
+        if (valueEl) valueEl.textContent = getDeviceCode();
+        modal.classList.add('-open');
+        modal.setAttribute('aria-hidden', 'false');
+      }
+    });
+    closeBtn?.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    copyBtn?.addEventListener('click', async () => {
+      const code = valueEl?.textContent || '';
+      try {
+        await navigator.clipboard.writeText(code);
+        copyBtn.textContent = 'Copiado';
+        setTimeout(() => { copyBtn.textContent = 'Copiar'; }, 1500);
+      } catch (_) {}
+    });
+  };
+
   const init = () => {
     loadState();
     document.documentElement.dataset.mode = STATE.mode;
@@ -8848,6 +8942,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
         // 'offline': sin red justo al arrancar, se sigue confiando en la
         // caché local (ya validada arriba) hasta la próxima comprobación.
       }).catch(() => {});
+    } else if (isNativeApp()) {
+      attemptNativeAutoLogin().then((ok) => { if (!ok) showLicenseGate(); });
     } else {
       showLicenseGate();
     }

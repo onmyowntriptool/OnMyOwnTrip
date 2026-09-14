@@ -144,6 +144,35 @@ evita, a diferencia de guardar la lista en un fichero del repo, es que
 cualquiera pueda leer los nombres de usuario válidos con solo abrir una
 URL.
 
+### Excepción: la app nativa (Android/iOS) entra sola, sin clave
+
+Quien se descarga la app desde Play Store ya pasó el único filtro que
+importa ahí, así que no tiene sentido pedirle además una clave de acceso
+manual como en la web. `app.js` genera un código anónimo por dispositivo
+(`getDeviceCode`, guardado en `localStorage`, nunca visible salvo con el
+gesto oculto de 5 toques en el icono de la cabecera — ver
+`wireDeviceCodeReveal`) y lo manda como `username` a `/license/check`.
+
+En `handleLicenseCheck`, si la petición llega con el header
+`Origin: https://localhost` (el origen fijo del WebView de Capacitor, ver
+`ALLOWED_ORIGINS` arriba) y ese código todavía no tiene entrada en
+`LICENSES`, el Worker la crea sola como `"libre"` la primera vez que lo ve.
+Las siguientes veces ya la encuentra `checkLicenseValidity` como cualquier
+otra licencia y no vuelve a escribir nada.
+
+Esto **no debilita la protección de la web**: el `Origin` lo pone el propio
+navegador/WebView, no algo que la app pueda declarar en el cuerpo de la
+petición — un visitante de la web real siempre llega como
+`https://onmyowntriptool.github.io` (o el dominio que uses), nunca como
+`https://localhost`, así que no hay forma de fingir ser la app nativa desde
+un navegador normal para saltarse la clave manual. La web sigue exactamente
+igual que antes: acceso solo a quien tú des de alta a mano.
+
+Para regalar acceso premium (sin publicidad) a alguien que usa la app
+nativa, pídele que toque 5 veces el icono de la cabecera (en menos de 2
+segundos) para que le salga su código, y úsalo en "Dar acceso premium" (ver
+más abajo) igual que harías con un username de la web.
+
 ## Panel de accesos (quién ha entrado, cuántas veces)
 
 `admin/dashboard.html` (en la raíz del repo, junto a `index.html`) es una
