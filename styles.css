@@ -183,6 +183,21 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   text-underline-offset: 2px;
 }
 .onboarding-reset:active { opacity: 0.9; }
+/* El desplegable de ciudad (position:absolute, ver .onboarding-city-list)
+   puede crecer bastante con varios países/ciudades y llegar a solaparse con
+   este pie -- subirle el z-index no basta porque el desplegable y el pie
+   viven en contextos de apilamiento distintos (cada contenedor intermedio
+   tiene su propio z-index) y encima el hueco alrededor del texto del
+   desplegable es transparente, así que el pie se seguía viendo a través.
+   Más simple y fiable: ocultarlo mientras el desplegable está abierto (aria-
+   expanded lo pone wireOnboarding en app.js), que es el único momento en
+   que pueden coincidir. */
+#onboarding:has(#obPickCity[aria-expanded="true"]) .onboarding-version,
+#onboarding:has(#obPickCity[aria-expanded="true"]) .onboarding-reset,
+#onboarding:has(#obPickCity[aria-expanded="true"]) .onboarding-legal {
+  opacity: 0;
+  pointer-events: none;
+}
 .onboarding-legal {
   position: absolute;
   left: 50%;
