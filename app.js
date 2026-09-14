@@ -8574,6 +8574,25 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     // CITIES.
     const alphabetically = (a, b) => a.localeCompare(b, 'es');
 
+    // Barrita de degradado + flecha pegada abajo del desplegable (ver
+    // .onboarding-city-scroll-hint en CSS), solo visible cuando de verdad
+    // queda contenido cortado por debajo -- se reutiliza el mismo elemento
+    // en las cuatro pantallas del selector en vez de crear uno nuevo cada
+    // vez. El cálculo de scrollHeight/clientHeight se hace un frame después
+    // porque justo al insertar el contenido el navegador aún no lo ha
+    // medido.
+    const cityScrollHint = document.createElement('div');
+    cityScrollHint.className = 'onboarding-city-scroll-hint';
+    cityScrollHint.setAttribute('aria-hidden', 'true');
+    cityScrollHint.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+    const finalizeCityList = () => {
+      if (!cityList) return;
+      cityList.appendChild(cityScrollHint);
+      requestAnimationFrame(() => {
+        cityScrollHint.classList.toggle('-visible', cityList.scrollHeight > cityList.clientHeight + 2);
+      });
+    };
+
     const renderContinents = () => {
       if (!cityList) return;
       cityList.innerHTML = '';
@@ -8581,6 +8600,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       continents.forEach((continent) => {
         cityList.appendChild(makeRow(geoLabel(continent), '', () => renderCountries(continent)));
       });
+      finalizeCityList();
     };
 
     const renderCountries = (continent) => {
@@ -8591,6 +8611,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       countries.forEach((country) => {
         cityList.appendChild(makeRow(geoLabel(country), '', () => renderCities(continent, country)));
       });
+      finalizeCityList();
     };
 
     // Ciudades con el mismo "region" (ej. varias ciudades de la Comunidad de
@@ -8611,6 +8632,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       items
         .sort((a, b) => alphabetically(a.label, b.label))
         .forEach((item) => cityList.appendChild(makeRow(item.label, '', item.onClick)));
+      finalizeCityList();
     };
 
     const renderRegionCities = (continent, country, region) => {
@@ -8623,6 +8645,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
         .forEach((city) => {
           cityList.appendChild(makeRow(city.name, '', () => finishOnboarding(city.id, chosenMode)));
         });
+      finalizeCityList();
     };
 
     const pickCityBtn = $('#obPickCity');

@@ -798,6 +798,30 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   overflow-y: auto;
 }
 .onboarding-city-list[hidden] { display: none; }
+/* Barrita con degradado + flecha pegada abajo del desplegable (ver
+   finalizeCityList en app.js): solo se hace visible (-visible) cuando el
+   contenido de verdad no cabe entero en el alto disponible, para avisar de
+   que hay más opciones haciendo scroll. sticky (no absolute) porque vive
+   dentro del propio contenedor con scroll (.onboarding-city-list) y tiene
+   que quedarse pegada abajo mientras se hace scroll, sin taparlo cuando ya
+   se ha llegado al final. */
+.onboarding-city-scroll-hint {
+  grid-column: 1 / -1;
+  position: sticky;
+  bottom: -10px;
+  margin: -8px -10px -10px;
+  padding-top: 16px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 26px;
+  color: var(--ob-text-soft);
+  background: linear-gradient(to bottom, transparent, var(--ob-card-bg) 65%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.onboarding-city-scroll-hint.-visible { opacity: 1; }
 /* Recuadros en vez de una lista de filas: cada opción (continente, país o
    ciudad) es una caja del mismo tamaño, dos por fila -- se ve igual en los
    tres niveles del selector porque los tres usan makeRow/esta misma clase.
