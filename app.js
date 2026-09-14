@@ -8589,7 +8589,10 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       if (!cityList) return;
       cityList.appendChild(cityScrollHint);
       requestAnimationFrame(() => {
-        cityScrollHint.classList.toggle('-visible', cityList.scrollHeight > cityList.clientHeight + 2);
+        // Margen de 10px (no 2): la propia flecha, al ser sticky, suma unos
+        // px de scrollHeight aunque todas las opciones ya se vean enteras,
+        // así que un margen pequeño la hacía aparecer sin hacer falta.
+        cityScrollHint.classList.toggle('-visible', cityList.scrollHeight > cityList.clientHeight + 10);
       });
     };
 

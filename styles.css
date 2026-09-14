@@ -782,8 +782,8 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   z-index: 20;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  padding: 10px;
+  gap: 6px;
+  padding: 8px;
   border-radius: 12px;
   border: 1px solid var(--ob-border);
   background: var(--ob-card-bg);
@@ -835,13 +835,13 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   align-items: center;
   justify-content: center;
   text-align: center;
-  min-height: 52px;
-  padding: 10px 8px;
+  min-height: 38px;
+  padding: 7px 6px;
   border: 1px solid var(--ob-border);
-  border-radius: 10px;
+  border-radius: 9px;
   background: var(--ob-card-bg-soft);
   color: var(--ob-text);
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
 }
