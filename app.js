@@ -4963,17 +4963,15 @@
       if (tutorialStepIndex > 0) showTutorialStep(tutorialStepIndex - 1);
     });
     $('#tutorialSkip')?.addEventListener('click', () => closeTutorial(true));
-    // Volver a ver el tutorial en cualquier momento: tocando a Billy en
-    // modo niño, o el logo/icono de marca en modo adultos (no hay mascota
-    // persistente en ese modo, así que el logo hace de "botón de ayuda").
+    // Volver a ver el tutorial en cualquier momento: tocando a Billy en modo
+    // niño. En modo Adultos ya NO es el logo/icono de marca (ver
+    // wireDeviceCodeReveal): ese icono ahora tiene su propio gesto oculto de
+    // 5 toques para el código del dispositivo, y un solo clic reabriendo el
+    // tutorial por encima chocaba con ese gesto -- el botón "?" de abajo
+    // sigue siendo la forma visible de repetirlo en modo Adultos.
     $('#explorerBadge')?.addEventListener('click', () => {
       if (STATE.mode === 'kids') startTutorial();
     });
-    $('#brandIcon')?.addEventListener('click', () => {
-      if (STATE.mode === 'adult') startTutorial();
-    });
-    // Botón "?" siempre visible en el header, para quien quiera repetir el
-    // tutorial sin conocer el atajo oculto de tocar el logo/Billy de arriba.
     $('#tutorialHelpBtn')?.addEventListener('click', () => startTutorial());
   };
 
@@ -8887,10 +8885,14 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     // si el punto cae dentro del rectángulo del icono funciona pase lo que
     // pase por encima, que es justo cuando más falta hace (alguien nuevo
     // probando el gesto suele tener el tutorial abierto en ese momento).
+    // Margen extra alrededor del icono (34x34 css px, pequeño para acertar
+    // varias veces seguidas con precisión): sin esto, cualquier toque un
+    // poco desviado del icono exacto no cuenta y hay que reintentar.
+    const TAP_PADDING = 14;
     document.addEventListener('click', (e) => {
       const r = icon.getBoundingClientRect();
       const x = e.clientX, y = e.clientY;
-      if (x < r.left || x > r.right || y < r.top || y > r.bottom) return;
+      if (x < r.left - TAP_PADDING || x > r.right + TAP_PADDING || y < r.top - TAP_PADDING || y > r.bottom + TAP_PADDING) return;
       tapCount++;
       if (resetTimer) clearTimeout(resetTimer);
       resetTimer = setTimeout(() => { tapCount = 0; }, 2000);
