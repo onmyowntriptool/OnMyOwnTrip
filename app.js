@@ -8878,7 +8878,19 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       modal.classList.remove('-open');
       modal.setAttribute('aria-hidden', 'true');
     };
-    icon.addEventListener('click', () => {
+    // Escucha en fase de CAPTURA sobre document, y por coordenadas (no
+    // e.target === icon): el tutorial de bienvenida (#tutorialOverlay) tapa
+    // la cabecera con una capa por encima mientras está abierto, así que un
+    // toque real ahí nunca llega a ser "target" el icono -- solo lo parecía
+    // en las pruebas porque un clic simulado con dispatchEvent(icon, ...) se
+    // salta esa capa, cosa que un dedo de verdad no puede hacer. Comprobar
+    // si el punto cae dentro del rectángulo del icono funciona pase lo que
+    // pase por encima, que es justo cuando más falta hace (alguien nuevo
+    // probando el gesto suele tener el tutorial abierto en ese momento).
+    document.addEventListener('click', (e) => {
+      const r = icon.getBoundingClientRect();
+      const x = e.clientX, y = e.clientY;
+      if (x < r.left || x > r.right || y < r.top || y > r.bottom) return;
       tapCount++;
       if (resetTimer) clearTimeout(resetTimer);
       resetTimer = setTimeout(() => { tapCount = 0; }, 2000);
@@ -8889,7 +8901,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
         modal.classList.add('-open');
         modal.setAttribute('aria-hidden', 'false');
       }
-    });
+    }, true);
     closeBtn?.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
     copyBtn?.addEventListener('click', async () => {
