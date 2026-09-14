@@ -765,35 +765,50 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   right: 0;
   top: calc(100% + 6px);
   z-index: 20;
-  display: flex;
-  flex-direction: column;
-  padding: 4px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 10px;
   border-radius: 12px;
   border: 1px solid var(--ob-border);
   background: var(--ob-card-bg);
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+  max-height: 60vh;
+  overflow-y: auto;
 }
 .onboarding-city-list[hidden] { display: none; }
+/* Recuadros en vez de una lista de filas: cada opción (continente, país o
+   ciudad) es una caja del mismo tamaño, dos por fila -- se ve igual en los
+   tres niveles del selector porque los tres usan makeRow/esta misma clase.
+   Grid (no flex) a propósito: con flex-grow, la última caja sola en una fila
+   impar (p.ej. "Vaticano") se estiraba a todo el ancho por no tener con
+   quién repartir el espacio sobrante -- en grid cada caja ocupa su propia
+   celda de tamaño fijo, así que la última simplemente deja hueco vacío al
+   lado en vez de crecer. */
 .onboarding-city-option {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
-  width: 100%;
-  padding: 9px 10px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 52px;
+  padding: 10px 8px;
+  border: 1px solid var(--ob-border);
+  border-radius: 10px;
+  background: var(--ob-card-bg-soft);
   color: var(--ob-text);
   font-size: 13.5px;
   font-weight: 600;
-  text-align: left;
   cursor: pointer;
 }
-.onboarding-city-option small { font-size: 11.5px; font-weight: 400; color: var(--ob-text-soft); }
-.onboarding-city-option:hover { background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
+.onboarding-city-option small { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 400; color: var(--ob-text-soft); }
+.onboarding-city-option:hover {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
 
 .onboarding-city-back {
   display: flex;
+  grid-column: 1 / -1;
   align-items: center;
   gap: 6px;
   width: 100%;
