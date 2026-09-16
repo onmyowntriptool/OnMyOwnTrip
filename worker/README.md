@@ -236,6 +236,17 @@ aparece una tabla "Ranking de patrocinios" con impresiones, "Ver la
 carta" y "Cómo llegar" por patrocinador, ordenada por quién se lleva más
 interés real (carta + cómo llegar juntos).
 
+Los números mostrados son **desde el alta o la última renovación**, no
+el acumulado histórico total: al crear un patrocinador (o al cambiarle
+la fecha de inicio para renovarlo) se guarda un snapshot del contador
+de ese momento (`metricsBaseline`, dentro de la ficha en `SPONSORS`) y
+`/sponsor/rank` lo resta al acumulado de `SPONSOR_METRICS` antes de
+enseñarlo. Así puedes darle a un negocio un periodo de prueba y
+enseñarle luego "esto generó tu ficha desde que empezó", sin perder el
+acumulado completo (que sigue intacto en `SPONSOR_METRICS` por si hace
+falta consultarlo aparte). No hay desglose por día, solo el corte desde
+esa fecha de activación.
+
 ### Por qué en lotes y no una escritura por clic
 
 El plan gratis de KV son 1.000 escrituras/día para TODA la cuenta

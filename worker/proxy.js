@@ -697,13 +697,31 @@ async function handleSponsorRank(request, env, headers) {
   const ranking = await Promise.all(list.keys.map(async (k) => {
     let data = {};
     try { data = JSON.parse(await env.SPONSOR_METRICS.get(k.name)) || {}; } catch (_) {}
+    const sponsorId = k.name.slice('sponsor:'.length);
+
+    // Resta el snapshot tomado en el alta/renovación (metricsBaseline, ver
+    // handleSponsorsUpsert) para enseñar solo lo que pasó desde que el
+    // patrocinador está activo en su periodo actual, sin perder el
+    // acumulado histórico que sigue intacto en SPONSOR_METRICS.
+    let baseline = { impression: 0, menu: 0, directions: 0, map: 0 };
+    let since = null;
+    if (env.SPONSORS) {
+      try {
+        const sponsorDoc = JSON.parse(await env.SPONSORS.get(`sponsor:${sponsorId}`));
+        if (sponsorDoc && sponsorDoc.metricsBaseline) baseline = { ...baseline, ...sponsorDoc.metricsBaseline };
+        if (sponsorDoc && sponsorDoc.startDate) since = sponsorDoc.startDate;
+      } catch (_) { /* sin ficha o corrupta: se enseña el acumulado completo */ }
+    }
+    const sinceField = (field) => Math.max(0, (data[field] || 0) - (baseline[field] || 0));
+
     return {
-      sponsorId: k.name.slice('sponsor:'.length),
+      sponsorId,
       name: data.name || '',
-      impression: data.impression || 0,
-      menu: data.menu || 0,
-      directions: data.directions || 0,
-      map: data.map || 0
+      impression: sinceField('impression'),
+      menu: sinceField('menu'),
+      directions: sinceField('directions'),
+      map: sinceField('map'),
+      since
     };
   }));
   // Orden pedido: quién se lleva más "Ver la carta" + "Cómo llegar" juntos
@@ -908,6 +926,31 @@ async function handleSponsorsUpsert(request, env, headers) {
       status: 400,
       headers: { ...headers, 'Content-Type': 'application/json' }
     });
+  }
+
+  // Snapshot de métricas ("metricsBaseline"): /sponsor/rank lo resta del
+  // acumulado histórico de SPONSOR_METRICS para enseñar solo lo que pasó
+  // desde que este patrocinador está activo en su periodo actual. Se
+  // recalcula en el alta y en cada renovación (startDate distinto al que
+  // ya había); si no cambia, se conserva el que ya había en vez de
+  // recalcularlo, o el histórico se "resetearía" en cada edición normal.
+  let existing = null;
+  try {
+    const raw = await env.SPONSORS.get(`sponsor:${sponsor.id}`);
+    if (raw) existing = JSON.parse(raw);
+  } catch (_) { /* ficha corrupta: se trata como alta nueva */ }
+
+  if (existing && existing.startDate === sponsor.startDate && existing.metricsBaseline) {
+    sponsor.metricsBaseline = existing.metricsBaseline;
+  } else if (env.SPONSOR_METRICS) {
+    let metrics = {};
+    try { metrics = JSON.parse(await env.SPONSOR_METRICS.get(`sponsor:${sponsor.id}`)) || {}; } catch (_) {}
+    sponsor.metricsBaseline = {
+      impression: metrics.impression || 0,
+      menu: metrics.menu || 0,
+      directions: metrics.directions || 0,
+      map: metrics.map || 0
+    };
   }
 
   await env.SPONSORS.put(`sponsor:${sponsor.id}`, JSON.stringify(sponsor));

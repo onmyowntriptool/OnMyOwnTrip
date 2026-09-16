@@ -193,10 +193,10 @@
     <div class="tab-panel" id="tabSponsors" role="tabpanel" hidden>
       <section>
         <h2>Ranking de patrocinios — por patrocinador, no por usuario</h2>
-        <p class="hint" style="margin-top:-6px">Ordenado por interés real ("Ver la carta" + "Cómo llegar" juntos), no por impresiones. Incluye restaurantes, cafeterías y hoteles.</p>
+        <p class="hint" style="margin-top:-6px">Ordenado por interés real ("Ver la carta" + "Cómo llegar" juntos), no por impresiones. Incluye restaurantes, cafeterías y hoteles. Los números son desde el alta o la última renovación (columna "Desde"), no el histórico total.</p>
         <div class="table-wrap">
           <table id="sponsorRankTable">
-            <thead><tr><th>Patrocinador</th><th>Impresiones</th><th>Ver la carta</th><th>Cómo llegar</th><th>Interés</th></tr></thead>
+            <thead><tr><th>Patrocinador</th><th>Desde</th><th>Impresiones</th><th>Ver la carta</th><th>Cómo llegar</th><th>Interés</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -470,13 +470,14 @@
     if (!tbody) return;
     tbody.innerHTML = '';
     if (!ranking.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty">Sin datos todavía.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">Sin datos todavía.</td></tr>';
       return;
     }
     ranking.forEach((r) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${escapeHtml(r.name || r.sponsorId)}</td>
+        <td>${escapeHtml(r.since || '—')}</td>
         <td>${r.impression}</td>
         <td>${r.menu}</td>
         <td>${r.directions}</td>
