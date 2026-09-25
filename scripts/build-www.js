@@ -17,6 +17,9 @@ const EXCLUDE = new Set([
   'contenido-poi-referencia.md', 'estudio-bugs-produccion.md',
   'poi-content-dump.txt', 'scratchpad_report.txt', 'test-photo.jpg',
   'debug-ios-localhost-regression.md',
+  // material de la ficha de Play Store (vídeos y capturas): no lo usa la app
+  'video-promo', 'capturas-ficha', 'video-clips', 'promo_final.mp4',
+  'feature-graphic-1024x500.png', 'icon-source-1024.png',
 ]);
 
 fs.rmSync(WWW, { recursive: true, force: true });
