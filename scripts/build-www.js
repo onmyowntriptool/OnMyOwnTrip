@@ -13,7 +13,7 @@ const EXCLUDE = new Set([
   'documentacion', '.trae', 'worker', 'admin', 'scripts',
   'images_rewards', 'scratchpad', '.claude', '.vscode', '.idea',
   'package.json', 'package-lock.json', '.gitignore', '.gitattributes',
-  'capacitor.config.json', 'onmyowntrip-qr.png',
+  'capacitor.config.json', 'codemagic.yaml', 'onmyowntrip-qr.png',
   'contenido-poi-referencia.md', 'estudio-bugs-produccion.md',
   'poi-content-dump.txt', 'scratchpad_report.txt', 'test-photo.jpg',
   'debug-ios-localhost-regression.md',

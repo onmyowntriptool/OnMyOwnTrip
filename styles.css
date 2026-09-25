@@ -155,7 +155,7 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
 .onboarding-version {
   position: absolute;
   right: 14px;
-  bottom: calc(12px + var(--safe-area-inset-bottom, 0px));
+  bottom: calc(12px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
   z-index: 2;
   padding: 10px;
   margin: -10px;
@@ -169,7 +169,7 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
 .onboarding-reset {
   position: absolute;
   left: 14px;
-  bottom: calc(12px + var(--safe-area-inset-bottom, 0px));
+  bottom: calc(12px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
   z-index: 2;
   padding: 10px;
   margin: -10px;
@@ -201,7 +201,7 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
 .onboarding-legal {
   position: absolute;
   left: 50%;
-  bottom: calc(12px + var(--safe-area-inset-bottom, 0px));
+  bottom: calc(12px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
   transform: translateX(-50%);
   z-index: 2;
   padding: 10px;
@@ -794,7 +794,7 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
      plugin nativo en <html>, ver SystemBars) en vez de env(...): este
      último no devuelve nada dentro del WebView de Capacitor aquí, así que
      un intento anterior con env() no tuvo ningún efecto real. */
-  max-height: calc(45vh - var(--safe-area-inset-bottom, 0px) - 12px);
+  max-height: calc(45vh - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) - 12px);
   overflow-y: auto;
 }
 .onboarding-city-list[hidden] { display: none; }

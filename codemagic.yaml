@@ -1,0 +1,47 @@
+# Compilación de la app iOS en la nube (Codemagic), ya que Xcode solo existe
+# en macOS y aquí se desarrolla en Windows. Se lanza a mano desde la web de
+# Codemagic (sin trigger automático, para no gastar minutos gratis en cada
+# push) y sube el resultado a TestFlight.
+#
+# Requisitos configurados en la web de Codemagic, no en este archivo:
+#   - Integración "App Store Connect" con una API key de App Store Connect,
+#     guardada con el nombre de abajo (integrations.app_store_connect).
+#   - La firma (certificado + perfil) la genera Codemagic sola con esa API
+#     key gracias a ios_signing.
+workflows:
+  ios-testflight:
+    name: iOS TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: OnMyOwnTrip ASC
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.onmyowntrip
+      node: 22
+      xcode: latest
+    scripts:
+      - name: Instalar dependencias
+        script: npm install
+      - name: Generar www/ y copiarlo al proyecto iOS
+        script: |
+          npm run build
+          npx cap sync ios
+      - name: Aplicar perfiles de firma
+        script: xcode-project use-profiles
+      - name: Numero de build (CFBundleVersion) = numero de build de Codemagic
+        script: |
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $BUILD_NUMBER;/" ios/App/App.xcodeproj/project.pbxproj
+      - name: Compilar IPA
+        script: |
+          xcode-project build-ipa \
+            --project "ios/App/App.xcodeproj" \
+            --scheme "App"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
