@@ -1747,7 +1747,7 @@
   // atenuado, igual que "fuera-de-servicio" en las fuentes.
   const makeRestroomIcon = (status) => L.divIcon({
     className: 'fountain-pin-wrap',
-    html: `<div class="restroom-pin${status === 'evento' ? ' -off' : ''}"><img src="assets/icons/restroom.png?v=2" alt="" /></div>`,
+    html: `<div class="restroom-pin${status === 'evento' ? ' -off' : ''}"><img src="assets/icons/restroom.png?v=3" alt="" /></div>`,
     iconSize: [12, 12], iconAnchor: [6, 6], popupAnchor: [0, -6]
   });
 

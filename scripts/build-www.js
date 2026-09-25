@@ -20,6 +20,9 @@ const EXCLUDE = new Set([
   // material de la ficha de Play Store (vídeos y capturas): no lo usa la app
   'video-promo', 'capturas-ficha', 'video-clips', 'promo_final.mp4',
   'feature-graphic-1024x500.png', 'icon-source-1024.png',
+  // JPG sueltos de iconos de patrocinio que la app no referencia (usa los
+  // sponsor-*-icon.png): 2,8 MB que no pintan nada en el paquete
+  'Restaurant_icon.jpg', 'cafe_icon.jpg', 'experiencia.jpg', 'hotel.jpg',
 ]);
 
 // Exclusiones por ruta relativa (no por nombre, a diferencia de EXCLUDE):
