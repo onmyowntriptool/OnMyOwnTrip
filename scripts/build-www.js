@@ -22,6 +22,15 @@ const EXCLUDE = new Set([
   'feature-graphic-1024x500.png', 'icon-source-1024.png',
 ]);
 
+// Exclusiones por ruta relativa (no por nombre, a diferencia de EXCLUDE):
+// data/cities/ es el contenido de pago de cada ciudad, gitignored desde el
+// gate V26. La app lo pide siempre al Worker (/content, ver loadCityData en
+// app.js) y nunca lo lee en local; si se empaquetara, cualquiera podría
+// leerlo descomprimiendo la APK/AAB sin licencia.
+const EXCLUDE_PATHS = new Set([
+  path.join('data', 'cities'),
+]);
+
 fs.rmSync(WWW, { recursive: true, force: true });
 fs.mkdirSync(WWW, { recursive: true });
 
@@ -32,6 +41,7 @@ const copyDir = (srcDir, destDir) => {
   for (const entry of fs.readdirSync(srcDir, { withFileTypes: true })) {
     if (EXCLUDE.has(entry.name) || entry.name.endsWith('.ps1')) continue;
     const srcPath = path.join(srcDir, entry.name);
+    if (EXCLUDE_PATHS.has(path.relative(ROOT, srcPath))) continue;
     const destPath = path.join(destDir, entry.name);
     if (entry.isDirectory()) {
       fs.mkdirSync(destPath, { recursive: true });
