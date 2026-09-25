@@ -1,7 +1,7 @@
 {
   "name": "OnMyOwnTrip",
   "short_name": "OnMyOwnTrip",
-  "description": "Turismo autoguiado interactivo por Toledo, Madrid, Alcalá de Henares, Buitrago del Lozoya, Peñíscola, Ciudad de México, Berlín, Roma, Ciudad del Vaticano, Estambul y Segovia. Modo Adultos y Niños.",
+  "description": "Turismo autoguiado interactivo por Toledo, Madrid, Alcalá de Henares, Buitrago del Lozoya, Peñíscola, Ciudad de México, Berlín, Roma, Ciudad del Vaticano, Estambul, Segovia y Barcelona. Modo Adultos y Niños.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

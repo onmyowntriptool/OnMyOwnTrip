@@ -979,6 +979,130 @@ const CITIES = {
         }
       }
     ]
+  },
+
+  barcelona: {
+    id: 'barcelona',
+    name: 'Barcelona',
+    country: 'España',
+    continent: 'Europa',
+    subtitle: {
+      es: { adult: 'La ciudad de Gaudí, entre la montaña y el mar', kids: '¡La Ciudad de las Casas de Cuento! 🦎' },
+      en: { adult: "Gaudí's city, between the mountain and the sea", kids: 'The City of Fairy-Tale Houses! 🦎' }
+    },
+    welcomeIntro: {
+      es: {
+        adult: 'Bienvenido a Barcelona, la ciudad donde un templo lleva en obras desde 1882 y las casas parecen esculpidas en lugar de construidas. En este paseo recorrerás las calles medievales del Barri Gòtic, las fachadas modernistas del Eixample y la montaña olímpica de Montjuïc, hasta llegar al mar. ¡Ven a descubrir la capital del Modernismo!',
+        kids: '¡Bienvenido a Barcelona, la ciudad de las casas de cuento! Vas a ver una iglesia gigante que lleva más de 140 años construyéndose, una casa con forma de dragón y un parque con una lagartija de colores. Pasearás por calles de la Edad Media y terminarás en la playa. ¡Prepárate para la aventura!'
+      },
+      en: {
+        adult: "Welcome to Barcelona, the city where a church has been under construction since 1882 and houses look sculpted rather than built. On this walk you'll explore the medieval lanes of the Barri Gòtic, the Modernista facades of the Eixample and the Olympic mountain of Montjuïc, all the way down to the sea. Come discover the capital of Catalan Modernisme!",
+        kids: "Welcome to Barcelona, the city of fairy-tale houses! You'll see a giant church that has been under construction for more than 140 years, a house shaped like a dragon and a park with a colorful lizard. You'll wander through streets from the Middle Ages and finish on the beach. Get ready for the adventure!"
+      }
+    },
+    // ~50% del máximo real de Barcelona (56 POIs con quiz × 10 = 560 posibles).
+    badgeThreshold: 280,
+    badgeImg: 'assets/badges/barcelona.png',
+    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/SF_maig_2_cropped.jpg/330px-SF_maig_2_cropped.jpg',
+    center: [41.3870, 2.1700],
+    zoom: 13.6,
+    minZoom: 12,
+    // Cubre Ciutat Vella, el Eixample, Gràcia/Park Güell, Montjuïc, el
+    // frente marítimo hasta el Port Olímpic, y los extremos de Pedralbes,
+    // Camp Nou, el Tibidabo y los búnquers del Carmel.
+    bounds: [[41.358, 2.105], [41.428, 2.210]],
+    routes: [
+      {
+        id: 'main',
+        name: {
+          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+        },
+        color: '#F59E0B',
+        intro: {
+          es: {
+            adult: 'La ruta imprescindible de Barcelona reúne los grandes símbolos de una ciudad que se reinventó a sí misma varias veces. Empezarás ante la Sagrada Família, el templo que Gaudí sabía que no vería terminado, subirás al Park Güell y recorrerás el Passeig de Gràcia entre la Casa Batlló y La Pedrera. Bajarás por La Rambla hasta el mercado de la Boqueria, entrarás en la Catedral gótica y en Santa Maria del Mar, la iglesia que construyeron los propios vecinos del barrio de la Ribera, y te asombrarás con la sala de conciertos del Palau de la Música Catalana. Terminarás en Montjuïc, frente al Palau Nacional, y en la playa de la Barceloneta. Al acabar habrás visto por qué Barcelona es, a la vez, ciudad medieval, capital del Modernismo y ciudad mediterránea. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Prepárate para la ruta más top de Barcelona! 🚩 Vas a ver una iglesia gigante con torres que parecen de arena mojada y que todavía se está construyendo, un parque con una lagartija de colores, y una casa con el tejado en forma de lomo de dragón. Pasearás por una calle llena de artistas, entrarás en un mercado con frutas de todos los colores, visitarás iglesias altísimas de la Edad Media y una sala de conciertos que parece un jardín de cristal. ¡Y terminarás en la playa! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "The unmissable route through Barcelona brings together the great symbols of a city that has reinvented itself several times. You'll start at the Sagrada Família, the church Gaudí knew he would never see finished, climb up to Park Güell and walk along Passeig de Gràcia between Casa Batlló and La Pedrera. You'll head down La Rambla to the Boqueria market, step inside the Gothic Cathedral and Santa Maria del Mar, the church built by the residents of the Ribera neighborhood themselves, and marvel at the concert hall of the Palau de la Música Catalana. You'll finish on Montjuïc, facing the Palau Nacional, and on the beach at Barceloneta. By the end you'll have seen why Barcelona is at once a medieval city, the capital of Modernisme and a Mediterranean city. Tap each stop on the map to see specific information about that spot.",
+            kids: "Get ready for Barcelona's top route! 🚩 You'll see a giant church with towers that look like dripping sand, and it's still being built, a park with a colorful lizard, and a house whose roof looks like a dragon's back. You'll stroll down a street full of street artists, step into a market with fruit of every color, visit super tall churches from the Middle Ages and a concert hall that looks like a glass garden. And you'll finish on the beach! Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'gotic',
+        name: {
+          es: { adult: 'Barri Gòtic y El Born', kids: '¡La Barcelona Medieval! 🏰' },
+          en: { adult: 'Barri Gòtic and El Born', kids: 'Medieval Barcelona! 🏰' }
+        },
+        color: '#B8411E',
+        intro: {
+          es: {
+            adult: 'Esta ruta recorre el corazón más antiguo de Barcelona, desde la colonia romana de Barcino hasta el asedio de 1714. Empezarás en la Plaça de Sant Jaume, antiguo foro romano donde hoy se miran frente a frente el Ayuntamiento y la Generalitat, verás las columnas del Templo de Augusto escondidas en un patio, y entrarás en la Plaça del Rei, el antiguo palacio de los condes-reyes. Pasarás bajo el Pont del Bisbe, te detendrás en la silenciosa Plaça de Sant Felip Neri y en Santa Maria del Pi, y saldrás a la Plaça Reial, con sus farolas diseñadas por un joven Gaudí, antes de visitar el Palau Güell. Ya en El Born, conocerás el Museu Picasso y el yacimiento de 1714 bajo el antiguo mercado, y terminarás en el Parc de la Ciutadella y el Arc de Triomf. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva a la parte más antigua de Barcelona! 🏰 Vas a ver columnas romanas de hace 2.000 años escondidas dentro de un patio, una plaza donde vivían los reyes y un puente de piedra con una calavera secreta. Descubrirás una plaza con marcas de la guerra en las paredes, una iglesia con un rosetón gigante, y unas farolas que diseñó Gaudí cuando era muy jovencito. Visitarás el museo de Picasso, un mercado antiguo con una ciudad enterrada debajo, y terminarás en un parque con una cascada dorada y un arco de ladrillo rojo. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route explores the oldest heart of Barcelona, from the Roman colony of Barcino to the siege of 1714. You'll start at Plaça de Sant Jaume, the old Roman forum where the City Hall and the Catalan Government face each other today, see the columns of the Temple of Augustus hidden in a courtyard, and step into Plaça del Rei, the former palace of the count-kings. You'll pass beneath the Pont del Bisbe, pause in the quiet Plaça de Sant Felip Neri and at Santa Maria del Pi, and come out onto Plaça Reial, with its lampposts designed by a young Gaudí, before visiting Palau Güell. In El Born you'll discover the Picasso Museum and the 1714 archaeological site beneath the old market, and finish in Parc de la Ciutadella and at the Arc de Triomf. Tap each stop on the map to see specific information about that spot.",
+            kids: "This route takes you to the oldest part of Barcelona! 🏰 You'll see 2,000-year-old Roman columns hidden inside a courtyard, a square where kings used to live and a stone bridge with a secret skull. You'll discover a square with war marks on its walls, a church with a giant round window, and lampposts that Gaudí designed when he was very young. You'll visit Picasso's museum, an old market with a buried city underneath, and finish in a park with a golden waterfall and a red-brick arch. Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'modernisme',
+        name: {
+          es: { adult: 'Ruta del Modernismo', kids: '¡Las Casas de Cuento! 🦎' },
+          en: { adult: 'Modernisme Route', kids: 'The Fairy-Tale Houses! 🦎' }
+        },
+        color: '#7C3AED',
+        intro: {
+          es: {
+            adult: 'Esta ruta se adentra en el Eixample y Gràcia para seguir la pista al Modernismo catalán más allá de Gaudí. Recorrerás el Passeig de Gràcia y la llamada Manzana de la Discordia, donde Domènech i Montaner, Puig i Cadafalch y Gaudí compitieron fachada con fachada en la Casa Lleó Morera, la Casa Amatller y la Casa Batlló. Verás la nube de alambre que corona la Fundació Antoni Tàpies, la Casa de les Punxes, con aire de castillo nórdico, y la Casa Vicens, la primera casa que construyó Gaudí. Terminarás en el Recinte Modernista de Sant Pau, el hospital-ciudad que Domènech i Montaner llenó de cerámica y jardines. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva por las casas más locas y bonitas de Barcelona! 🦎 Vas a ver una manzana de casas donde tres arquitectos compitieron para ver quién hacía la fachada más espectacular, una nube gigante de alambre encima de un edificio, y una casa con torres puntiagudas que parece un castillo de cuento. Descubrirás la primera casa que construyó Gaudí, llena de azulejos de flores, y terminarás en un hospital que parece una ciudad mágica, con cúpulas de colores. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route heads into the Eixample and Gràcia to follow Catalan Modernisme beyond Gaudí. You'll walk along Passeig de Gràcia and the so-called Block of Discord, where Domènech i Montaner, Puig i Cadafalch and Gaudí competed facade against facade at Casa Lleó Morera, Casa Amatller and Casa Batlló. You'll see the wire cloud crowning the Fundació Antoni Tàpies, the Casa de les Punxes, which looks like a Nordic castle, and Casa Vicens, the first house Gaudí ever built. You'll finish at the Sant Pau Recinte Modernista, the hospital-city that Domènech i Montaner filled with ceramics and gardens. Tap each stop on the map to see specific information about that spot.",
+            kids: "This route takes you past Barcelona's craziest and most beautiful houses! 🦎 You'll see a block where three architects competed to make the most spectacular facade, a giant wire cloud on top of a building, and a house with pointy towers that looks like a storybook castle. You'll discover the very first house Gaudí built, covered in flower tiles, and finish at a hospital that looks like a magical city, with colorful domes. Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'montjuic',
+        name: {
+          es: { adult: 'Montjuïc, la Montaña Olímpica', kids: '¡La Montaña Mágica! ⛲' },
+          en: { adult: 'Montjuïc, the Olympic Mountain', kids: 'The Magic Mountain! ⛲' }
+        },
+        color: '#16A34A',
+        intro: {
+          es: {
+            adult: 'Esta ruta sube por Montjuïc, la montaña que Barcelona transformó dos veces: para la Exposición Internacional de 1929 y para los Juegos Olímpicos de 1992. Empezarás en la Plaça d\'Espanya, entre sus torres venecianas, subirás junto a la Font Màgica y descubrirás el Pabellón de Mies van der Rohe, una pieza clave de la arquitectura moderna. Recorrerás el Poble Espanyol, un pueblo con réplicas de edificios de toda España, llegarás al Estadi Olímpic y a la Fundació Joan Miró, y terminarás en el Castillo de Montjuïc, con la mejor vista del puerto. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta sube a una montaña llena de sorpresas! ⛲ Vas a empezar entre dos torres altísimas, ver una fuente que baila con luces y música, y entrar en un edificio moderno hecho de cristal y mármol. Pasearás por un pueblo con casas copiadas de toda España, verás el estadio donde se encendió la llama olímpica con una flecha, y entrarás en el museo de Miró, lleno de colores y formas divertidas. ¡Y terminarás en un castillo en lo más alto, con vistas a los barcos del puerto! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route climbs Montjuïc, the hill Barcelona transformed twice: for the 1929 International Exposition and for the 1992 Olympic Games. You'll start at Plaça d'Espanya, between its Venetian towers, walk up beside the Magic Fountain and discover the Barcelona Pavilion by Mies van der Rohe, a landmark of modern architecture. You'll explore the Poble Espanyol, a village of replica buildings from all over Spain, reach the Olympic Stadium and the Fundació Joan Miró, and finish at Montjuïc Castle, with the best view of the port. Tap each stop on the map to see specific information about that spot.",
+            kids: "This route climbs a mountain full of surprises! ⛲ You'll start between two super tall towers, see a fountain that dances with lights and music, and step into a modern building made of glass and marble. You'll stroll through a village with houses copied from all over Spain, see the stadium where the Olympic flame was lit with an arrow, and visit Miró's museum, full of colors and fun shapes. And you'll finish at a castle right at the top, with views of the ships in the port! Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'mar',
+        name: {
+          es: { adult: 'El Puerto y el Mar', kids: '¡A la Orilla del Mar! ⚓' },
+          en: { adult: 'The Port and the Sea', kids: 'Down by the Sea! ⚓' }
+        },
+        color: '#0EA5E9',
+        intro: {
+          es: {
+            adult: 'Una ruta que sigue la relación de Barcelona con el Mediterráneo, de los astilleros medievales a la ciudad olímpica que abrió sus playas en 1992. Empezarás bajo el Mirador de Colón, visitarás las Drassanes Reials, uno de los astilleros medievales mejor conservados del mundo, y subirás al Teleférico del Puerto. Cruzarás el Port Vell por la Rambla de Mar, entrarás en el Museu d\'Història de Catalunya, instalado en unos antiguos almacenes portuarios, y terminarás en el Port Olímpic, bajo el gran pez dorado de Frank Gehry. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva a la orilla del mar! ⚓ Vas a ver una estatua de Colón en lo alto de una columna gigante, entrar en unos astilleros donde se construían barcos hace 700 años, y volar sobre el puerto en un teleférico. Cruzarás un puente de madera que se mueve para dejar pasar los barcos, visitarás un museo de historia en un antiguo almacén, y terminarás junto a un pez dorado gigante que brilla con el sol. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "A route that follows Barcelona's relationship with the Mediterranean, from its medieval shipyards to the Olympic city that opened up its beaches in 1992. You'll start beneath the Columbus Monument, visit the Drassanes Reials, one of the best-preserved medieval shipyards in the world, and ride the Port Cable Car. You'll cross Port Vell along the Rambla de Mar, visit the Museu d'Història de Catalunya, housed in old harbor warehouses, and finish at the Port Olímpic, beneath Frank Gehry's great golden fish. Tap each stop on the map to see specific information about that spot.",
+            kids: "This route takes you down to the sea! ⚓ You'll see a statue of Columbus on top of a giant column, step into shipyards where boats were built 700 years ago, and fly over the port in a cable car. You'll cross a wooden bridge that moves to let boats through, visit a history museum inside an old warehouse, and finish beside a giant golden fish that shines in the sun. Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      }
+    ]
   }
 };
 
