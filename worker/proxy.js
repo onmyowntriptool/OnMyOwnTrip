@@ -377,7 +377,7 @@ async function checkLicenseValidity(env, username) {
   const value = raw.trim();
   if (value.toLowerCase() === 'libre') return { ok: true, expires: null };
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   if (today <= value) return { ok: true, expires: value };
 
   return { ok: false, reason: 'expired', expires: value };
@@ -754,8 +754,13 @@ const SPONSOR_SUBMISSION_TEASER_MAX = 160;
 const SPONSOR_SUBMISSION_CTA_MAX = 40;
 const SPONSOR_SUBMISSION_MENU_MAX_ROWS = 8;
 
+// Fecha de hoy en hora de España, no en UTC: las fechas de inicio/fin de
+// patrocinios y de caducidad de licencias se ponen pensando en el calendario
+// español, y con UTC un patrocinio que empieza "hoy" no salía hasta las
+// 02:00 (01:00 en invierno), y uno que caduca "hoy" seguía visible hasta esa
+// hora del día siguiente. 'en-CA' formatea directamente como YYYY-MM-DD.
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date());
 }
 
 // Misma fecha en ambos límites: activo todo ese día (comparación de strings

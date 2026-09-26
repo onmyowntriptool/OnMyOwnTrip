@@ -698,7 +698,9 @@
     $('#' + id).addEventListener('input', () => markFieldInvalid(id, false));
   });
 
-  const todayISO = () => new Date().toISOString().slice(0, 10);
+  // Hora de España, igual que todayISO en worker/proxy.js: el estado
+  // Activo/Programado/Caducado debe coincidir con lo que sirve el Worker.
+  const todayISO = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date());
 
   const sponsorStatus = (s) => {
     const today = todayISO();
