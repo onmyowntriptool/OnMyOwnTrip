@@ -11,7 +11,7 @@ const WWW = path.join(ROOT, 'www');
 const EXCLUDE = new Set([
   'node_modules', '.git', 'android', 'ios', 'www',
   'documentacion', '.trae', 'worker', 'admin', 'scripts',
-  'images_rewards', 'scratchpad', '.claude', '.vscode', '.idea',
+  'images_rewards', 'scratchpad', 'presentacion', '.claude', '.vscode', '.idea',
   'package.json', 'package-lock.json', '.gitignore', '.gitattributes',
   'capacitor.config.json', 'codemagic.yaml', 'onmyowntrip-qr.png',
   'contenido-poi-referencia.md', 'estudio-bugs-produccion.md',

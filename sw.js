@@ -16,7 +16,7 @@
 // Sube este número cuando cambies la lista SHELL_URLS de aquí abajo
 // (los propios archivos versionados con "?v=N" ya se cachean solos con
 // su nueva clave la primera vez que se piden, sin necesidad de tocar esto).
-const CACHE_VERSION = 'v265';
+const CACHE_VERSION = 'v266';
 const SHELL_CACHE = `omot-shell-${CACHE_VERSION}`;
 const IMAGE_CACHE = `omot-images-${CACHE_VERSION}`;
 // Contenido de ciudad servido por el Worker (POST /content, ver
@@ -105,6 +105,9 @@ self.addEventListener('fetch', (event) => {
   // (Ctrl+F5). Dejarlas pasar sin tocar: la red decide, sin caché de este
   // Service Worker de por medio.
   if (url.pathname.includes('/admin/') || url.pathname.endsWith('/patrocinador.html')) return;
+  // La presentación web (presentacion/) tampoco es parte de la app: se
+  // comparte por enlace y debe verse siempre la última versión publicada.
+  if (url.pathname.includes('/presentacion/')) return;
 
   // Contenido de ciudad (POST /content, gate de licencia — ver
   // worker/proxy.js): a diferencia del resto de peticiones POST de este
