@@ -1103,6 +1103,112 @@ const CITIES = {
         }
       }
     ]
+  },
+
+  malaga: {
+    id: 'malaga',
+    name: 'Málaga',
+    country: 'España',
+    continent: 'Europa',
+    subtitle: {
+      es: { adult: 'La ciudad de Picasso, entre la Alcazaba y el Mediterráneo', kids: '¡La Ciudad del Sol, los Castillos y Picasso! ☀️' },
+      en: { adult: "Picasso's city, between the Alcazaba and the Mediterranean", kids: 'The City of Sun, Castles and Picasso! ☀️' }
+    },
+    welcomeIntro: {
+      es: {
+        adult: 'Bienvenido a Málaga, una ciudad con casi tres mil años de historia donde un teatro romano descansa a los pies de una fortaleza andalusí. En este paseo subirás a la Alcazaba y a Gibralfaro, descubrirás la ciudad natal de Picasso y terminarás junto al mar, entre el puerto y la playa. ¡Ven a descubrir la capital de la Costa del Sol!',
+        kids: '¡Bienvenido a Málaga, la ciudad del sol! Aquí hay un teatro romano, dos castillos árabes en lo alto de una colina y una catedral a la que le falta una torre. Además, ¡aquí nació Picasso! Terminarás en el puerto y en la playa. ¡Prepárate para la aventura!'
+      },
+      en: {
+        adult: "Welcome to Málaga, a city with almost three thousand years of history, where a Roman theater lies at the foot of an Andalusian fortress. On this walk you'll climb up to the Alcazaba and Gibralfaro, discover Picasso's birthplace and finish by the sea, between the port and the beach. Come discover the capital of the Costa del Sol!",
+        kids: "Welcome to Málaga, the city of sunshine! Here there's a Roman theater, two Moorish castles on top of a hill and a cathedral that's missing a tower. And Picasso was born here! You'll finish at the port and on the beach. Get ready for the adventure!"
+      }
+    },
+    // ~50% del máximo real de Málaga (41 POIs con quiz × 10 = 410 posibles).
+    badgeThreshold: 205,
+    badgeImg: 'assets/badges/malaga.png',
+    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Alcazaba_de_M%C3%A1laga_overview.jpg/330px-Alcazaba_de_M%C3%A1laga_overview.jpg',
+    center: [36.7205, -4.4185],
+    zoom: 15,
+    minZoom: 12.5,
+    // Cubre el centro histórico, la Alcazaba y Gibralfaro, el puerto y La
+    // Malagueta, el Soho y El Perchel, la Tabacalera al oeste, Pedregalejo
+    // al este y el Jardín Botánico de La Concepción al norte.
+    bounds: [[36.695, -4.450], [36.766, -4.355]],
+    routes: [
+      {
+        id: 'main',
+        name: {
+          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+        },
+        color: '#F59E0B',
+        intro: {
+          es: {
+            adult: 'La ruta imprescindible de Málaga reúne en pocas calles casi tres mil años de historia. Empezarás en la Alcazaba, el palacio fortaleza andalusí que domina la ciudad, verás a sus pies el Teatro Romano, redescubierto por casualidad en 1951, y subirás hasta el Castillo de Gibralfaro, con la mejor vista de la bahía. Bajarás a la Catedral, a la que los malagueños llaman «la Manquita» porque nunca se terminó su segunda torre, visitarás el Museo Picasso y la Plaza de la Merced, donde nació el pintor, y recorrerás la elegante Calle Larios hasta el mercado de Atarazanas, que conserva una puerta nazarí de un antiguo astillero. Terminarás en el Muelle Uno y en la playa de La Malagueta. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Prepárate para la ruta más top de Málaga! 🚩 Vas a entrar en un palacio árabe con fuentes y jardines, ver un teatro romano de verdad que estuvo enterrado durante siglos, y subir a un castillo en lo alto de la montaña. Descubrirás una catedral a la que le falta una torre, el museo de Picasso y la plaza donde nació, y un mercado con una puerta árabe gigante por donde antes entraban los barcos. ¡Y terminarás en el puerto y en la playa! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "The unmissable route through Málaga packs almost three thousand years of history into a few streets. You'll start at the Alcazaba, the Andalusian palace-fortress overlooking the city, see the Roman Theater at its foot, rediscovered by chance in 1951, and climb up to Gibralfaro Castle, with the best view of the bay. You'll head down to the Cathedral, which locals call 'la Manquita', the one-armed lady, because its second tower was never finished, visit the Picasso Museum and Plaza de la Merced, where the painter was born, and stroll the elegant Calle Larios to the Atarazanas market, which keeps a Nasrid gateway from an old shipyard. You'll finish at Muelle Uno and on La Malagueta beach. Tap each stop on the map to see specific information about that spot.",
+            kids: "Get ready for Málaga's top route! 🚩 You'll step into a Moorish palace with fountains and gardens, see a real Roman theater that was buried for centuries, and climb up to a castle on top of the mountain. You'll discover a cathedral that's missing a tower, Picasso's museum and the square where he was born, and a market with a giant Moorish gate where ships used to sail in. And you'll finish at the port and on the beach! Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'centro',
+        name: {
+          es: { adult: 'Centro Histórico y Picasso', kids: '¡Tras los Pasos de Picasso! 🎨' },
+          en: { adult: 'Historic Center and Picasso', kids: "In Picasso's Footsteps! 🎨" }
+        },
+        color: '#B8411E',
+        intro: {
+          es: {
+            adult: 'Esta ruta se adentra en el entramado de calles del centro histórico, el que conoció un Picasso niño. Empezarás en la Plaza de la Constitución, la plaza mayor de la ciudad desde época nazarí, cruzarás el Pasaje de Chinitas, que dio nombre a un célebre café cantante, y entrarás en el Museo Carmen Thyssen, instalado en un palacio renacentista. Visitarás la iglesia de los Santos Mártires, dedicada a los patronos de la ciudad, y la iglesia de Santiago, donde fue bautizado Picasso, antes de llegar a su casa natal y al Teatro Cervantes. Terminarás en el Museo del Vidrio y Cristal y en el Palacio Episcopal, junto a la catedral. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva por las calles donde jugaba Picasso cuando era pequeño! 🎨 Empezarás en la plaza más importante de la ciudad, con una fuente de mármol que vino de Italia, y pasarás por un pasaje donde había un café famoso de flamenco. Verás un museo de pintura en un palacio, una iglesia con una torre que parece árabe donde bautizaron a Picasso, y la casa donde nació. ¡Y terminarás en un museo lleno de objetos de cristal de colores! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route heads into the web of streets of the historic center, the one a young Picasso knew. You'll start at Plaza de la Constitución, the city's main square since Nasrid times, cross the Pasaje de Chinitas, which gave its name to a famous café cantante, and enter the Carmen Thyssen Museum, housed in a Renaissance palace. You'll visit the church of the Santos Mártires, dedicated to the city's patron saints, and the church of Santiago, where Picasso was baptized, before reaching his birthplace and the Teatro Cervantes. You'll finish at the Museum of Glass and Crystal and the Bishop's Palace, beside the cathedral. Tap each stop on the map to see specific information about that spot.",
+            kids: "This route takes you through the streets where Picasso played as a little boy! 🎨 You'll start at the city's most important square, with a marble fountain that came from Italy, and walk through a passage where there was a famous flamenco café. You'll see a painting museum inside a palace, a church with a tower that looks Moorish where Picasso was baptized, and the house where he was born. And you'll finish at a museum full of colorful glass objects! Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'puerto',
+        name: {
+          es: { adult: 'El Parque, el Puerto y La Malagueta', kids: '¡Palmeras, Barcos y Faro! ⛵' },
+          en: { adult: 'The Park, the Port and La Malagueta', kids: 'Palm Trees, Boats and a Lighthouse! ⛵' }
+        },
+        color: '#0EA5E9',
+        intro: {
+          es: {
+            adult: 'Una ruta que sigue la relación de Málaga con el mar, desde los terrenos ganados al agua en el siglo XIX hasta el puerto abierto a la ciudad en el siglo XXI. Empezarás en el Ayuntamiento y recorrerás el Paseo del Parque, un jardín subtropical plantado sobre antiguos terrenos portuarios, hasta el Palacio de la Aduana, hoy Museo de Málaga. Pasearás por el Palmeral de las Sorpresas y el Muelle Uno hasta el cubo de colores del Centre Pompidou y La Farola, el faro de nombre femenino. Seguirás por la plaza de toros de La Malagueta y el Cementerio Inglés, el primer cementerio protestante de España, y terminarás en el Gran Hotel Miramar, frente al mar. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva junto al mar! ⛵ Vas a pasear por un parque lleno de plantas de todo el mundo y ver un edificio antiguo de aduanas que ahora es un museo gigante. Caminarás bajo pérgolas blancas y palmeras hasta un cubo de cristal de colores y un faro con nombre de chica: ¡La Farola! Verás una plaza de toros redonda, un cementerio lleno de historias de viajeros ingleses y un hotel precioso junto a la playa. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "A route that follows Málaga's relationship with the sea, from land reclaimed from the water in the 19th century to the port opened up to the city in the 21st. You'll start at the City Hall and walk the Paseo del Parque, a subtropical garden planted on former port land, to the Palacio de la Aduana, today the Museum of Málaga. You'll stroll through the Palmeral de las Sorpresas and Muelle Uno to the colored cube of the Centre Pompidou and La Farola, the lighthouse with a feminine name. You'll continue past La Malagueta bullring and the English Cemetery, the first Protestant cemetery in Spain, and finish at the Gran Hotel Miramar, facing the sea. Tap each stop on the map to see specific information about that spot.",
+            kids: "This route takes you along the sea! ⛵ You'll stroll through a park full of plants from all over the world and see an old customs building that's now a giant museum. You'll walk under white pergolas and palm trees to a colorful glass cube and a lighthouse with a girl's name: La Farola! You'll see a round bullring, a cemetery full of stories about English travelers and a beautiful hotel by the beach. Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'soho',
+        name: {
+          es: { adult: 'Soho, el río y El Perchel', kids: '¡Murales Gigantes y Coches Antiguos! 🎨🚗' },
+          en: { adult: 'Soho, the River and El Perchel', kids: 'Giant Murals and Vintage Cars! 🎨🚗' }
+        },
+        color: '#7C3AED',
+        intro: {
+          es: {
+            adult: 'Esta ruta cruza al oeste del centro para descubrir la Málaga más contemporánea y la más marinera. Empezarás en la Alameda Principal, el gran paseo del siglo XVIII abierto sobre terrenos ganados al mar, y entrarás en el Soho, el antiguo ensanche del XIX convertido en barrio de las artes, con murales de artistas internacionales y el Centro de Arte Contemporáneo. Cruzarás el río Guadalmedina hasta la iglesia de Santo Domingo, de donde sale cada Jueves Santo el Cristo de Mena llevado por la Legión, y el mercado del Carmen, en el barrio pescador de El Perchel. Terminarás en la antigua Tabacalera, hoy Museo Automovilístico y de la Moda. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta te lleva a la Málaga más moderna! 🎨 Vas a pasear por un barrio con edificios enteros pintados con murales gigantes de artistas de todo el mundo, entrar en un museo de arte moderno, y cruzar el río hasta una iglesia muy famosa en Semana Santa. Visitarás un mercado de pescado en el barrio de los pescadores, ¡y terminarás en una antigua fábrica de tabaco llena de coches antiguos y vestidos de moda! 🚗 ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route crosses to the west of the center to discover Málaga's most contemporary and most seafaring sides. You'll start on the Alameda Principal, the great 18th-century promenade laid out on land reclaimed from the sea, and enter the Soho, the old 19th-century extension turned arts district, with murals by international artists and the Contemporary Art Center. You'll cross the Guadalmedina river to the church of Santo Domingo, from which the Cristo de Mena is carried every Holy Thursday by the Spanish Legion, and the Carmen market, in the fishing quarter of El Perchel. You'll finish at the former Tabacalera, now the Automobile and Fashion Museum. Tap each stop on the map to see specific information about that spot.",
+            kids: "This route takes you to Málaga's most modern side! 🎨 You'll stroll through a neighborhood with whole buildings covered in giant murals by artists from all over the world, visit a modern art museum, and cross the river to a church that's very famous during Holy Week. You'll visit a fish market in the fishermen's neighborhood, and finish in an old tobacco factory full of vintage cars and fashion dresses! 🚗 Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      }
+    ]
   }
 };
 
