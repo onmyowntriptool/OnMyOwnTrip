@@ -825,6 +825,15 @@
     }
   };
 
+  // Antes se hacía scroll a #tabManage (arriba del todo de la pestaña), pero
+  // el formulario está DEBAJO de las tablas de solicitudes y patrocinadores:
+  // con varios patrocinadores dados de alta quedaba fuera de pantalla y
+  // "Editar"/"Importar" parecían no hacer nada.
+  const scrollToSponsorForm = () => {
+    $('#sponsorFormTitle').closest('.form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('#spName').focus({ preventScroll: true });
+  };
+
   // Precarga SOLO los campos de "Datos del negocio" (lo que mandó el
   // cliente); ID/ciudad/nivel/coordenadas/fechas quedan en blanco para que
   // los decidas tú antes de guardar.
@@ -842,7 +851,7 @@
     $('#spWebsiteUrl').value = p.websiteUrl || '';
     $('#spMenuRows').innerHTML = '';
     (p.menu || []).forEach((row) => addMenuRow(row.item, row.price));
-    $('#tabManage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scrollToSponsorForm();
   };
 
   const discardPending = async (id) => {
@@ -932,7 +941,7 @@
     (s.menu || []).forEach((row) => addMenuRow(row.item, row.price));
     $('#spFormError').hidden = true;
     clearInvalidMarks();
-    $('#tabManage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scrollToSponsorForm();
   };
 
   $('#spCancelBtn').addEventListener('click', resetSponsorForm);
