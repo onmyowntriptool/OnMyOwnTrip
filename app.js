@@ -3513,23 +3513,49 @@
     // respuesta posterior, y ahí esta mención no debe sonar.
     const hist = aiHistoryFor(poi.id).filter((x) => x.role === 'assistant');
     if (!hist.length || !hist[hist.length - 1].isSummary) return done();
-    // FIX (feedback: el silencio de casi 1s entre el final de la narración y
-    // el anuncio se sentía como un corte en la experiencia, no como una
-    // pausa natural). Antes eran 900ms; esta pausa más breve sigue evitando
-    // que se pisen los dos audios, sin sonar a corte.
+    // FIX (feedback: el silencio entre el final de la narración y el anuncio
+    // se sentía como un corte y la gente "se perdía"). 900ms -> 300ms -> 80ms:
+    // lo justo para que no se pisen los dos audios. En nativo la espera real
+    // la marcaba la descarga de la voz en la nube, ver prefetchSponsorOutro.
     setTimeout(() => {
       // Si mientras tanto se cerró la ficha, se abrió otro POI o arrancó una
       // narración más nueva sobre el mismo POI, no decimos nada.
       if (STATE.activePoiId !== poi.id || STATE.audio.playing || STATE.audio.playId !== myPlayId) return done();
-      // audioLine: frase a medida escrita por el patrocinador (ver Gestión
-      // en admin/dashboard.html) tiene prioridad; si no la escribió, se
-      // usa la batería genérica de arriba, ya adaptada a su tipo de
-      // negocio (comida vs. alojamiento) y con distancia real.
-      const text = match.sponsor.audioLine
+      speakOverrideText(sponsorOutroTextFor(match, myPlayId), done);
+    }, 80);
+  };
+
+  // audioLine: frase a medida escrita por el patrocinador (ver Gestión en
+  // admin/dashboard.html) tiene prioridad; si no la escribió, se usa la
+  // batería genérica de arriba, ya adaptada a su tipo de negocio (comida vs.
+  // alojamiento) y con distancia real. Se memoriza por narración (playId):
+  // buildSponsorOutroFallback rota frases con un contador, así que el texto
+  // precargado y el que luego suena tienen que ser el MISMO, o la caché de
+  // CLOUD_TTS no acertaría.
+  const sponsorOutroTextFor = (match, playId) => {
+    if (match.outroPlayId !== playId || !match.outroText) {
+      match.outroText = match.sponsor.audioLine
         ? pickLang(match.sponsor.audioLine)
         : buildSponsorOutroFallback(match.sponsor, match.distance);
-      speakOverrideText(text, done);
-    }, 300);
+      match.outroPlayId = playId;
+    }
+    return match.outroText;
+  };
+
+  // Solo nativo (sin speechSynthesis): mientras suena la narración se
+  // descarga ya la voz del anuncio, para que al terminar arranque casi sin
+  // hueco en vez de esperar ~1s a la red. Mismas condiciones que
+  // maybeSpeakSponsorDemoOutro; si al final no suena, solo se gastó una
+  // petición de TTS.
+  const prefetchSponsorOutro = (poi, myPlayId) => {
+    if (SPEECH.isSupported() || !CLOUD_TTS.isConfigured()) return;
+    if (!poi || STATE.mode === 'kids') return;
+    const match = activeSponsorDemoMatch;
+    if (!match || match.poiId !== poi.id || !match.sponsor.audioMention) return;
+    const hist = aiHistoryFor(poi.id).filter((x) => x.role === 'assistant');
+    if (!hist.length || !hist[hist.length - 1].isSummary) return;
+    const text = sponsorOutroTextFor(match, myPlayId);
+    if (!CLOUD_TTS.getReadyUrl(text)) CLOUD_TTS.fetchAndCache(text);
   };
 
   // Cierre de "Introducción" pospuesto (ver showFullIntro): se llama como
@@ -7730,10 +7756,20 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       return 'h' + (h >>> 0).toString(36);
     };
 
-    const fetchAndCache = async (text) => {
-      if (!endpoint || !text) return null;
+    // Peticiones en curso por texto: si la precarga del anuncio del
+    // patrocinador (ver prefetchSponsorOutro) aún no terminó cuando toca
+    // sonar, se espera a ESA descarga en vez de lanzar otra idéntica.
+    const inflight = new Map();
+    const fetchAndCache = (text) => {
+      if (!endpoint || !text) return Promise.resolve(null);
       const key = hashText(text);
-      if (readyUrls.has(key)) return readyUrls.get(key);
+      if (readyUrls.has(key)) return Promise.resolve(readyUrls.get(key));
+      if (inflight.has(key)) return inflight.get(key);
+      const p = fetchAndCacheUncached(text, key).finally(() => inflight.delete(key));
+      inflight.set(key, p);
+      return p;
+    };
+    const fetchAndCacheUncached = async (text, key) => {
       const cacheKey = `https://tts.cache.local/${key}`;
       try {
         const cache = await caches.open(CACHE_NAME);
@@ -7965,6 +8001,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     const p = cloudAudioEl.play();
     if (p && p.catch) p.catch(fallbackToSpeech);
     updateAudioUi();
+    prefetchSponsorOutro(POIS.find((x) => x.id === STATE.activePoiId), myPlayId);
   };
 
   // onSegmentEnd (opcional): se dispara una sola vez cuando esta narración
