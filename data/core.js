@@ -1209,6 +1209,93 @@ const CITIES = {
         }
       }
     ]
+  },
+  alicante: {
+    id: 'alicante',
+    name: 'Alicante',
+    country: 'España',
+    continent: 'Europa',
+    subtitle: {
+      es: { adult: 'La ciudad del castillo sobre el mar, entre la Explanada y las Hogueras', kids: '¡La Ciudad del Castillo, la Playa y las Hogueras! 🔥' },
+      en: { adult: 'The city of the castle above the sea, between the Explanada and the Hogueras', kids: 'The City of the Castle, the Beach and the Bonfires! 🔥' }
+    },
+    welcomeIntro: {
+      es: {
+        adult: 'Bienvenido a Alicante, una ciudad mediterránea vigilada desde hace más de mil años por el castillo de Santa Bárbara, en lo alto del monte Benacantil. En este paseo subirás a la fortaleza por un ascensor excavado en la roca, recorrerás las callejuelas encaladas del barrio de Santa Cruz y descubrirás la «cota cero» desde la que se mide la altura de toda España. Terminarás en la Explanada, sobre millones de teselas que dibujan olas. ¡Ven a descubrir la capital de la Costa Blanca!',
+        kids: '¡Bienvenido a Alicante! Aquí hay un castillo en lo alto de una montaña que tiene cara, un ascensor que sube por dentro de la roca y un paseo con el suelo en forma de olas. Además, en junio la ciudad se llena de figuras gigantes que se queman en la noche de San Juan. ¡Prepárate para la aventura!'
+      },
+      en: {
+        adult: "Welcome to Alicante, a Mediterranean city watched over for more than a thousand years by Santa Bárbara Castle, high on Mount Benacantil. On this walk you'll ride up to the fortress in a lift carved into the rock, wander the whitewashed lanes of the Santa Cruz quarter and discover the 'zero point' from which the height of all of Spain is measured. You'll finish on the Explanada, walking over millions of tiles that draw waves. Come discover the capital of the Costa Blanca!",
+        kids: "Welcome to Alicante! Here there's a castle on top of a mountain that has a face, a lift that goes up inside the rock and a promenade with a wave-shaped floor. And in June the city fills up with giant figures that are burned on Saint John's night. Get ready for the adventure!"
+      }
+    },
+    // ~50% del máximo real de Alicante (33 POIs con quiz × 10 = 330 posibles).
+    badgeThreshold: 165,
+    badgeImg: 'assets/badges/alicante.png',
+    heroImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Castello_de_Santa_B%C3%A0rbara_Alicante.jpg/330px-Castello_de_Santa_B%C3%A0rbara_Alicante.jpg',
+    center: [38.3455, -0.4830],
+    zoom: 15,
+    minZoom: 12.5,
+    // Cubre el casco antiguo, el castillo y el puerto, el Tossal y San Antón
+    // al norte, El Palmeral al sur, Lucentum en la Albufereta al noreste y el
+    // monasterio de la Santa Faz.
+    bounds: [[38.315, -0.525], [38.398, -0.430]],
+    routes: [
+      {
+        id: 'main',
+        name: {
+          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+        },
+        color: '#F59E0B',
+        intro: {
+          es: {
+            adult: 'La ruta imprescindible de Alicante empieza en lo más alto. Subirás al castillo de Santa Bárbara, en la cima del Benacantil, y bajarás a la playa del Postiguet, a los pies de la Cara del Moro. En el casco antiguo visitarás la basílica de Santa María, la iglesia más antigua de la ciudad, el Museo de Arte Contemporáneo, con obras de Picasso, Miró o Dalí, y las callejuelas encaladas del barrio de Santa Cruz. Verás el Ayuntamiento, que guarda la «cota cero» de España, y la concatedral de San Nicolás, antes de recorrer la Rambla hasta el Mercado Central. Terminarás en la Explanada, el paseo de las olas de mármol. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Prepárate para la ruta más top de Alicante! 🚩 Vas a subir a un castillo en un ascensor que va por dentro de la montaña, bajar a una playa desde donde se ve una cara gigante en la roca, y pasear por un barrio de casitas blancas con escaleras y flores. Descubrirás el punto desde el que se mide la altura de toda España, un mercado enorme lleno de comida, y terminarás en un paseo con el suelo en forma de olas. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "The unmissable route through Alicante starts at the top. You'll ride up to Santa Bárbara Castle, on the summit of Benacantil, and come down to Postiguet beach, at the foot of the Cara del Moro. In the old town you'll visit the basilica of Santa María, the city's oldest church, the Museum of Contemporary Art, with works by Picasso, Miró and Dalí, and the whitewashed lanes of the Santa Cruz quarter. You'll see the City Hall, which holds Spain's 'zero point', and the co-cathedral of San Nicolás, before walking down La Rambla to the Mercado Central. You'll finish on the Explanada, the promenade of marble waves. Tap each stop on the map to see specific information about that spot.",
+            kids: "Get ready for Alicante's top route! 🚩 You'll ride up to a castle in a lift that goes inside the mountain, come down to a beach where you can see a giant face in the rock, and stroll through a neighborhood of little white houses with stairs and flowers. You'll discover the spot used to measure the height of all of Spain, a huge market full of food, and finish on a promenade with a wave-shaped floor. Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'centro',
+        name: {
+          es: { adult: 'Casco Antiguo y Centro', kids: '¡Aljibes, Hogueras y Árboles Gigantes! 🔥' },
+          en: { adult: 'Old Town and Center', kids: 'Cisterns, Bonfires and Giant Trees! 🔥' }
+        },
+        color: '#B8411E',
+        intro: {
+          es: {
+            adult: 'Esta ruta enlaza el casco antiguo con el centro burgués del siglo XIX. Empezarás en el Museo de Bellas Artes Gravina, con la pintura alicantina del XIX, y bajarás a los pozos de Garrigós, aljibes excavados en la roca para una ciudad siempre sedienta, antes de subir por los senderos y miradores del parque de la Ereta. Ya en el centro, conocerás la historia de las Hogueras de San Juan en su museo, descansarás a la sombra de los ficus gigantes del Portal de Elche y de la plaza de Gabriel Miró, y recorrerás la calle Castaños hasta el Teatro Principal. Terminarás en la plaza de los Luceros, junto a su fuente monumental. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta está llena de sorpresas! 🔥 Vas a ver cuadros enormes en un palacio, bajar a unas cuevas gigantes donde se guardaba el agua de la lluvia y subir por un parque colgado de la montaña. Luego descubrirás el museo de las Hogueras, con muñecos que se salvaron del fuego, y pasearás bajo árboles tan grandes que dan sombra a plazas enteras. ¡Y terminarás en una fuente con cuatro caballos! ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route links the old town with the 19th-century middle-class center. You'll start at the Gravina Fine Arts Museum, with 19th-century Alicante painting, and go down to the Pozos de Garrigós, cisterns carved into the rock for an ever-thirsty city, before climbing the paths and viewpoints of La Ereta park. In the center, you'll learn the story of the Hogueras de San Juan at its museum, rest in the shade of the giant fig trees of the Portal de Elche and the Plaza de Gabriel Miró, and walk Calle Castaños to the Teatro Principal. You'll finish at the Plaza de los Luceros, beside its monumental fountain. Tap each stop on the map to see specific information about that spot.",
+            kids: "This route is full of surprises! 🔥 You'll see huge paintings in a palace, go down into giant caves where rainwater was stored and climb a park hanging from the mountain. Then you'll discover the Hogueras museum, with figures saved from the fire, and walk under trees so big they shade whole squares. And you'll finish at a fountain with four horses! Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      },
+      {
+        id: 'puerto',
+        name: {
+          es: { adult: 'Puerto y Frente Marítimo', kids: '¡Barcos, Leyendas y Palmeras! ⚓' },
+          en: { adult: 'Port and Seafront', kids: 'Ships, Legends and Palm Trees! ⚓' }
+        },
+        color: '#0EA5E9',
+        intro: {
+          es: {
+            adult: 'Esta ruta recorre el Alicante que mira al mar. Empezarás contemplando la Cara del Moro, el perfil rocoso del Benacantil que una leyenda convierte en el rostro de un gobernador castigado, y seguirás por la plaza de la Puerta del Mar, donde se abría la antigua muralla hacia el puerto. Verás la Casa Carbonell, el edificio más fotografiado de la Explanada, y pasearás por el puerto, con siete siglos de comercio mediterráneo y la memoria del final de la guerra civil. Terminarás en el parque de Canalejas, el más antiguo de la ciudad, entre ficus monumentales y leones de piedra. Toca cada parada en el mapa para ver la información específica de ese lugar.',
+            kids: '¡Esta ruta es para los amantes del mar! ⚓ Vas a descubrir una montaña que tiene cara y la leyenda de una princesa, ver un velero de verdad que dio la vuelta al mundo y un edificio blanco que parece una tarta gigante. Pasearás entre barcos en el puerto y terminarás en un parque con leones y perros de piedra. ¡Toca cada punto del mapa para descubrir todo sobre ese sitio!'
+          },
+          en: {
+            adult: "This route explores the Alicante that faces the sea. You'll start by gazing at the Cara del Moro, the rocky profile of Benacantil that legend turns into the face of a punished governor, and continue to the Plaza de la Puerta del Mar, where the old wall opened toward the port. You'll see Casa Carbonell, the most photographed building on the Explanada, and stroll through the port, with seven centuries of Mediterranean trade and the memory of the end of the Civil War. You'll finish in Canalejas Park, the city's oldest, among monumental fig trees and stone lions. Tap each stop on the map to see specific information about that spot.",
+            kids: "This route is for sea lovers! ⚓ You'll discover a mountain with a face and the legend of a princess, see a real sailboat that went around the world and a white building that looks like a giant cake. You'll stroll among ships in the port and finish in a park with stone lions and dogs. Tap each point on the map to discover everything about that spot!"
+          }
+        }
+      }
+    ]
   }
 };
 

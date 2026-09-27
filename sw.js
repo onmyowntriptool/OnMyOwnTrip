@@ -16,7 +16,7 @@
 // Sube este número cuando cambies la lista SHELL_URLS de aquí abajo
 // (los propios archivos versionados con "?v=N" ya se cachean solos con
 // su nueva clave la primera vez que se piden, sin necesidad de tocar esto).
-const CACHE_VERSION = 'v266';
+const CACHE_VERSION = 'v267';
 const SHELL_CACHE = `omot-shell-${CACHE_VERSION}`;
 const IMAGE_CACHE = `omot-images-${CACHE_VERSION}`;
 // Contenido de ciudad servido por el Worker (POST /content, ver
@@ -39,7 +39,7 @@ const SHELL_URLS = [
   './',
   './index.html',
   './app.js?v=261',
-  './data/core.js?v=37',
+  './data/core.js?v=38',
   './styles.css?v=126',
   './manifest.json?v=2',
   './privacidad.html',

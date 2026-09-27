@@ -1143,7 +1143,7 @@ const ANDROID_PACKAGE_NAME = 'com.onmyowntrip';
 const ALL_CITY_IDS = [
   'toledo', 'madrid', 'alcala-de-henares', 'buitrago-del-lozoya',
   'peniscola', 'cdmx', 'berlin', 'roma', 'vaticano', 'estambul', 'segovia',
-  'barcelona', 'malaga'
+  'barcelona', 'malaga', 'alicante'
 ];
 
 // productId de Play Console -> cityId. Los ids de producto son a propósito
@@ -1162,7 +1162,8 @@ const PREMIUM_PRODUCT_TO_CITY = {
   ads_free_estambul: 'estambul',
   ads_free_segovia: 'segovia',
   ads_free_barcelona: 'barcelona',
-  ads_free_malaga: 'malaga'
+  ads_free_malaga: 'malaga',
+  ads_free_alicante: 'alicante'
 };
 // Caso especial: desbloquea TODAS las de ALL_CITY_IDS de golpe, en vez de
 // una sola ciudad -- no aparece en PREMIUM_PRODUCT_TO_CITY a propósito.
