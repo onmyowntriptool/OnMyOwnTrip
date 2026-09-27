@@ -1,0 +1,64 @@
+{
+  "_ayuda": "Variables de la presentación. Edita esto y ejecuta: node scripts/presentacion/build.js — ver README.md en esta carpeta.",
+
+  "evento": {
+    "titulo": "Día Mundial del Turismo 2026",
+    "tema": "Turismo e inteligencia artificial: rediseñando el sector",
+    "lugar": "Universidad Anáhuac México, Campus Norte",
+    "fecha": "29 de septiembre de 2026"
+  },
+
+  "ponente": {
+    "nombre": "David G. Henriquez",
+    "cargo": "Fundador",
+    "email": "onmyowntriptool@gmail.com"
+  },
+
+  "region": {
+    "nombre": "Latinoamérica"
+  },
+
+  "demo": {
+    "ciudad": "Ciudad de México",
+    "lugar": "la Catedral Metropolitana"
+  },
+
+  "cifras": {
+    "_nota": "destinos, paises y lugares se calculan solos con los datos de la app (data/core.js + data/cities). Pon un valor aquí solo para forzarlo.",
+    "destinos": null,
+    "paises": null,
+    "lugares": null,
+    "idiomas_modos": "2×2",
+    "plataformas": "Web · Android en Google Play · iOS en camino · Español e inglés · Modo Adultos y Modo Niños"
+  },
+
+  "destinos": {
+    "_nota": "Orden de las medallas en la diapositiva 8 (ids de data/core.js). Una ciudad nueva que no esté aquí se añade al final y el build avisa.",
+    "orden": ["cdmx", "roma", "vaticano", "berlin", "estambul", "madrid", "barcelona", "toledo", "segovia", "malaga", "alcala-de-henares", "peniscola", "buitrago-del-lozoya"],
+    "nombres": { "madrid": "Madrid" },
+    "paises": { "vaticano": "Ciudad del Vaticano" }
+  },
+
+  "hitos": {
+    "hecho": [
+      "{{cifras.destinos}} destinos publicados y probados con usuarios",
+      "App Android en Google Play (fase de pruebas)",
+      "Marca ON MY OWN TRIP solicitada en la OEPM",
+      "Sistema de patrocinadores operativo"
+    ],
+    "proximos": [
+      "Lanzamiento público en Android e iPhone",
+      "Más ciudades en México y {{region.nombre}}",
+      "Primeros patrocinadores locales",
+      "Alianzas con oficinas de turismo y universidades"
+    ]
+  },
+
+  "descarga": {
+    "_nota": "El QR se genera solo desde qr_url. Cuando las apps estén publicadas, rellena android/ios: se muestran como botones y el aviso de 'próximamente' desaparece.",
+    "qr_url": "https://onmyowntriptool.github.io/OnMyOwnTrip/",
+    "proximamente": "Próximamente disponible para Android y iPhone",
+    "android": "",
+    "ios": ""
+  }
+}
