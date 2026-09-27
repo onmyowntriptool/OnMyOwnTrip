@@ -1434,8 +1434,8 @@
     scanLogHint: { es: { adult: 'Registro local de fotos escaneadas que no coincidían con ningún lugar de la app. Solo tú puedes verlo.', kids: 'Registro local de fotos escaneadas que no coincidían con ningún lugar de la app. Solo tú puedes verlo.' }, en: { adult: "Local log of scanned photos that didn't match any place in the app. Only you can see it.", kids: "Local log of scanned photos that didn't match any place in the app. Only you can see it." } },
     scanLogExport: { es: { adult: '⬇️ Exportar JSON', kids: '⬇️ Exportar JSON' }, en: { adult: '⬇️ Export JSON', kids: '⬇️ Export JSON' } },
     scanLogClear: { es: { adult: '🗑️ Borrar registro', kids: '🗑️ Borrar registro' }, en: { adult: '🗑️ Clear log', kids: '🗑️ Clear log' } },
-    rewardChestTitle: { es: { adult: 'Mochila de viaje', kids: 'Mochila de viaje' }, en: { adult: 'Travel backpack', kids: 'Travel backpack' } },
-    rewardChestHint: { es: { adult: 'Responde bien a las preguntas de cada sitio para ganar ⭐. Cuando te lleguen para algo, toca "Reclamar" y elige tú qué te llevas.', kids: 'Responde bien a las preguntas de cada sitio para ganar ⭐. Cuando te lleguen para algo, toca "Reclamar" y elige tú qué te llevas.' }, en: { adult: 'Answer each place\'s questions correctly to earn ⭐. Once you have enough, tap "Claim" and choose what you take home.', kids: 'Answer each place\'s questions correctly to earn ⭐. Once you have enough, tap "Claim" and choose what you take home.' } },
+    rewardChestTitle: { es: { adult: 'Insignias', kids: 'Mochila de viaje' }, en: { adult: 'Badges', kids: 'Travel backpack' } },
+    rewardChestHint: { es: { adult: 'Consigue la insignia de una ciudad visitando al menos la mitad de sus lugares.', kids: 'Responde bien a las preguntas de cada sitio para ganar ⭐. Cuando te lleguen para algo, toca "Reclamar" y elige tú qué te llevas.' }, en: { adult: 'Earn a city\'s badge by visiting at least half of its places.', kids: 'Answer each place\'s questions correctly to earn ⭐. Once you have enough, tap "Claim" and choose what you take home.' } },
     scanTakePhoto: { es: { adult: 'Tomar foto', kids: 'Tomar foto' }, en: { adult: 'Take photo', kids: 'Take photo' } },
     scanUploadPhoto: { es: { adult: 'Subir foto', kids: 'Subir foto' }, en: { adult: 'Upload photo', kids: 'Upload photo' } },
     modeToggleAdult: { es: { adult: 'Adultos', kids: 'Adultos' }, en: { adult: 'Adults', kids: 'Adults' } },
@@ -4046,15 +4046,33 @@
     return sum;
   };
 
-  // Se llama tras cada pregunta de quiz respondida (ver answerKidsQuiz): si
-  // la ciudad activa define badgeThreshold (ver data/core.js) y aún no
-  // tiene su insignia, comprueba si ya se alcanzó y la desbloquea con un
-  // aviso — se acierte o no la pregunta en curso, lo que cuenta es el total
-  // acumulado de la ciudad, igual que el resto de la mochila.
+  // Equivalente en modo Adultos a cityPointsEarned de arriba: aquí no hay
+  // quiz, así que el criterio es "cuántos POIs reales de la ciudad ya se han
+  // abierto al menos una vez" (mismo isVisited que usa openVisitSummary).
+  const ADULT_BADGE_VISITED_RATIO = 0.5;
+  const cityVisitedRatio = () => {
+    if (!POIS || !POIS.length) return 0;
+    const realPois = POIS.filter((p) => !p.isAdHocScan);
+    if (!realPois.length) return 0;
+    const visited = realPois.filter((p) => (STATE.ai.perPoiHistory[p.id] || []).length > 0);
+    return visited.length / realPois.length;
+  };
+
+  // Se llama tras cada pregunta de quiz respondida en modo Niños (ver
+  // answerKidsQuiz) y tras cada primera visita a un POI en modo Adultos (ver
+  // ensureAiPanelInitialGreet): si la ciudad activa define badgeThreshold
+  // (ver data/core.js) y aún no tiene su insignia, comprueba si ya se
+  // alcanzó y la desbloquea con un aviso. La insignia es una sola por
+  // ciudad, compartida entre los dos modos -- la gana quien llegue primero,
+  // por el criterio de su propio modo (puntos de quiz en Niños, % de POIs
+  // visitados en Adultos); el otro modo la ve ya conseguida igual.
   const checkCityBadge = () => {
     if (!CURRENT_CITY || !CURRENT_CITY.badgeThreshold) return;
     if (STATE.game.cityBadges.includes(CURRENT_CITY.id)) return;
-    if (cityPointsEarned() < CURRENT_CITY.badgeThreshold) return;
+    const earned = STATE.mode === 'kids'
+      ? cityPointsEarned() >= CURRENT_CITY.badgeThreshold
+      : cityVisitedRatio() >= ADULT_BADGE_VISITED_RATIO;
+    if (!earned) return;
     STATE.game.cityBadges.push(CURRENT_CITY.id);
     saveState();
     showToast(t('cityBadgeUnlocked').replace('{city}', CURRENT_CITY.name), 4000);
@@ -4255,8 +4273,16 @@
     const badge = $('#pointsBadge');
     if (!badge) return;
     const isKids = STATE.mode === 'kids';
-    badge.hidden = !isKids;
-    if (!isKids) return;
+    badge.hidden = false;
+    if (!isKids) {
+      // En Adultos este mismo hueco de cabecera (antes solo de Niños) pasa a
+      // ser el acceso a las insignias de ciudad (ver checkCityBadge/
+      // renderCityBadgeRow) -- sin nivel de explorador ni saldo de estrellas,
+      // que son conceptos solo de Niños.
+      badge.style.removeProperty('--explorer-color');
+      badge.textContent = `🏅 ${t('rewardChestTitle')}`;
+      return;
+    }
     const level = getExplorerLevel(STATE.game.points);
     badge.style.setProperty('--explorer-color', level.color);
     // El número mostrado es el saldo GASTABLE (puntos menos lo ya
@@ -4370,6 +4396,12 @@
   const renderRewardChest = () => {
     const list = $('#rewardChestList');
     if (!list) return;
+    // La tienda de recompensas se paga con estrellas de quiz, que solo
+    // existen en Niños -- en Adultos este modal se reduce a la fila de
+    // insignias de ciudad (ver renderCityBadgeRow), sin nada que reclamar.
+    const isKids = STATE.mode === 'kids';
+    list.hidden = !isKids;
+    if (!isKids) { renderCityBadgeRow(); return; }
     list.innerHTML = '';
     const balance = rewardBalance();
     REWARD_ITEMS.forEach((item) => {
@@ -5833,6 +5865,11 @@
       // viejo en vez de la suya.
       STATE.audio.overrideText = null;
       if ((SPEECH.isSupported() || CLOUD_TTS.isConfigured()) && !STATE.audio.playing) startAudio(false, true);
+      // Este POI acaba de pasar a "visitado" (ver isVisited en
+      // openVisitSummary, mismo criterio): es el punto natural para
+      // comprobar la insignia de la ciudad en modo Adultos, ya que ahí no
+      // hay quiz que la dispare como en modo Niños (ver checkCityBadge).
+      checkCityBadge();
     } else if (forceSpeak) {
       // El usuario pidió que el saludo/teaser de bienvenida siempre se diga
       // al entrar en un punto, no solo la primera vez: se repite el mismo
@@ -8346,7 +8383,14 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       });
     }
 
-    $('#pointsBadge')?.addEventListener('click', openVisitSummary);
+    // En Niños abre el resumen de la visita (con el progreso de puntos de
+    // ESTA ciudad); en Adultos, sin puntos ni resumen de quiz, abre
+    // directamente la mochila con la fila de insignias de todas las
+    // ciudades (ver renderRewardChest).
+    $('#pointsBadge')?.addEventListener('click', () => {
+      if (STATE.mode === 'kids') openVisitSummary();
+      else openRewardChest();
+    });
     if (els.visitSummary) {
       $('.visit-summary-close', els.visitSummary).addEventListener('click', closeVisitSummary);
       els.visitSummary.addEventListener('click', (e) => {
