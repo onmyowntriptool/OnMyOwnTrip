@@ -1822,7 +1822,19 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   right: 14px;
   bottom: 178px;
   z-index: 700;
+  /* Mismo panel opaco que .map-tools, del que sale este menú. Antes dependía
+     de un .dropdown-menu que ya no existía en este CSS y el menú salía sin
+     fondo, con el texto flotando ilegible encima del mapa (tester Dionny). */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
 }
+.scan-menu[hidden] { display: none; }
 .scan-menu .dropdown-option svg { flex-shrink: 0; color: var(--color-text-soft); }
 
 /* ---------- MARCADOR "MI POSICIÓN" ---------- */
