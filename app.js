@@ -2992,9 +2992,15 @@
       return typeof Capacitor !== 'undefined' && !!(Capacitor.isNativePlatform && Capacitor.isNativePlatform());
     } catch (_) { return false; }
   };
+  // Solo Android: el Worker verifica las compras únicamente contra Google
+  // Play (handlePremiumVerifyPurchase), y en iOS aún no existen los
+  // productos en App Store Connect. En iPhone se oculta así todo lo de pago
+  // (el enlace "Quitar publicidad" es la única entrada al modal Premium) --
+  // Apple rechaza una compra que no funciona y también un texto que remita
+  // a "la app de Android".
   const isNativeBillingAvailable = () => {
     try {
-      return isNativeApp() && !!(Capacitor.Plugins && Capacitor.Plugins.NativePurchases);
+      return isNativeApp() && Capacitor.getPlatform() === 'android' && !!(Capacitor.Plugins && Capacitor.Plugins.NativePurchases);
     } catch (_) { return false; }
   };
 
