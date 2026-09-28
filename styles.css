@@ -885,7 +885,11 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   position: absolute;
   top: 0; left: 0; right: 0;
   z-index: 2100;
-  padding: 16px 16px 14px;
+  /* env(safe-area-inset-top): en iPhone la app ocupa toda la pantalla
+     (viewport-fit=cover) y sin esto la barra de estado (hora, batería)
+     queda encima del título. En el WebView de Android vale 0, así que
+     allí no cambia nada. */
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -922,8 +926,8 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   flex-wrap: wrap;
   row-gap: 8px;
   gap: 12px;
-  margin: -16px -16px 0;
-  padding: 16px 16px 18px;
+  margin: calc(-16px - env(safe-area-inset-top, 0px)) -16px 0;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 18px;
   background: linear-gradient(180deg,
     color-mix(in srgb, var(--color-bg) 94%, transparent) 0%,
     color-mix(in srgb, var(--color-bg) 55%, transparent) 70%,
