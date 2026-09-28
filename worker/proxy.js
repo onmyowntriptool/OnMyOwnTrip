@@ -16,10 +16,15 @@
 // con Capacitor (Android/iOS), no un navegador de verdad — sin esta línea
 // el chat, la audioguía y el control de licencias fallan solo dentro de
 // la app nativa, aunque en la web vayan bien.
+// En iOS el WebView de Capacitor no puede usar https:// para su esquema
+// local (WKWebView ya lo gestiona), así que la app de iPhone llega con
+// 'capacitor://localhost'. Ambos son orígenes de la app nativa.
+const NATIVE_ORIGINS = ['https://localhost', 'capacitor://localhost'];
+
 const ALLOWED_ORIGINS = [
   'https://onmyowntriptool.github.io',
   'http://localhost:8791',
-  'https://localhost'
+  ...NATIVE_ORIGINS
 ];
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
@@ -352,8 +357,14 @@ async function handleLicenseCheck(request, env, headers) {
   // (generado solo por la app, ver getDeviceCode en app.js) no tiene aún
   // entrada en LICENSES, se crea aquí una vez como "libre" -- las próximas
   // veces ya la encuentra checkLicenseValidity y no vuelve a escribir nada.
+  // Solo si tiene exactamente el formato de getDeviceCode: lo que alguien
+  // escriba a mano en la puerta de acceso de la app nativa (que sigue
+  // saliendo si el auto-login falla, p. ej. sin red) se comprueba igual que
+  // en la web. Sin este filtro, el robot de pruebas de Google Play creó
+  // claves "libre" con texto aleatorio (ncpoig, oocbgh) que además valían
+  // para entrar en la web.
   const origin = request.headers.get('Origin') || '';
-  if (origin === 'https://localhost') {
+  if (NATIVE_ORIGINS.includes(origin) && /^[A-HJKMNP-Z2-9]{6}$/.test(username)) {
     const existing = await env.LICENSES.get(username);
     if (existing == null) await env.LICENSES.put(username, 'libre');
   }
