@@ -22,6 +22,8 @@
 const NATIVE_ORIGINS = ['https://localhost', 'capacitor://localhost'];
 
 const ALLOWED_ORIGINS = [
+  'https://onmyowntrip.com',
+  'https://www.onmyowntrip.com',
   'https://onmyowntriptool.github.io',
   'http://localhost:8791',
   ...NATIVE_ORIGINS

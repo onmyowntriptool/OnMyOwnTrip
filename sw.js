@@ -16,7 +16,7 @@
 // Sube este número cuando cambies la lista SHELL_URLS de aquí abajo
 // (los propios archivos versionados con "?v=N" ya se cachean solos con
 // su nueva clave la primera vez que se piden, sin necesidad de tocar esto).
-const CACHE_VERSION = 'v271';
+const CACHE_VERSION = 'v272';
 const SHELL_CACHE = `omot-shell-${CACHE_VERSION}`;
 const IMAGE_CACHE = `omot-images-${CACHE_VERSION}`;
 // Contenido de ciudad servido por el Worker (POST /content, ver
@@ -41,7 +41,7 @@ const SHELL_URLS = [
   './app.js?v=261',
   './data/core.js?v=38',
   './styles.css?v=135',
-  './manifest.json?v=2',
+  './manifest.json?v=3',
   './privacidad.html',
   './assets/icons/icon-192.png?v=1',
   './assets/icons/icon-512.png?v=1',
@@ -62,7 +62,7 @@ self.addEventListener('install', (event) => {
       SHELL_URLS.map(async (url) => {
         try {
           const res = await fetch(url, { cache: 'no-cache' });
-          if (res.ok) await cache.put(url, res);
+          if (res.ok) await cache.put(url, await unredirect(res));
         } catch (_) { /* se cacheará más adelante vía el fetch handler */ }
       })
     );
@@ -93,6 +93,17 @@ self.addEventListener('activate', (event) => {
 
 const isImageRequest = (req) => req.destination === 'image';
 
+// Cloudflare Pages quita el ".html" de las URLs con una redirección 308
+// (/index.html -> /, /privacidad.html -> /privacidad). Una respuesta que
+// llegó tras una redirección queda marcada como "redirected", y si se sirve
+// desde caché a una NAVEGACIÓN el navegador la rechaza y muestra su página
+// de error (bug real: la app instalada, que arranca en index.html, no
+// abría). Se guarda y se sirve siempre una copia limpia, sin esa marca.
+const unredirect = async (res) => {
+  if (!res || !res.redirected) return res;
+  return new Response(await res.blob(), { status: res.status, statusText: res.statusText, headers: res.headers });
+};
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -104,7 +115,8 @@ self.addEventListener('fetch', (event) => {
   // cambio recién publicado se veía viejo hasta forzar un refresco duro
   // (Ctrl+F5). Dejarlas pasar sin tocar: la red decide, sin caché de este
   // Service Worker de por medio.
-  if (url.pathname.includes('/admin/') || url.pathname.endsWith('/patrocinador.html')) return;
+  // (En Cloudflare Pages la URL llega sin ".html": /patrocinador.)
+  if (url.pathname.includes('/admin/') || /\/patrocinador(\.html)?$/.test(url.pathname)) return;
   // La presentación web (presentacion/) tampoco es parte de la app: se
   // comparte por enlace y debe verse siempre la última versión publicada.
   if (url.pathname.includes('/presentacion/')) return;
@@ -192,9 +204,9 @@ self.addEventListener('fetch', (event) => {
   // cara a la siguiente visita.
   event.respondWith((async () => {
     const cache = await caches.open(SHELL_CACHE);
-    const cached = await cache.match(request);
-    const networkFetch = fetch(request).then((res) => {
-      if (res && res.ok) cache.put(request, res.clone());
+    const cached = await unredirect(await cache.match(request));
+    const networkFetch = fetch(request).then(async (res) => {
+      if (res && res.ok) await cache.put(request, await unredirect(res.clone()));
       return res;
     }).catch(() => null);
     return cached || (await networkFetch) || Response.error();
