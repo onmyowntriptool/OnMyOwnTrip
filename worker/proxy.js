@@ -171,22 +171,166 @@ export default {
       });
     }
 
-    const geminiRes = await fetch(GEMINI_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${env.GEMINI_API_KEY}`
-      },
-      body
-    });
-
-    const text = await geminiRes.text();
-    return new Response(text, {
-      status: geminiRes.status,
-      headers: { ...headers, 'Content-Type': 'application/json' }
-    });
+    return handleChatWithFallback(body, env, headers);
   }
 };
+
+// ---------------------------------------------------------------------------
+// Chat con respaldo: la app nunca debería caer al simulador local solo porque
+// Google esté saturado un momento. Orden de intentos:
+//   1. Gemini con el modelo que pide la app (gemini-3.6-flash).
+//   2. Si responde 429/5xx o no contesta: espera 1 s y reintenta el mismo.
+//   3. Si sigue fallando: otro modelo de Gemini más ligero (misma clave y
+//      saldo, pero Google reparte la capacidad por modelo).
+//   4. Último recurso: Claude Haiku (Anthropic), solo si existe el secret
+//      ANTHROPIC_API_KEY. La respuesta se devuelve en el mismo formato
+//      OpenAI que Gemini, así que la app no nota el cambio.
+// Un 400 de la petición original (fallo nuestro, no de capacidad) se devuelve
+// tal cual sin gastar intentos. Todo cabe en el tiempo que espera la app:
+// 90 s en el chat y 15 s en el reconocimiento de fotos (ver app.js).
+// La cabecera X-OMOT-Provider dice quién respondió, para depurar.
+// ---------------------------------------------------------------------------
+const GEMINI_FALLBACK_MODEL = 'gemini-3.5-flash-lite';
+const CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
+const CLAUDE_MODEL = 'claude-haiku-4-5';
+
+const isRetryable = (status) => status === 429 || status >= 500;
+
+async function fetchWithTimeout(url, init, ms) {
+  try {
+    return await fetch(url, { ...init, signal: AbortSignal.timeout(Math.max(1000, ms)) });
+  } catch (e) {
+    // Timeout o red caída: se trata como "saturado" para pasar al siguiente.
+    return new Response(JSON.stringify({ error: 'upstream unreachable', detail: String(e && e.message) }), { status: 503 });
+  }
+}
+
+async function handleChatWithFallback(rawBody, env, headers) {
+  const json = (text, status, provider) => new Response(text, {
+    status,
+    headers: { ...headers, 'Content-Type': 'application/json', 'X-OMOT-Provider': provider }
+  });
+
+  let payload;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch (e) {
+    return json(JSON.stringify({ error: 'invalid request body' }), 400, 'none');
+  }
+
+  const hasImage = Array.isArray(payload.messages) && payload.messages.some((m) =>
+    Array.isArray(m.content) && m.content.some((p) => p && p.type === 'image_url'));
+  const deadline = Date.now() + (hasImage ? 14000 : 85000);
+  const left = () => deadline - Date.now();
+
+  const callGemini = (model, cap) => fetchWithTimeout(GEMINI_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.GEMINI_API_KEY}` },
+    body: JSON.stringify({ ...payload, model })
+  }, Math.min(cap, left()));
+
+  // Reparto del tiempo: en fotos (15 s en la app) no hay margen para el
+  // reintento ni el modelo alternativo; se salta directo a Claude.
+  const plan = hasImage
+    ? [['gemini', payload.model, 7000]]
+    : [['gemini', payload.model, 30000], ['wait', 1000], ['gemini', payload.model, 20000], ['gemini', GEMINI_FALLBACK_MODEL, 18000]];
+
+  let last = null;
+  for (const [kind, arg, cap] of plan) {
+    if (kind === 'wait') { await new Promise((r) => setTimeout(r, arg)); continue; }
+    if (left() < 2000) break;
+    const res = await callGemini(arg, cap);
+    const text = await res.text();
+    if (res.ok) return json(text, res.status, `gemini:${arg}`);
+    last = { text, status: res.status };
+    console.warn(`[chat] gemini ${arg} -> ${res.status}: ${text.slice(0, 200)}`);
+    // Un 400 del modelo principal es un fallo de la petición: se devuelve
+    // tal cual. Del alternativo puede ser un parámetro que no admite: se
+    // sigue al siguiente proveedor.
+    if (!isRetryable(res.status) && arg === payload.model) return json(text, res.status, `gemini:${arg}`);
+  }
+
+  if (env.ANTHROPIC_API_KEY && left() > 2000) {
+    const res = await callClaude(payload, env, left());
+    if (res.ok) return json(JSON.stringify(res.body), 200, `claude:${CLAUDE_MODEL}`);
+    console.warn(`[chat] claude -> ${res.status}: ${res.detail}`);
+  }
+
+  // Todo falló: se devuelve el último error de Gemini (429/503), que la app
+  // ya sabe mostrar como "IA saturada" y cubrir con el simulador local.
+  return json(last ? last.text : JSON.stringify({ error: 'all providers failed' }), last ? last.status : 503, 'none');
+}
+
+// Traduce la petición OpenAI (chat.completions) de la app a la Messages API de
+// Anthropic y la respuesta de vuelta al formato OpenAI. Fetch directo porque
+// este Worker se edita y despliega pegándolo en el panel de Cloudflare, sin
+// empaquetador que pueda incluir el SDK.
+async function callClaude(payload, env, ms) {
+  const system = [];
+  const messages = [];
+  for (const m of payload.messages || []) {
+    if (m.role === 'system') {
+      system.push(typeof m.content === 'string' ? m.content : (m.content || []).map((p) => p.text || '').join('\n'));
+      continue;
+    }
+    const role = m.role === 'assistant' ? 'assistant' : 'user';
+    let content;
+    if (typeof m.content === 'string') {
+      content = m.content;
+    } else {
+      content = (m.content || []).map((p) => {
+        if (p.type === 'text') return { type: 'text', text: p.text };
+        if (p.type === 'image_url') {
+          const url = (p.image_url && p.image_url.url) || '';
+          const match = url.match(/^data:(image\/[a-z+]+);base64,(.*)$/i);
+          if (match) return { type: 'image', source: { type: 'base64', media_type: match[1], data: match[2] } };
+          return { type: 'image', source: { type: 'url', url } };
+        }
+        return null;
+      }).filter(Boolean);
+    }
+    messages.push({ role, content });
+  }
+
+  const res = await fetchWithTimeout(CLAUDE_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: Math.min(payload.max_tokens || payload.max_completion_tokens || 3500, 8000),
+      ...(system.length ? { system: system.join('\n\n') } : {}),
+      messages
+    })
+  }, ms);
+
+  if (!res.ok) return { ok: false, status: res.status, detail: (await res.text()).slice(0, 200) };
+  const data = await res.json();
+  const text = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
+  if (data.stop_reason === 'refusal' || !text) return { ok: false, status: 502, detail: `empty or refusal (${data.stop_reason})` };
+  return {
+    ok: true,
+    body: {
+      id: data.id,
+      object: 'chat.completion',
+      created: Math.floor(Date.now() / 1000),
+      model: data.model,
+      choices: [{
+        index: 0,
+        message: { role: 'assistant', content: text },
+        finish_reason: data.stop_reason === 'max_tokens' ? 'length' : 'stop'
+      }],
+      usage: {
+        prompt_tokens: data.usage ? data.usage.input_tokens : 0,
+        completion_tokens: data.usage ? data.usage.output_tokens : 0,
+        total_tokens: data.usage ? data.usage.input_tokens + data.usage.output_tokens : 0
+      }
+    }
+  };
+}
 
 // Audioguía en voz real (Google Cloud Text-to-Speech). Solo se usa para el
 // resumen narrado de cada POI (texto fijo, cacheado en el navegador de

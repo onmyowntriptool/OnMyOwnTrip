@@ -1408,6 +1408,10 @@
     callDidYouSaySomething: { es: { adult: 'Disculpa, ¿quieres decirme algo, o continúo?', kids: '¡Ups! ¿Querías decirme algo, o sigo? 👂' }, en: { adult: 'Sorry, did you want to say something, or should I continue?', kids: 'Oops! Did you want to tell me something, or should I keep going? 👂' } },
     callBye: { es: { adult: 'Hasta luego, que disfrutes la visita.', kids: '¡Hasta la próxima aventura! 👋' }, en: { adult: 'Goodbye, enjoy your visit.', kids: 'See you on the next adventure! 👋' } },
     callThinking: { es: { adult: 'Pensando…', kids: 'Pensando… 🤔' }, en: { adult: 'Thinking…', kids: 'Thinking… 🤔' } },
+    // Indicador del chat escrito (makeTypingEl): van seguidos de tres puntos
+    // animados, por eso sin "…" propio.
+    aiThinking: { es: { adult: 'Pensando', kids: 'Pensando' }, en: { adult: 'Thinking', kids: 'Thinking' } },
+    aiStillThinking: { es: { adult: 'Sigo pensando', kids: 'Sigo pensando' }, en: { adult: 'Still thinking', kids: 'Still thinking' } },
     callStillThinking: { es: { adult: 'Sigo pensando, un momento…', kids: 'Sigo pensando… dame un segundo más 🤔' }, en: { adult: 'Still thinking, one moment…', kids: 'Still thinking… give me one more second 🤔' } },
     callAnswerFailed: { es: { adult: 'No he podido generar una respuesta. ¿Lo intentamos de nuevo?', kids: '¡Ups! Mi cajita mágica está un poquito lenta. ¿Lo intentamos otra vez?' }, en: { adult: "I couldn't generate an answer. Shall we try again?", kids: 'Oops! My magic box is running a little slow. Shall we try again?' } },
     callSpeaking: { es: { adult: 'Respondiendo…', kids: 'Hablando…' }, en: { adult: 'Answering…', kids: 'Talking…' } },
@@ -6250,11 +6254,16 @@
     av.appendChild(avIcon);
     const b = document.createElement('div');
     b.className = 'ai-msg-bubble';
-    if (statusText) {
-      b.textContent = statusText;
-    } else {
-      b.innerHTML = `<span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span>`;
-    }
+    // Siempre texto + puntos titilando: antes, al pasar a statusText los
+    // puntos desaparecían y la espera volvía a parecer congelada.
+    const label = document.createElement('span');
+    label.className = 'ai-typing-label';
+    label.textContent = statusText || t('aiThinking');
+    const dots = document.createElement('span');
+    dots.className = 'ai-dots';
+    dots.innerHTML = '<span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span>';
+    b.appendChild(label);
+    b.appendChild(dots);
     wrap.appendChild(av);
     wrap.appendChild(b);
     return wrap;
@@ -6670,7 +6679,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     // fetchOpenAI) se siente como que la app se ha quedado colgada, ya
     // que los puntos por sí solos no comunican que sigue en marcha.
     const slowTimer = setTimeout(() => {
-      typingMsg.statusText = t('callStillThinking');
+      typingMsg.statusText = t('aiStillThinking');
       renderAiMessages();
     }, 6000);
 
