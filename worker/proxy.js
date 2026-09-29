@@ -181,7 +181,8 @@ export default {
 // ---------------------------------------------------------------------------
 // Chat con respaldo: la app nunca debería caer al simulador local solo porque
 // Google esté saturado un momento. Orden de intentos:
-//   1. Gemini con el modelo que pide la app (gemini-3.6-flash).
+//   1. Gemini con GEMINI_PRIMARY_MODEL (lo decide el Worker, no la app: así
+//      un cambio de modelo llega también a las apps ya instaladas).
 //   2. Si responde 429/5xx o no contesta: espera 1 s y reintenta el mismo.
 //   3. Si sigue fallando: otro modelo de Gemini más ligero (misma clave y
 //      saldo, pero Google reparte la capacidad por modelo).
@@ -193,6 +194,9 @@ export default {
 // 90 s en el chat y 15 s en el reconocimiento de fotos (ver app.js).
 // La cabecera X-OMOT-Provider dice quién respondió, para depurar.
 // ---------------------------------------------------------------------------
+// 3.8-flash: mismo precio que 3.6-flash y medido 2026-09-29 en 1,5-4 s frente
+// a 9-14 s del 3.6 (que la app pedía).
+const GEMINI_PRIMARY_MODEL = 'gemini-3.8-flash';
 const GEMINI_FALLBACK_MODEL = 'gemini-3.5-flash-lite';
 const CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
 const CLAUDE_MODEL = 'claude-haiku-4-5';
@@ -227,7 +231,7 @@ async function handleChatWithFallback(rawBody, env, headers) {
   const simulate = env.ADMIN_KEY && payload.adminKey === env.ADMIN_KEY ? payload.omotSimulate : null;
   delete payload.omotSimulate;
   delete payload.adminKey;
-  const simulatedDown = (model) => simulate === 'gemini-down' || (simulate === 'primary-down' && model === payload.model);
+  const simulatedDown = (model) => simulate === 'gemini-down' || (simulate === 'primary-down' && model === GEMINI_PRIMARY_MODEL);
 
   const hasImage = Array.isArray(payload.messages) && payload.messages.some((m) =>
     Array.isArray(m.content) && m.content.some((p) => p && p.type === 'image_url'));
@@ -243,8 +247,8 @@ async function handleChatWithFallback(rawBody, env, headers) {
   // Reparto del tiempo: en fotos (15 s en la app) no hay margen para el
   // reintento ni el modelo alternativo; se salta directo a Claude.
   const plan = hasImage
-    ? [['gemini', payload.model, 7000]]
-    : [['gemini', payload.model, 30000], ['wait', 1000], ['gemini', payload.model, 20000], ['gemini', GEMINI_FALLBACK_MODEL, 18000]];
+    ? [['gemini', GEMINI_PRIMARY_MODEL, 7000]]
+    : [['gemini', GEMINI_PRIMARY_MODEL, 30000], ['wait', 1000], ['gemini', GEMINI_PRIMARY_MODEL, 20000], ['gemini', GEMINI_FALLBACK_MODEL, 18000]];
 
   let last = null;
   for (const [kind, arg, cap] of plan) {
@@ -262,7 +266,7 @@ async function handleChatWithFallback(rawBody, env, headers) {
     // Un 400 del modelo principal es un fallo de la petición: se devuelve
     // tal cual. Del alternativo puede ser un parámetro que no admite: se
     // sigue al siguiente proveedor.
-    if (!isRetryable(res.status) && arg === payload.model) return json(text, res.status, `gemini:${arg}`);
+    if (!isRetryable(res.status) && arg === GEMINI_PRIMARY_MODEL) return json(text, res.status, `gemini:${arg}`);
   }
 
   if (env.ANTHROPIC_API_KEY && left() > 2000) {

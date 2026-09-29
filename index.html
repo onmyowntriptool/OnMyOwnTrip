@@ -814,7 +814,9 @@
       // modelos estables — de ahí los 503 "Service Unavailable" frecuentes
       // vistos en el panel de uso, incluso con cuota de pago de sobra.
       // "gemini-3.6-flash" es la versión estable equivalente.
-      model: 'gemini-3.6-flash',
+      // El Worker decide el modelo real (GEMINI_PRIMARY_MODEL en
+      // worker/proxy.js); este valor solo se usa sin Worker.
+      model: 'gemini-3.8-flash',
       maxTokens: 3500,
       extraBody: { reasoning_effort: 'low' }
     };
