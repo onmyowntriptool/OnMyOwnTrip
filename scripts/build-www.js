@@ -9,7 +9,7 @@ const ROOT = path.resolve(__dirname, '..');
 const WWW = path.join(ROOT, 'www');
 
 const EXCLUDE = new Set([
-  'node_modules', '.git', 'android', 'ios', 'www',
+  'node_modules', '.git', 'android', 'ios', 'www', 'site', 'portada',
   'documentacion', '.trae', 'worker', 'admin', 'scripts',
   'images_rewards', 'scratchpad', 'presentacion', '.claude', '.vscode', '.idea',
   'package.json', 'package-lock.json', '.gitignore', '.gitattributes',
