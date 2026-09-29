@@ -163,7 +163,7 @@ otra licencia y no vuelve a escribir nada.
 Esto **no debilita la protección de la web**: el `Origin` lo pone el propio
 navegador/WebView, no algo que la app pueda declarar en el cuerpo de la
 petición — un visitante de la web real siempre llega como
-`https://onmyowntriptool.github.io` (o el dominio que uses), nunca como
+`https://onmyowntrip.com` (o el dominio que uses), nunca como
 `https://localhost`, así que no hay forma de fingir ser la app nativa desde
 un navegador normal para saltarse la clave manual. La web sigue exactamente
 igual que antes: acceso solo a quien tú des de alta a mano.

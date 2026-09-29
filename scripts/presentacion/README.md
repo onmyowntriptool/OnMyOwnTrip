@@ -1,7 +1,7 @@
 # Presentación de OnMyOwnTrip
 
 Fuente de la presentación web publicada en
-<https://onmyowntriptool.github.io/OnMyOwnTrip/presentacion/>.
+<https://onmyowntrip.com/presentacion/>.
 
 ```
 scripts/presentacion/

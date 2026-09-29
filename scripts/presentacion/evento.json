@@ -56,7 +56,7 @@
 
   "descarga": {
     "_nota": "El QR se genera solo desde qr_url. Cuando las apps estén publicadas, rellena android/ios: se muestran como botones y el aviso de 'próximamente' desaparece.",
-    "qr_url": "https://onmyowntriptool.github.io/OnMyOwnTrip/",
+    "qr_url": "https://onmyowntrip.com/",
     "proximamente": "Próximamente disponible para Android y iPhone",
     "android": "",
     "ios": ""

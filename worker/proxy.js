@@ -24,6 +24,8 @@ const NATIVE_ORIGINS = ['https://localhost', 'capacitor://localhost'];
 const ALLOWED_ORIGINS = [
   'https://onmyowntrip.com',
   'https://www.onmyowntrip.com',
+  // Dominio anterior: se mantiene para quien siga entrando por la URL vieja
+  // mientras se le redirige (ver migrate-domain.js).
   'https://onmyowntriptool.github.io',
   'http://localhost:8791',
   ...NATIVE_ORIGINS
