@@ -2838,8 +2838,8 @@ html[data-mode="kids"] .bottom-sheet {
   font-weight: 500;
 }
 
-/* "Pensando" + tres puntos que titilan en secuencia, visibles durante toda
-   la espera (también cuando el texto pasa a "Sigo pensando"). */
+/* "Pensando" + puntos que se van sumando: . → .. → ... → . (en bucle),
+   visibles durante toda la espera (también con "Sigo pensando"). */
 .ai-msg.-typing .ai-msg-bubble {
   padding: 11px 14px;
   display: inline-flex;
@@ -2860,17 +2860,22 @@ html[data-mode="kids"] .bottom-sheet {
   height: 6px;
   border-radius: 50%;
   background: var(--color-primary);
-  opacity: 0.2;
-  animation: typingBlink 1.2s ease-in-out infinite;
 }
-.ai-msg.-typing .ai-dot:nth-child(2) { animation-delay: 0.2s; }
-.ai-msg.-typing .ai-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes typingBlink {
-  0%, 70%, 100% { opacity: 0.2; }
-  35% { opacity: 1; }
+/* El primero siempre visible; el segundo aparece al tercio del ciclo y el
+   tercero a los dos tercios; al reiniciar vuelven a quedar ocultos. */
+.ai-msg.-typing .ai-dot:nth-child(2) { animation: typingDot2 1.5s steps(1, end) infinite; }
+.ai-msg.-typing .ai-dot:nth-child(3) { animation: typingDot3 1.5s steps(1, end) infinite; }
+@keyframes typingDot2 {
+  0% { opacity: 0; }
+  33.33% { opacity: 1; }
+}
+@keyframes typingDot3 {
+  0% { opacity: 0; }
+  66.66% { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ai-msg.-typing .ai-dot { animation-duration: 2.4s; }
+  .ai-msg.-typing .ai-dot:nth-child(2),
+  .ai-msg.-typing .ai-dot:nth-child(3) { animation-duration: 3s; }
 }
 
 .ai-suggestions {
