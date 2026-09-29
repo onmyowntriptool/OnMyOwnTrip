@@ -30,6 +30,31 @@
   var NEW_BASE = '/app';
   var HASH_PREFIX = '#omot-migrate=';
   var KEY_PREFIX = 'omot_';
+  // Tope prudente para la URL (Safari es el más estricto de los navegadores
+  // habituales). Si no cabe todo: fuera primero el historial de chat, que es
+  // lo menos importante; si aun así no cabe, solo lo esencial (clave de
+  // acceso, código de dispositivo y avisos ya vistos).
+  var MAX_ENCODED = 60000;
+  var ESSENTIAL = /^omot_(license|device_code|tutorial|city_intro)/;
+
+  function fitData(data) {
+    var size = function (d) { return encodeURIComponent(JSON.stringify(d)).length; };
+    if (size(data) <= MAX_ENCODED) return data;
+    var slim = {};
+    for (var k in data) slim[k] = data[k];
+    try {
+      var st = JSON.parse(slim.omot_state_v1);
+      if (st && st.ai) {
+        st.ai.perPoiHistory = {};
+        st.ai.historyLang = {};
+        slim.omot_state_v1 = JSON.stringify(st);
+      }
+    } catch (_) { /* estado ilegible: se trata en el paso siguiente */ }
+    if (size(slim) <= MAX_ENCODED) return slim;
+    var essential = {};
+    for (var e in data) if (ESSENTIAL.test(e)) essential[e] = data[e];
+    return essential;
+  }
 
   try {
     if (location.hostname === OLD_HOST) {
@@ -50,7 +75,7 @@
       if (!path) path = '/';
 
       var target = NEW_ORIGIN + NEW_BASE + path + location.search;
-      if (count) target += HASH_PREFIX + encodeURIComponent(JSON.stringify(data));
+      if (count) target += HASH_PREFIX + encodeURIComponent(JSON.stringify(fitData(data)));
       else if (location.hash) target += location.hash;
 
       // Evita que el resto de la página (app.js, etc.) llegue a pintarse
