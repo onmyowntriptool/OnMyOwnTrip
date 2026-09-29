@@ -26,6 +26,8 @@
   var OLD_HOST = 'onmyowntriptool.github.io';
   var OLD_BASE = '/OnMyOwnTrip';
   var NEW_ORIGIN = 'https://onmyowntrip.com';
+  // La raíz de onmyowntrip.com es la portada; la app web vive en /app/.
+  var NEW_BASE = '/app';
   var HASH_PREFIX = '#omot-migrate=';
   var KEY_PREFIX = 'omot_';
 
@@ -47,7 +49,7 @@
       if (path.indexOf(OLD_BASE) === 0) path = path.slice(OLD_BASE.length);
       if (!path) path = '/';
 
-      var target = NEW_ORIGIN + path + location.search;
+      var target = NEW_ORIGIN + NEW_BASE + path + location.search;
       if (count) target += HASH_PREFIX + encodeURIComponent(JSON.stringify(data));
       else if (location.hash) target += location.hash;
 
