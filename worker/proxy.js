@@ -48,6 +48,9 @@ function corsHeaders(origin) {
     'Access-Control-Allow-Origin': allowed,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    // Deja leer desde el navegador quién respondió al chat (ver
+    // handleChatWithFallback y la pestaña IA del panel de admin).
+    'Access-Control-Expose-Headers': 'X-OMOT-Provider',
   };
 }
 
@@ -218,6 +221,14 @@ async function handleChatWithFallback(rawBody, env, headers) {
     return json(JSON.stringify({ error: 'invalid request body' }), 400, 'none');
   }
 
+  // Modo prueba del panel de admin: hace como si Gemini fallara para ver qué
+  // nivel del respaldo contesta. Solo con la clave de administrador; esos
+  // campos nunca se reenvían a ningún proveedor.
+  const simulate = env.ADMIN_KEY && payload.adminKey === env.ADMIN_KEY ? payload.omotSimulate : null;
+  delete payload.omotSimulate;
+  delete payload.adminKey;
+  const simulatedDown = (model) => simulate === 'gemini-down' || (simulate === 'primary-down' && model === payload.model);
+
   const hasImage = Array.isArray(payload.messages) && payload.messages.some((m) =>
     Array.isArray(m.content) && m.content.some((p) => p && p.type === 'image_url'));
   const deadline = Date.now() + (hasImage ? 14000 : 85000);
@@ -239,6 +250,10 @@ async function handleChatWithFallback(rawBody, env, headers) {
   for (const [kind, arg, cap] of plan) {
     if (kind === 'wait') { await new Promise((r) => setTimeout(r, arg)); continue; }
     if (left() < 2000) break;
+    if (simulatedDown(arg)) {
+      last = { text: JSON.stringify({ error: 'simulated outage' }), status: 503 };
+      continue;
+    }
     const res = await callGemini(arg, cap);
     const text = await res.text();
     if (res.ok) return json(text, res.status, `gemini:${arg}`);

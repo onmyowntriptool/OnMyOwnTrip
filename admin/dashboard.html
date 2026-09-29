@@ -166,6 +166,7 @@
       <button type="button" class="tab-btn" id="tabBtnSponsors" role="tab" aria-selected="false">Patrocinios</button>
       <button type="button" class="tab-btn" id="tabBtnManage" role="tab" aria-selected="false">Gestión</button>
       <button type="button" class="tab-btn" id="tabBtnPremium" role="tab" aria-selected="false">Acceso premium</button>
+      <button type="button" class="tab-btn" id="tabBtnAi" role="tab" aria-selected="false">IA</button>
     </div>
 
     <div class="tab-panel" id="tabAccess" role="tabpanel">
@@ -411,6 +412,26 @@
         </div>
       </section>
     </div>
+
+    <div class="tab-panel" id="tabAi" role="tabpanel" hidden>
+      <section>
+        <h2>Probar el respaldo de la IA</h2>
+        <p class="hint" style="margin-top:-6px">Manda una pregunta real al chat, igual que la app. Los modos "simular" hacen como si Google fallara (solo para esta prueba, protegida con tu clave) para ver qué nivel del respaldo contesta: Gemini &rarr; reintento &rarr; modelo ligero de Gemini &rarr; Claude.</p>
+        <div class="form-card">
+          <div class="form-actions" style="flex-wrap:wrap;gap:10px">
+            <button type="button" class="refresh-btn" data-ai-test="">Normal</button>
+            <button type="button" class="refresh-btn" data-ai-test="primary-down">Simular Gemini principal caído</button>
+            <button type="button" class="refresh-btn" data-ai-test="gemini-down">Simular Google caído</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="aiTestTable">
+            <thead><tr><th>Prueba</th><th>Respondió</th><th>Tiempo</th><th>Respuesta</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
   </div>
 
 <script>
@@ -590,11 +611,16 @@
   const tabSponsors = $('#tabSponsors');
   const tabManage = $('#tabManage');
   const tabPremium = $('#tabPremium');
+  const tabBtnAi = $('#tabBtnAi');
+  const tabAi = $('#tabAi');
   const showTab = (name) => {
     tabAccess.hidden = name !== 'access';
     tabSponsors.hidden = name !== 'sponsors';
     tabManage.hidden = name !== 'manage';
     tabPremium.hidden = name !== 'premium';
+    tabAi.hidden = name !== 'ai';
+    tabBtnAi.classList.toggle('-active', name === 'ai');
+    tabBtnAi.setAttribute('aria-selected', String(name === 'ai'));
     tabBtnAccess.classList.toggle('-active', name === 'access');
     tabBtnAccess.setAttribute('aria-selected', String(name === 'access'));
     tabBtnSponsors.classList.toggle('-active', name === 'sponsors');
@@ -616,6 +642,57 @@
   tabBtnSponsors.addEventListener('click', () => showTab('sponsors'));
   tabBtnManage.addEventListener('click', () => showTab('manage'));
   tabBtnPremium.addEventListener('click', () => showTab('premium'));
+  tabBtnAi.addEventListener('click', () => showTab('ai'));
+
+  // ============================================================
+  // Prueba del respaldo de la IA (ver handleChatWithFallback en
+  // worker/proxy.js). La simulación de fallos solo la acepta el Worker
+  // si va con la clave de administrador.
+  // ============================================================
+  const AI_TEST_LABELS = { '': 'Normal', 'primary-down': 'Gemini principal caído', 'gemini-down': 'Google caído' };
+  const AI_PROVIDER_LABELS = {
+    'gemini:gemini-3.6-flash': 'Gemini (principal)',
+    'gemini:gemini-3.5-flash-lite': 'Gemini ligero (respaldo 2)',
+    'claude:claude-haiku-4-5': 'Claude Haiku (respaldo 3)',
+    'none': 'Nadie (la app mostraría el aviso de IA saturada)'
+  };
+  const runAiTest = async (mode, btn) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${AI_TEST_LABELS[mode]}</td><td>Pensando…</td><td></td><td></td>`;
+    $('#aiTestTable tbody').prepend(row);
+    document.querySelectorAll('[data-ai-test]').forEach((b) => { b.disabled = true; });
+    const t0 = performance.now();
+    try {
+      const res = await fetch(`${WORKER_BASE}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer proxy' },
+        body: JSON.stringify({
+          model: 'gemini-3.6-flash',
+          max_tokens: 800,
+          reasoning_effort: 'low',
+          messages: [
+            { role: 'system', content: 'Eres un guía turístico. Responde en una sola frase corta.' },
+            { role: 'user', content: 'Dime un dato curioso de la Sagrada Família.' }
+          ],
+          ...(mode ? { omotSimulate: mode, adminKey } : {})
+        })
+      });
+      const provider = res.headers.get('X-OMOT-Provider') || '(Worker sin actualizar)';
+      const data = await res.json().catch(() => ({}));
+      const text = data?.choices?.[0]?.message?.content || JSON.stringify(data).slice(0, 160);
+      const cells = row.querySelectorAll('td');
+      cells[1].textContent = `${AI_PROVIDER_LABELS[provider] || provider} · HTTP ${res.status}`;
+      cells[2].textContent = `${((performance.now() - t0) / 1000).toFixed(1)} s`;
+      cells[3].textContent = text;
+    } catch (e) {
+      row.querySelectorAll('td')[1].textContent = `Error: ${e.message}`;
+    } finally {
+      document.querySelectorAll('[data-ai-test]').forEach((b) => { b.disabled = false; });
+    }
+  };
+  document.querySelectorAll('[data-ai-test]').forEach((b) => {
+    b.addEventListener('click', () => runAiTest(b.dataset.aiTest, b));
+  });
 
   // ============================================================
   // Gestión de patrocinadores (KV "SPONSORS", ver worker/README.md).
