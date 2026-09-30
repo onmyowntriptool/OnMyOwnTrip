@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Encuesta · OnMyOwnTrip</title>
+<meta name="description" content="Cuéntanos qué te ha parecido OnMyOwnTrip. Encuesta anónima de 2 minutos.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0B1426">
+<link rel="icon" type="image/png" href="/img/icono.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!--
+  Encuesta anónima para testers. Las preguntas NO están aquí: las da el
+  Worker (SURVEY en worker/proxy.js), que también valida y guarda cada
+  respuesta; los resultados se ven en el panel, pestaña "Encuesta".
+  Una respuesta por persona: se guarda en este navegador un código
+  aleatorio (no identifica a nadie) que el Worker usa para rechazar un
+  segundo envío.
+-->
+<style>
+  :root {
+    --bg: #0B1426;
+    --surface: rgba(255, 255, 255, 0.045);
+    --surface-2: rgba(255, 255, 255, 0.08);
+    --line: rgba(255, 255, 255, 0.10);
+    --text: #EAF0FA;
+    --muted: #9DB0CB;
+    --teal: #2DD4BF;
+    --blue: #3B82F6;
+    --amber: #F5B942;
+    --danger: #FCA5A5;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 400 16px/1.55 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: Sora, Inter, system-ui, sans-serif; letter-spacing: -0.02em; margin: 0; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 32px 16px calc(120px + env(safe-area-inset-bottom, 0px)); }
+  .brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-weight: 600; margin-bottom: 28px; }
+  .brand img { width: 32px; height: 32px; border-radius: 9px; }
+  h1 { font-size: clamp(26px, 6vw, 34px); line-height: 1.15; margin-bottom: 10px; }
+  .intro { color: var(--muted); margin: 0 0 28px; }
+  .section { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--teal); margin: 34px 0 12px; }
+  .note { background: rgba(45, 212, 191, .08); border: 1px solid rgba(45, 212, 191, .28); border-radius: 14px; padding: 14px 16px; color: var(--text); font-size: 15px; margin: 0 0 14px; }
+  .q { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; margin-bottom: 14px; }
+  .q.-missing { border-color: var(--danger); }
+  .q h3 { font-size: 17px; line-height: 1.35; margin-bottom: 4px; }
+  .q .kind { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opt { position: relative; }
+  .opt input { position: absolute; opacity: 0; pointer-events: none; }
+  .opt span {
+    display: inline-flex; align-items: center; min-height: 42px; padding: 8px 14px;
+    border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2);
+    color: var(--text); font-size: 15px; cursor: pointer; user-select: none;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .opt input:checked + span { background: var(--teal); border-color: var(--teal); color: #042F2A; font-weight: 600; }
+  .opt input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 2px; }
+  textarea {
+    width: 100%; min-height: 110px; resize: vertical; padding: 12px 14px; border-radius: 14px;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: inherit;
+  }
+  textarea:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .bar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: rgba(11, 20, 38, .92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .bar-in { max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 14px; }
+  .progress { flex: 1; font-size: 14px; color: var(--muted); }
+  .progress b { color: var(--text); }
+  .track { height: 5px; border-radius: 999px; background: var(--surface-2); margin-top: 6px; overflow: hidden; }
+  .track i { display: block; height: 100%; width: 0; background: var(--teal); transition: width .2s ease; }
+  .btn {
+    border: 0; border-radius: 999px; padding: 0 22px; height: 48px; font: 600 16px Inter, sans-serif;
+    background: var(--amber); color: #1A1300; cursor: pointer; white-space: nowrap;
+  }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .msg { color: var(--danger); font-size: 14px; margin: 8px 0 0; }
+  .center { text-align: center; padding-top: 12vh; }
+  .center h1 { margin-bottom: 12px; }
+  .center p { color: var(--muted); }
+  .center a { color: var(--teal); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <a class="brand" href="/"><img src="/img/icono.png" alt=""> OnMyOwnTrip</a>
+
+  <div id="loading"><p class="intro">Cargando la encuesta…</p></div>
+
+  <div id="failed" class="center" hidden>
+    <h1>No se ha podido cargar</h1>
+    <p>Revisa tu conexión y vuelve a intentarlo en un momento.</p>
+  </div>
+
+  <div id="done" class="center" hidden>
+    <h1>¡Gracias!</h1>
+    <p id="doneText">Tu respuesta nos ayuda mucho a mejorar la app.</p>
+    <p><a href="/">Volver a onmyowntrip.com</a></p>
+  </div>
+
+  <form id="form" hidden novalidate>
+    <h1 id="title"></h1>
+    <p class="intro" id="intro"></p>
+    <div id="questions"></div>
+  </form>
+</main>
+
+<div class="bar" id="bar" hidden>
+  <div class="bar-in">
+    <div class="progress"><span id="progressText"></span><div class="track"><i id="progressFill"></i></div></div>
+    <button class="btn" id="send" type="button">Enviar</button>
+  </div>
+  <p class="msg" id="error" hidden></p>
+</div>
+
+<script>
+  var WORKER = 'https://damp-unit-7cc9onmyowntrip-proxy.davidg-henriquez.workers.dev';
+  // Solo para pruebas en local: ?worker=http://localhost:PUERTO
+  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+    var w = new URLSearchParams(location.search).get('worker');
+    if (w) WORKER = w;
+  }
+  var $ = function (id) { return document.getElementById(id); };
+  var survey = null;
+  var storeKey = null;
+
+  function readStore() { try { return JSON.parse(localStorage.getItem(storeKey) || 'null') || {}; } catch (e) { return {}; } }
+  function writeStore(v) { try { localStorage.setItem(storeKey, JSON.stringify(v)); } catch (e) {} }
+  function newToken() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  }
+  function post(path, body) {
+    return fetch(WORKER + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })
+      .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+  }
+  function showDone(text) {
+    $('form').hidden = true; $('bar').hidden = true; $('loading').hidden = true;
+    if (text) $('doneText').textContent = text;
+    $('done').hidden = false;
+    window.scrollTo(0, 0);
+  }
+  function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  function render() {
+    $('title').textContent = survey.title;
+    $('intro').textContent = survey.intro;
+    var html = '';
+    survey.questions.forEach(function (q) {
+      if (q.section) html += '<h2 class="section">' + esc(q.section) + '</h2>';
+      if (q.note) html += '<p class="note">' + esc(q.note) + '</p>';
+      html += '<div class="q" data-q="' + q.id + '" role="group" aria-labelledby="t-' + q.id + '"><h3 id="t-' + q.id + '">' + esc(q.text) + '</h3>';
+      html += '<p class="kind">' + (q.type === 'multi' ? 'Puedes marcar varias' : q.type === 'text' ? '' : 'Marca una') + '</p>';
+      if (q.type === 'text') {
+        html += '<textarea name="' + q.id + '" maxlength="1000" placeholder="Escribe aquí si quieres"></textarea>';
+      } else {
+        html += '<div class="opts">' + q.options.map(function (o) {
+          return '<label class="opt"><input type="' + (q.type === 'multi' ? 'checkbox' : 'radio') + '" name="' + q.id + '" value="' + esc(o[0]) + '"><span>' + esc(o[1]) + '</span></label>';
+        }).join('') + '</div>';
+      }
+      html += '</div>';
+    });
+    $('questions').innerHTML = html;
+    $('form').addEventListener('change', updateProgress);
+    $('loading').hidden = true; $('form').hidden = false; $('bar').hidden = false;
+    updateProgress();
+  }
+
+  function collect() {
+    var answers = {}, missing = [];
+    survey.questions.forEach(function (q) {
+      if (q.type === 'text') {
+        var t = document.querySelector('textarea[name="' + q.id + '"]').value.trim();
+        if (t) answers[q.id] = t;
+      } else if (q.type === 'multi') {
+        var vals = Array.prototype.map.call(document.querySelectorAll('input[name="' + q.id + '"]:checked'), function (i) { return i.value; });
+        if (vals.length) answers[q.id] = vals;
+      } else {
+        var sel = document.querySelector('input[name="' + q.id + '"]:checked');
+        if (sel) answers[q.id] = sel.value;
+      }
+      if (!q.optional && answers[q.id] === undefined) missing.push(q.id);
+    });
+    return { answers: answers, missing: missing };
+  }
+
+  function updateProgress() {
+    var required = survey.questions.filter(function (q) { return !q.optional; });
+    var c = collect();
+    var answered = required.length - c.missing.length;
+    $('progressText').innerHTML = '<b>' + answered + '</b> de ' + required.length + ' respondidas';
+    $('progressFill').style.width = (answered / required.length * 100) + '%';
+    document.querySelectorAll('.q.-missing').forEach(function (el) {
+      if (c.missing.indexOf(el.dataset.q) < 0) el.classList.remove('-missing');
+    });
+  }
+
+  $('send').addEventListener('click', function () {
+    var c = collect();
+    $('error').hidden = true;
+    if (c.missing.length) {
+      c.missing.forEach(function (id) { document.querySelector('.q[data-q="' + id + '"]').classList.add('-missing'); });
+      var first = document.querySelector('.q[data-q="' + c.missing[0] + '"]');
+      first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      $('error').textContent = 'Faltan ' + c.missing.length + ' preguntas por responder (marcadas en rojo).';
+      $('error').hidden = false;
+      return;
+    }
+    var store = readStore();
+    if (!store.token) { store.token = newToken(); writeStore(store); }
+    var btn = $('send');
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    post('/survey/submit', { token: store.token, answers: c.answers }).then(function (r) {
+      if (r.ok || r.reason === 'already') {
+        store.done = true; writeStore(store);
+        showDone(r.ok ? null : 'Ya habías respondido esta encuesta desde este dispositivo. ¡Gracias!');
+        return;
+      }
+      btn.disabled = false; btn.textContent = 'Enviar';
+      $('error').textContent = r.reason === 'limit'
+        ? 'Se han enviado muchas respuestas desde esta conexión hoy. Inténtalo mañana.'
+        : 'No se ha podido enviar. Revisa tu conexión e inténtalo de nuevo.';
+      $('error').hidden = false;
+    }).catch(function () {
+      btn.disabled = false; btn.textContent = 'Enviar';
+      $('error').textContent = 'No se ha podido enviar. Revisa tu conexión e inténtalo de nuevo.';
+      $('error').hidden = false;
+    });
+  });
+
+  post('/survey/questions').then(function (r) {
+    if (!r.ok || !r.survey) throw new Error('sin encuesta');
+    survey = r.survey;
+    storeKey = 'omot_survey_' + survey.id;
+    if (readStore().done) { showDone('Ya respondiste esta encuesta. ¡Gracias por ayudarnos!'); return; }
+    render();
+  }).catch(function () {
+    $('loading').hidden = true; $('failed').hidden = false;
+  });
+</script>
+</body>
+</html>

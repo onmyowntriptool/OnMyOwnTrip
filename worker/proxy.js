@@ -110,8 +110,12 @@ export default {
     // Interruptor a distancia de la oferta Premium del chat (ver
     // getChatUpsellEnabled): el panel lo lee y lo cambia desde aquí.
     const isPremiumAdminConfig = url.pathname.endsWith('/premium/admin/config');
+    // Encuesta anónima de onmyowntrip.com/encuesta (ver SURVEY más abajo).
+    const isSurveyQuestions = url.pathname.endsWith('/survey/questions');
+    const isSurveySubmit = url.pathname.endsWith('/survey/submit');
+    const isSurveyResults = url.pathname.endsWith('/survey/admin/results');
 
-    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify && !isPremiumGrant && !isPremiumRevoke && !isPremiumAdminList && !isPremiumAdminConfig)) {
+    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify && !isPremiumGrant && !isPremiumRevoke && !isPremiumAdminList && !isPremiumAdminConfig && !isSurveyQuestions && !isSurveySubmit && !isSurveyResults)) {
       return new Response(JSON.stringify({ error: 'not found' }), {
         status: 404,
         headers: { ...headers, 'Content-Type': 'application/json' }
@@ -149,6 +153,9 @@ export default {
     if (isPremiumRevoke) return handlePremiumRevoke(request, env, headers);
     if (isPremiumAdminList) return handlePremiumAdminList(request, env, headers);
     if (isPremiumAdminConfig) return handlePremiumAdminConfig(request, env, headers);
+    if (isSurveyQuestions) return jsonResponse({ ok: true, survey: SURVEY }, 200, headers);
+    if (isSurveySubmit) return handleSurveySubmit(request, env, headers);
+    if (isSurveyResults) return handleSurveyResults(request, env, headers);
 
     // Rate limiting por IP (binding "RATE_LIMITER", configurado en el panel
     // de Cloudflare → pestaña "Bindings" → Add binding → Rate Limiting).
@@ -1450,6 +1457,135 @@ async function getAppVersionStats(env) {
     cursor = page.list_complete ? null : page.cursor;
   } while (cursor);
   return Object.values(groups).sort((a, b) => a.platform.localeCompare(b.platform) || Number(b.version) - Number(a.version));
+}
+
+// ============================================================
+// ENCUESTA ANÓNIMA (página onmyowntrip.com/encuesta, resultados en el
+// panel, pestaña "Encuesta"). Las preguntas viven aquí, en un único sitio:
+// la página las pide a /survey/questions, el envío se valida contra ellas y
+// el panel las usa para pintar los resultados. Para una encuesta nueva,
+// cambia SURVEY.id (los resultados anteriores quedan guardados aparte).
+//
+// Anónima: la respuesta se guarda con una clave aleatoria y solo el día,
+// sin usuario, IP ni hora. Una por persona: el navegador manda un código
+// aleatorio propio (no identifica a nadie) y aquí se guarda solo su hash,
+// en otra clave sin relación con la respuesta; un segundo envío con el
+// mismo código se rechaza. Además, como mucho 5 respuestas al día por
+// conexión (hash de la IP, caduca en 2 días), para frenar abusos sin
+// bloquear a varias personas que comparten wifi. Todo en ACCESS_LOG con
+// prefijo "survey:" (el botón "Borrar historial" del panel no lo toca).
+// ============================================================
+const jsonResponse = (body, status, headers) => new Response(JSON.stringify(body), {
+  status, headers: { ...headers, 'Content-Type': 'application/json' }
+});
+const sha256Hex = async (text) => {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+};
+
+const SURVEY = {
+  id: 'beta-2026-10',
+  title: '¿Qué te ha parecido OnMyOwnTrip?',
+  intro: 'Son 12 preguntas de un clic, unos 2 minutos. Es anónima: no guardamos tu nombre ni nada que te identifique.',
+  questions: [
+    { id: 'edad', section: 'Sobre ti', type: 'single', text: '¿Qué edad tienes?', options: [
+      ['m25', 'Menos de 25'], ['25-34', '25–34'], ['35-44', '35–44'], ['45-54', '45–54'], ['55-64', '55–64'], ['65', '65 o más']] },
+    { id: 'viaje', type: 'multi', text: '¿Cómo sueles viajar?', options: [
+      ['solo', 'Solo/a'], ['pareja', 'En pareja'], ['ninos', 'Con niños'], ['amigos', 'Con amigos'], ['trabajo', 'En viajes de trabajo']] },
+    { id: 'usado', section: 'Lo que has probado', type: 'multi', text: '¿Qué has usado de la app?', options: [
+      ['mapa', 'Mapa y rutas'], ['audio', 'Audioguía narrada'], ['preguntas', 'Preguntas al guía IA'], ['llamada', 'Llamada de voz con el guía'],
+      ['camara', 'Apunta y descubre (cámara)'], ['ninos', 'Modo niños y medallas'], ['fuentes', 'Fuentes y aseos'], ['buscar', 'Buscar un Punto de interés']] },
+    { id: 'favorito', type: 'single', text: '¿Qué es lo que más te ha gustado?', options: [
+      ['audio', 'La audioguía'], ['preguntas', 'Poder preguntar al guía IA'], ['libre', 'Explorar libre, sin ruta fija'],
+      ['camara', 'La cámara que reconoce lugares'], ['ninos', 'El modo niños'], ['gratis', 'Que sea gratis']] },
+    { id: 'utilidad', type: 'single', text: '¿Te ha servido para conocer mejor la ciudad?', options: [
+      ['5', 'Mucho'], ['4', 'Bastante'], ['3', 'Algo'], ['2', 'Poco'], ['1', 'Nada']] },
+    { id: 'facilidad', type: 'single', text: '¿Cómo de fácil te ha resultado usarla?', options: [
+      ['5', 'Muy fácil'], ['4', 'Fácil'], ['3', 'Normal'], ['2', 'Difícil'], ['1', 'Muy difícil']] },
+    { id: 'descarga', section: 'Descarga y recomendación', type: 'single', text: '¿Te la descargarías para tu próximo viaje?', options: [
+      ['5', 'Sí, seguro'], ['4', 'Probablemente'], ['3', 'No lo sé'], ['2', 'Probablemente no'], ['1', 'No']] },
+    { id: 'recomienda', type: 'single', text: '¿La recomendarías a un amigo?', options: [
+      ['5', 'Seguro que sí'], ['4', 'Probablemente'], ['3', 'No lo sé'], ['2', 'Probablemente no'], ['1', 'No']] },
+    { id: 'suficientes', section: 'Premium',
+      note: 'La app es gratis, con 3 preguntas al guía IA en cada Punto de interés al día. Premium, por ciudad y con un pago único, da preguntas ilimitadas y quita la publicidad.',
+      type: 'single', text: '¿Te parecen suficientes 3 preguntas gratis por Punto de interés?', options: [
+        ['sobran', 'Sí, me sobran'], ['justas', 'Justas'], ['corto', 'Me quedo corto/a']] },
+    { id: 'pagaria', type: 'single', text: '¿Pagarías por Premium?', options: [
+      ['si', 'Sí'], ['precio', 'Depende del precio'], ['especial', 'Solo en un viaje largo o especial'], ['no', 'No, me basta con lo gratis']] },
+    { id: 'precio_ciudad', type: 'single', text: '¿Cuánto pagarías por Premium en UNA ciudad? (pago único)', options: [
+      ['0', 'Nada'], ['0.99', '0,99 €'], ['1.99', '1,99 €'], ['2.99', '2,99 €'], ['3.99', '3,99 €'], ['4.99', '4,99 € o más']] },
+    { id: 'precio_todas', type: 'single', text: '¿Y por Premium en TODAS las ciudades? (pago único)', options: [
+      ['0', 'Nada'], ['4.99', 'Hasta 4,99 €'], ['5-9', '5–9,99 €'], ['10-14', '10–14,99 €'], ['15-19', '15–19,99 €'], ['20', '20 € o más']] },
+    { id: 'comentario', section: 'Para terminar', type: 'text', optional: true, text: '¿Algo que quieras decirnos? (opcional)' }
+  ]
+};
+
+async function handleSurveySubmit(request, env, headers) {
+  if (!env.ACCESS_LOG) return jsonResponse({ ok: false, reason: 'not-configured' }, 501, headers);
+  let payload;
+  try { payload = await request.json(); } catch (_) { return jsonResponse({ ok: false, reason: 'bad-request' }, 400, headers); }
+  const token = String((payload && payload.token) || '');
+  const answers = (payload && payload.answers) || {};
+  if (!/^[a-zA-Z0-9-]{20,64}$/.test(token) || typeof answers !== 'object') {
+    return jsonResponse({ ok: false, reason: 'bad-request' }, 400, headers);
+  }
+
+  // Solo se guardan respuestas a preguntas conocidas y con opciones válidas.
+  const clean = {};
+  for (const q of SURVEY.questions) {
+    const a = answers[q.id];
+    const valid = q.options ? q.options.map((o) => o[0]) : null;
+    if (q.type === 'single' && valid.includes(a)) clean[q.id] = a;
+    else if (q.type === 'multi' && Array.isArray(a)) {
+      const picked = [...new Set(a.filter((v) => valid.includes(v)))];
+      if (picked.length) clean[q.id] = picked;
+    } else if (q.type === 'text' && typeof a === 'string' && a.trim()) clean[q.id] = a.trim().slice(0, 1000);
+    if (!q.optional && clean[q.id] === undefined) return jsonResponse({ ok: false, reason: 'incomplete', question: q.id }, 400, headers);
+  }
+
+  const prefix = `survey:${SURVEY.id}`;
+  const tokenKey = `${prefix}:tok:${await sha256Hex(token)}`;
+  if (await env.ACCESS_LOG.get(tokenKey)) return jsonResponse({ ok: false, reason: 'already' }, 409, headers);
+
+  const day = new Date().toISOString().slice(0, 10);
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const ipKey = `${prefix}:ip:${await sha256Hex(`${env.ADMIN_KEY || ''}|${ip}`)}:${day}`;
+  const ipCount = parseInt(await env.ACCESS_LOG.get(ipKey), 10) || 0;
+  if (ipCount >= 5) return jsonResponse({ ok: false, reason: 'limit' }, 429, headers);
+
+  await env.ACCESS_LOG.put(`${prefix}:resp:${crypto.randomUUID()}`, JSON.stringify({ a: clean, d: day }));
+  await env.ACCESS_LOG.put(tokenKey, '1');
+  await env.ACCESS_LOG.put(ipKey, String(ipCount + 1), { expirationTtl: 172800 });
+  return jsonResponse({ ok: true }, 200, headers);
+}
+
+// Resultados para el panel: recuento por opción de cada pregunta, total de
+// respuestas y los comentarios libres (con su día, sin nada más).
+async function handleSurveyResults(request, env, headers) {
+  const { error } = await checkAdminAccess(request, env, headers);
+  if (error) return error;
+  const prefix = `survey:${SURVEY.id}:resp:`;
+  const keys = [];
+  let cursor;
+  do {
+    const page = await env.ACCESS_LOG.list({ prefix, cursor, limit: 1000 });
+    keys.push(...page.keys.map((k) => k.name));
+    cursor = page.list_complete ? null : page.cursor;
+  } while (cursor);
+  const counts = {};
+  const comments = [];
+  SURVEY.questions.forEach((q) => { if (q.options) counts[q.id] = Object.fromEntries(q.options.map((o) => [o[0], 0])); });
+  const rows = await Promise.all(keys.map(async (k) => { try { return JSON.parse(await env.ACCESS_LOG.get(k)); } catch (_) { return null; } }));
+  rows.filter(Boolean).forEach(({ a, d }) => {
+    SURVEY.questions.forEach((q) => {
+      const v = a[q.id];
+      if (q.type === 'single' && v in (counts[q.id] || {})) counts[q.id][v] += 1;
+      if (q.type === 'multi' && Array.isArray(v)) v.forEach((x) => { if (x in counts[q.id]) counts[q.id][x] += 1; });
+      if (q.type === 'text' && v) comments.push({ text: v, day: d });
+    });
+  });
+  comments.sort((x, y) => (x.day < y.day ? 1 : -1));
+  return jsonResponse({ ok: true, survey: SURVEY, total: rows.filter(Boolean).length, counts, comments }, 200, headers);
 }
 
 // Convierte una cadena base64 estándar en base64url (sin relleno) — formato

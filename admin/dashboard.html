@@ -79,10 +79,30 @@
 
   .empty { color: var(--text-soft); font-size: 13px; padding: 18px; text-align: center; }
 
+  /* Resultados de la encuesta (pestaña Encuesta) */
+  .survey-total { font-size: 15px; margin: 0 0 8px; }
+  .survey-total b { font-size: 22px; color: var(--accent); }
+  .survey-section { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 24px 0 10px; }
+  .survey-q { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+  .survey-q h4 { margin: 0 0 10px; font-size: 14px; }
+  .survey-q h4 small { color: var(--text-soft); font-weight: 400; }
+  .survey-row { display: grid; grid-template-columns: minmax(0, 11rem) 1fr 5.5rem; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; }
+  .survey-label { overflow-wrap: anywhere; }
+  .survey-bar { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .survey-bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+  .survey-num { text-align: right; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+  .survey-comment { margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 13px; line-height: 1.5; }
+  .survey-comment small { display: block; color: var(--text-soft); margin-top: 4px; }
+  @media (max-width: 520px) { .survey-row { grid-template-columns: 1fr 4.5rem; } .survey-bar { grid-column: 1 / -1; grid-row: 2; } }
+
   /* Pestañas: separan la revisión de accesos/licencias del ranking de
      patrocinios en vez de apilarlas una debajo de otra -- antes había que
      bajar hasta el final para ver el ranking. */
-  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+  /* Con seis pestañas ya no caben en un móvil: la fila se desliza en
+     horizontal en vez de salirse de la pantalla. */
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn { flex: none; white-space: nowrap; }
   .tab-btn {
     border: 0; background: none; color: var(--text-soft); font-weight: 700; font-size: 13.5px;
     padding: 10px 16px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
@@ -168,6 +188,7 @@
       <button type="button" class="tab-btn" id="tabBtnManage" role="tab" aria-selected="false">Gestión</button>
       <button type="button" class="tab-btn" id="tabBtnPremium" role="tab" aria-selected="false">Acceso premium</button>
       <button type="button" class="tab-btn" id="tabBtnAi" role="tab" aria-selected="false">IA</button>
+      <button type="button" class="tab-btn" id="tabBtnSurvey" role="tab" aria-selected="false">Encuesta</button>
     </div>
 
     <div class="tab-panel" id="tabAccess" role="tabpanel">
@@ -457,6 +478,20 @@
       </section>
     </div>
 
+    <!-- Resultados de la encuesta anónima de onmyowntrip.com/encuesta (ver
+         SURVEY y handleSurveyResults en worker/proxy.js). -->
+    <div class="tab-panel" id="tabSurvey" role="tabpanel" hidden>
+      <section>
+        <h2>Encuesta a testers</h2>
+        <p class="hint" style="margin-top:-6px">Enlace para compartir: <a href="https://onmyowntrip.com/encuesta/" target="_blank" rel="noopener" style="color:var(--accent)">onmyowntrip.com/encuesta</a>. Respuestas anónimas, una por dispositivo. En las preguntas de varias casillas, los porcentajes no suman 100.</p>
+        <div class="form-actions" style="margin-bottom:14px">
+          <button type="button" class="refresh-btn" id="surveyRefresh">Actualizar</button>
+          <span class="error" id="surveyError" hidden></span>
+        </div>
+        <div id="surveyResults"><p class="empty">Cargando…</p></div>
+      </section>
+    </div>
+
     <div class="tab-panel" id="tabAi" role="tabpanel" hidden>
       <section>
         <h2>Probar el respaldo de la IA</h2>
@@ -482,7 +517,10 @@
   // Mismo Worker que ya usa la app para IA y licencias (ver window.LLM_CONFIG
   // en index.html); se repite aquí en vez de leerlo de allí porque esta
   // página no carga app.js ni ese script de configuración, es independiente.
-  const WORKER_BASE = 'https://damp-unit-7cc9onmyowntrip-proxy.davidg-henriquez.workers.dev';
+  // Solo para pruebas en local: ?worker=http://localhost:PUERTO apunta a un
+  // Worker de pruebas (en producción se ignora y va siempre al real).
+  const WORKER_BASE = (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).get('worker'))
+    || 'https://damp-unit-7cc9onmyowntrip-proxy.davidg-henriquez.workers.dev';
 
   let adminKey = '';
   const $ = (sel) => document.querySelector(sel);
@@ -657,12 +695,18 @@
   const tabPremium = $('#tabPremium');
   const tabBtnAi = $('#tabBtnAi');
   const tabAi = $('#tabAi');
+  const tabBtnSurvey = $('#tabBtnSurvey');
+  const tabSurvey = $('#tabSurvey');
   const showTab = (name) => {
     tabAccess.hidden = name !== 'access';
     tabSponsors.hidden = name !== 'sponsors';
     tabManage.hidden = name !== 'manage';
     tabPremium.hidden = name !== 'premium';
     tabAi.hidden = name !== 'ai';
+    tabSurvey.hidden = name !== 'survey';
+    tabBtnSurvey.classList.toggle('-active', name === 'survey');
+    tabBtnSurvey.setAttribute('aria-selected', String(name === 'survey'));
+    if (name === 'survey') loadSurveyResults();
     tabBtnAi.classList.toggle('-active', name === 'ai');
     tabBtnAi.setAttribute('aria-selected', String(name === 'ai'));
     tabBtnAccess.classList.toggle('-active', name === 'access');
@@ -687,6 +731,56 @@
   tabBtnManage.addEventListener('click', () => showTab('manage'));
   tabBtnPremium.addEventListener('click', () => showTab('premium'));
   tabBtnAi.addEventListener('click', () => showTab('ai'));
+  tabBtnSurvey.addEventListener('click', () => showTab('survey'));
+
+  // ============================================================
+  // Resultados de la encuesta (ver handleSurveyResults en worker/proxy.js):
+  // el Worker devuelve las preguntas y el recuento de cada opción, así que
+  // si cambian las preguntas no hay que tocar nada aquí.
+  // ============================================================
+  const loadSurveyResults = async () => {
+    const box = $('#surveyResults');
+    const err = $('#surveyError');
+    err.hidden = true;
+    try {
+      const res = await fetch(`${WORKER_BASE}/survey/admin/results`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey })
+      });
+      if (!res.ok) throw new Error('código ' + res.status);
+      const data = await res.json();
+      const total = data.total || 0;
+      let html = `<p class="survey-total"><b>${total}</b> ${total === 1 ? 'respuesta' : 'respuestas'}</p>`;
+      data.survey.questions.forEach((q) => {
+        if (q.section) html += `<h3 class="survey-section">${escapeHtml(q.section)}</h3>`;
+        if (q.type === 'text') {
+          html += `<div class="survey-q"><h4>${escapeHtml(q.text)}</h4>`;
+          html += data.comments.length
+            ? data.comments.map((c) => `<p class="survey-comment">${escapeHtml(c.text)}<small>${escapeHtml(c.day)}</small></p>`).join('')
+            : '<p class="empty">Sin comentarios todavía.</p>';
+          html += '</div>';
+          return;
+        }
+        const counts = data.counts[q.id] || {};
+        const max = Math.max(1, ...Object.values(counts));
+        html += `<div class="survey-q"><h4>${escapeHtml(q.text)}${q.type === 'multi' ? ' <small>(varias)</small>' : ''}</h4>`;
+        q.options.forEach(([value, label]) => {
+          const n = counts[value] || 0;
+          const pct = total ? Math.round((n / total) * 100) : 0;
+          html += `<div class="survey-row"><span class="survey-label">${escapeHtml(label)}</span>`
+            + `<span class="survey-bar"><i style="width:${(n / max) * 100}%"></i></span>`
+            + `<span class="survey-num">${n} · ${pct}%</span></div>`;
+        });
+        html += '</div>';
+      });
+      box.innerHTML = html;
+    } catch (e) {
+      err.hidden = false;
+      err.textContent = 'No se pudieron cargar los resultados: ' + e.message;
+    }
+  };
+  $('#surveyRefresh').addEventListener('click', loadSurveyResults);
 
   // ============================================================
   // Prueba del respaldo de la IA (ver handleChatWithFallback en
