@@ -415,13 +415,14 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   inset: 0;
   z-index: 6100;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background:
-    linear-gradient(rgba(5, 7, 13, 0.55), rgba(5, 7, 13, 0.85)),
-    var(--city-intro-photo, none) center / cover no-repeat,
-    #05070d;
+  /* Foto arriba y tarjeta abajo (antes la foto ocupaba toda la pantalla
+     detrás de la tarjeta y se veía pixelada y tapada). La foto vive en
+     ::before, en la mitad superior, fundida hacia el fondo oscuro. */
+  justify-content: flex-end;
+  padding: 24px 16px calc(28px + var(--safe-area-inset-bottom, 0px));
+  background: #05070d;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.25s ease;
@@ -430,6 +431,21 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
   opacity: 1;
   visibility: visible;
 }
+/* Capas de arriba abajo: degradado (algo de sombra arriba para la barra de
+   estado y fundido a negro abajo), la foto a 960px y la de 330px como
+   respaldo inmediato (ver maybeShowCityIntro en app.js). */
+.city-intro-modal::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 62%;
+  background:
+    linear-gradient(to bottom, rgba(5, 7, 13, 0.35) 0%, rgba(5, 7, 13, 0) 22%, rgba(5, 7, 13, 0) 55%, #05070d 100%),
+    var(--city-intro-photo-hd, none) center / cover no-repeat,
+    var(--city-intro-photo, none) center / cover no-repeat;
+}
 /* EXPERIMENTO (rama experimento-diseno-editorial): la tarjeta (texto +
    botones) se queda invisible ~2s tras abrirse el modal -- ver el
    setTimeout en maybeShowCityIntro, app.js -- para dar tiempo a ver la
@@ -437,6 +453,7 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
    pointer-events:none mientras tanto, para que no se pueda tocar "Saltar
    intro" ni "Empezar a explorar" antes de que se vean de verdad. */
 .city-intro-card {
+  position: relative;
   width: min(92vw, 400px);
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);

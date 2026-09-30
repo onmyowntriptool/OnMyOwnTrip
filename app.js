@@ -5366,10 +5366,21 @@
       || (POIS.filter((p) => p.essential && p.essential.route === 'main' && p.image)
         .sort((a, b) => a.essential.order - b.essential.order)[0] || {}).image
       || (POIS.find((p) => p.image) || {}).image;
+    // Las fotos vienen como miniatura de Wikimedia de 330px: estirada a lo
+    // ancho del móvil se veía pixelada. Encima va la misma foto a 960px (un
+    // ancho estándar de Wikimedia, 136-370 KB en las 14 ciudades); la de
+    // 330px queda debajo como respaldo inmediato mientras carga, o si la
+    // grande fallara (ver .city-intro-modal::before en styles.css).
     if (heroImage) {
       cityIntroModal.style.setProperty('--city-intro-photo', `url('${heroImage}')`);
+      if (/\/330px-/.test(heroImage)) {
+        cityIntroModal.style.setProperty('--city-intro-photo-hd', `url('${heroImage.replace('/330px-', '/960px-')}')`);
+      } else {
+        cityIntroModal.style.removeProperty('--city-intro-photo-hd');
+      }
     } else {
       cityIntroModal.style.removeProperty('--city-intro-photo');
+      cityIntroModal.style.removeProperty('--city-intro-photo-hd');
     }
     cityIntroPlaybackStarted = false;
     hideCityIntroTapHint();
