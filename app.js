@@ -951,6 +951,9 @@
     // vigilante en segundo plano que ya revisa si la licencia sigue siendo
     // válida (ver LICENSE.startWatching). Vacío = publicidad en todas.
     premiumCities: [],
+    // Interruptor a distancia de la oferta Premium del chat (ver CHAT_QUOTA
+    // y getChatUpsellEnabled en worker/proxy.js): llega con la licencia.
+    chatUpsell: false,
     category: CATEGORIES.ALL,
     activeRoute: null, // id de la ruta imprescindible activa (para ciudades con varios circuitos)
     activePoiId: null,
@@ -1240,8 +1243,8 @@
       const recheck = async () => {
         const result = await check(username, 'watch');
         if (result.ok) {
-          writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [] });
-          STATE.premiumCities = result.premiumCities || [];
+          writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell });
+          STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell;
         } else if (result.reason !== 'offline') {
           stopWatching();
           clearStored();
@@ -1337,6 +1340,19 @@
     essentialFallback: { es: { adult: 'Rutas<br>recomendadas', kids: '¡Lo Top! 🚩' }, en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' } },
     askPlaceholder: { es: { adult: 'Escribe tu pregunta…', kids: 'Escribe tu pregunta…' }, en: { adult: 'Type your question…', kids: 'Type your question…' } },
     askAriaLabel: { es: { adult: 'Escribe tu pregunta a la guía IA', kids: 'Escribe tu pregunta a la guía IA' }, en: { adult: 'Type your question to the AI guide', kids: 'Type your question to the AI guide' } },
+    // Límite de preguntas al guía IA (ver CHAT_QUOTA). {n} = preguntas por
+    // Punto de interés; {city} = nombre de la ciudad. Sin emojis: el modo
+    // niño no tiene chat de texto, así que solo se ven en modo adulto.
+    chatQuotaHintFirst: { es: { adult: 'Puedes hacer {n} preguntas gratis sobre cada Punto de interés. En cada Punto de interés nuevo, tienes {n} más.', kids: 'Puedes hacer {n} preguntas gratis sobre cada Punto de interés. En cada Punto de interés nuevo, tienes {n} más.' }, en: { adult: 'You can ask {n} free questions about each point of interest. Every new point of interest gives you {n} more.', kids: 'You can ask {n} free questions about each point of interest. Every new point of interest gives you {n} more.' } },
+    chatQuotaHintFull: { es: { adult: '{n} preguntas gratis en este Punto de interés', kids: '{n} preguntas gratis en este Punto de interés' }, en: { adult: '{n} free questions at this point of interest', kids: '{n} free questions at this point of interest' } },
+    chatQuotaHintLeft: { es: { adult: 'Te quedan {n} preguntas en este Punto de interés', kids: 'Te quedan {n} preguntas en este Punto de interés' }, en: { adult: '{n} questions left at this point of interest', kids: '{n} questions left at this point of interest' } },
+    chatQuotaHintLast: { es: { adult: 'Última pregunta en este Punto de interés', kids: 'Última pregunta en este Punto de interés' }, en: { adult: 'Last question at this point of interest', kids: 'Last question at this point of interest' } },
+    chatQuotaHintNone: { es: { adult: 'Sin preguntas en este Punto de interés hasta mañana', kids: 'Sin preguntas en este Punto de interés hasta mañana' }, en: { adult: 'No questions left at this point of interest until tomorrow', kids: 'No questions left at this point of interest until tomorrow' } },
+    chatQuotaDailyReached: { es: { adult: 'Has alcanzado el máximo de preguntas de hoy. Mañana se renuevan.', kids: 'Has alcanzado el máximo de preguntas de hoy. Mañana se renuevan.' }, en: { adult: "You've reached today's question limit. It resets tomorrow.", kids: "You've reached today's question limit. It resets tomorrow." } },
+    chatQuotaExhaustedMsg: { es: { adult: 'Has usado tus {n} preguntas sobre este Punto de interés. Sigues teniendo gratis el audio, la información y {n} preguntas nuevas en cada uno de los demás Puntos de interés. Aquí se renuevan mañana.', kids: 'Has usado tus {n} preguntas sobre este Punto de interés. Sigues teniendo gratis el audio, la información y {n} preguntas nuevas en cada uno de los demás Puntos de interés. Aquí se renuevan mañana.' }, en: { adult: "You've used your {n} questions about this point of interest. The audio, the information and {n} new questions at every other point of interest are still free. They reset here tomorrow.", kids: "You've used your {n} questions about this point of interest. The audio, the information and {n} new questions at every other point of interest are still free. They reset here tomorrow." } },
+    chatQuotaCallBlocked: { es: { adult: 'Has usado tus preguntas sobre este Punto de interés por hoy. Puedes seguir preguntando en los demás Puntos de interés.', kids: 'Has usado tus preguntas sobre este Punto de interés por hoy. Puedes seguir preguntando en los demás Puntos de interés.' }, en: { adult: "You've used your questions about this point of interest for today. You can keep asking at the other points of interest.", kids: "You've used your questions about this point of interest for today. You can keep asking at the other points of interest." } },
+    chatQuotaUpsell: { es: { adult: 'Preguntas ilimitadas en {city} con Premium', kids: 'Preguntas ilimitadas en {city} con Premium' }, en: { adult: 'Unlimited questions in {city} with Premium', kids: 'Unlimited questions in {city} with Premium' } },
+    premiumHintChat: { es: { adult: 'Sin publicidad y con preguntas ilimitadas al guía. Elige una ciudad, o todas de una vez.', kids: 'Sin publicidad y con preguntas ilimitadas al guía. Elige una ciudad, o todas de una vez.' }, en: { adult: 'No ads and unlimited questions to the guide. Pick a city, or all of them at once.', kids: 'No ads and unlimited questions to the guide. Pick a city, or all of them at once.' } },
     backToMenu: { es: { adult: 'Menú principal', kids: 'Menú principal' }, en: { adult: 'Main menu', kids: 'Main menu' } },
     // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
     // etiquetas visibles de las tres filas siempre presentes en .header-bottom
@@ -3058,7 +3074,7 @@
       const data = await res.json().catch(() => ({ ok: false }));
       if (data.ok && Array.isArray(data.premiumCities)) {
         STATE.premiumCities = data.premiumCities;
-        LICENSE.writeStored({ username, expires: (stored && stored.expires) ?? null, premiumCities: data.premiumCities });
+        LICENSE.writeStored({ username, expires: (stored && stored.expires) ?? null, premiumCities: data.premiumCities, chatUpsell: STATE.chatUpsell });
       }
       return data;
     } catch (e) {
@@ -5392,6 +5408,9 @@
   const closePremiumModal = () => {
     $('#premiumModal')?.classList.remove('-open');
     $('#premiumModal')?.setAttribute('aria-hidden', 'true');
+    // Una compra recién hecha quita el límite de preguntas en esa ciudad.
+    renderChatQuotaHint();
+    renderAiMessages();
   };
 
   const setPremiumError = (msg) => {
@@ -5418,7 +5437,13 @@
       if (hintEl) hintEl.hidden = true;
       return;
     }
-    if (hintEl) hintEl.hidden = false;
+    if (hintEl) {
+      hintEl.hidden = false;
+      // Con la oferta del chat encendida (isChatUpsellOn), Premium también
+      // quita el límite de preguntas: el texto lo dice para que se sepa qué
+      // se compra.
+      if (isChatUpsellOn()) hintEl.textContent = t('premiumHintChat');
+    }
     if (allBtn) allBtn.hidden = false;
     if (restoreBtn) restoreBtn.hidden = false;
 
@@ -5685,6 +5710,140 @@
   };
 
   /* =========================================================
+   * LÍMITE DE PREGUNTAS AL GUÍA IA (plan gratis)
+   * =======================================================*/
+  // Cuentan las preguntas libres al guía (escritas, dictadas o en la llamada
+  // por voz). Plan gratis: CHAT_QUOTA.perPoi por Punto de interés y día, más
+  // un tope diario total invisible (dailyFree) que solo frena abusos y
+  // controla el gasto de IA. Con el Premium de la ciudad (isCityPremium) no
+  // hay límite por Punto de interés, solo un tope diario alto (dailyPremium).
+  // "Profundiza más" no cuenta: ya tiene su propio final (7 puntos, ver
+  // queueDeepenWithFillers). El modo niño no tiene chat de texto ni llamada.
+  // Se cuenta en el dispositivo (localStorage): alguien técnico podría
+  // saltárselo, pero para controlar el gasto normal basta.
+  //
+  // INTERRUPTOR de la oferta Premium: STATE.chatUpsell, que manda el Worker
+  // con la licencia (se enciende o apaga desde el panel de administración,
+  // pestaña Gestión, sin publicar versión nueva). Apagado, el límite
+  // funciona igual pero sin ningún enlace ni ventana de Premium. Aun
+  // encendido, solo se ofrece donde la compra funciona (isNativeBillingAvailable).
+  const CHAT_QUOTA = {
+    perPoi: 3,
+    dailyFree: 40,
+    dailyPremium: 200
+  };
+  const isChatUpsellOn = () => !!STATE.chatUpsell;
+  const CHAT_QUOTA_KEY = 'omot_chat_quota_v1';
+  const chatQuotaToday = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  };
+  // noticeSeen sobrevive al cambio de día a propósito: el aviso largo de
+  // "cómo funciona" solo se enseña una vez en la vida de la app.
+  const readChatQuota = () => {
+    let q = null;
+    try { q = JSON.parse(localStorage.getItem(CHAT_QUOTA_KEY) || 'null'); } catch (_) {}
+    if (!q || typeof q !== 'object') q = {};
+    const day = chatQuotaToday();
+    if (q.day !== day) { q.day = day; q.total = 0; q.perPoi = {}; q.upsellShown = {}; }
+    return q;
+  };
+  const writeChatQuota = (q) => {
+    try { localStorage.setItem(CHAT_QUOTA_KEY, JSON.stringify(q)); } catch (_) {}
+  };
+  const chatQuotaPoiKey = (poiId) => `${STATE.cityId || ''}:${poiId}`;
+
+  // remaining es null si no hay límite por Punto de interés (Premium).
+  const chatQuotaStatus = (poiId) => {
+    const q = readChatQuota();
+    const premium = !!STATE.cityId && isCityPremium(STATE.cityId);
+    const used = q.perPoi[chatQuotaPoiKey(poiId)] || 0;
+    return {
+      premium,
+      used,
+      remaining: premium ? null : Math.max(0, CHAT_QUOTA.perPoi - used),
+      dailyReached: q.total >= (premium ? CHAT_QUOTA.dailyPremium : CHAT_QUOTA.dailyFree),
+      noticeSeen: !!q.noticeSeen
+    };
+  };
+  const isChatQuotaBlocked = (poiId) => {
+    const s = chatQuotaStatus(poiId);
+    return s.dailyReached || s.remaining === 0;
+  };
+  const consumeChatQuota = (poiId) => {
+    const q = readChatQuota();
+    const key = chatQuotaPoiKey(poiId);
+    q.perPoi[key] = (q.perPoi[key] || 0) + 1;
+    q.total = (q.total || 0) + 1;
+    q.noticeSeen = true;
+    writeChatQuota(q);
+  };
+  // Si la IA falla del todo, la pregunta no se cobra.
+  const refundChatQuota = (poiId) => {
+    const q = readChatQuota();
+    const key = chatQuotaPoiKey(poiId);
+    if (q.perPoi[key]) q.perPoi[key] -= 1;
+    if (q.total) q.total -= 1;
+    writeChatQuota(q);
+  };
+
+  const chatUpsellAvailable = () => isChatUpsellOn() && isNativeBillingAvailable()
+    && !!STATE.cityId && !isCityPremium(STATE.cityId);
+  const chatUpsellLabel = () => t('chatQuotaUpsell').replace('{city}', (CURRENT_CITY && CURRENT_CITY.name) || '');
+
+  // La ventana de Premium solo se abre sola cuando alguien intenta preguntar
+  // en un Punto de interés ya agotado (acaba de querer justo lo que Premium
+  // da), y como mucho una vez al día por ciudad. El resto de veces solo ve
+  // el enlace discreto bajo el campo de texto y en el aviso del chat.
+  const maybeAutoOpenChatUpsell = () => {
+    if (!chatUpsellAvailable()) return;
+    const q = readChatQuota();
+    if (q.upsellShown[STATE.cityId]) return;
+    q.upsellShown[STATE.cityId] = true;
+    writeChatQuota(q);
+    openPremiumModal();
+  };
+
+  // Tras una respuesta: si con ella se agotaron las preguntas de este Punto
+  // de interés, deja el aviso en el chat. role 'notice' (no 'assistant') para
+  // que nunca se narre ni se tome como respuesta de la IA (ver
+  // buildNarrativeText y los filtros por role === 'assistant').
+  const noteChatQuotaAfterAnswer = (poiId) => {
+    const s = chatQuotaStatus(poiId);
+    if (s.premium || s.remaining !== 0) return;
+    aiHistoryFor(poiId).push({ role: 'notice', text: t('chatQuotaExhaustedMsg').replace(/\{n\}/g, CHAT_QUOTA.perPoi) });
+  };
+
+  const renderChatQuotaHint = () => {
+    const el = $('#aiQuotaHint');
+    if (!el) return;
+    const poiId = STATE.activePoiId;
+    if (!poiId || STATE.mode === 'kids') { el.hidden = true; return; }
+    const s = chatQuotaStatus(poiId);
+    const n = CHAT_QUOTA.perPoi;
+    let text = '';
+    let tone = '';
+    if (s.dailyReached) { text = t('chatQuotaDailyReached'); tone = ' -out'; }
+    else if (s.premium) text = '';
+    else if (s.remaining === 0) { text = t('chatQuotaHintNone'); tone = ' -out'; }
+    else if (s.remaining === 1) { text = t('chatQuotaHintLast'); tone = ' -last'; }
+    else if (s.used === 0 && !s.noticeSeen) text = t('chatQuotaHintFirst').replace(/\{n\}/g, n);
+    else if (s.used === 0) text = t('chatQuotaHintFull').replace('{n}', n);
+    else text = t('chatQuotaHintLeft').replace('{n}', s.remaining);
+    el.className = 'ai-quota-hint' + tone;
+    el.textContent = text;
+    el.hidden = !text;
+    if (text && s.remaining === 0 && !s.dailyReached && chatUpsellAvailable()) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ai-quota-upsell';
+      b.textContent = chatUpsellLabel();
+      b.addEventListener('click', openPremiumModal);
+      el.appendChild(b);
+    }
+  };
+
+  /* =========================================================
    * AI GUIDE
    * =======================================================*/
   const aiHistoryFor = (poiId) => {
@@ -5906,6 +6065,7 @@
     const input = $('#aiInput');
     const sendBtn = $('#aiSend');
     if (sendBtn) sendBtn.toggleAttribute('disabled', STATE.ai.pending || !(input && input.value.trim()));
+    renderChatQuotaHint();
     const box = $('#aiSuggestions');
     if (!box || !STATE.activePoiId) return;
     box.innerHTML = '';
@@ -6184,6 +6344,25 @@
     history.forEach((msg) => {
       if (msg.role === 'typing') {
         box.appendChild(makeTypingEl(msg.statusText));
+        return;
+      }
+      // Aviso de límite de preguntas (ver noteChatQuotaAfterAnswer): nota
+      // centrada, sin avatar, para que no se lea como respuesta de la IA.
+      if (msg.role === 'notice') {
+        const note = document.createElement('div');
+        note.className = 'ai-msg-notice';
+        const p = document.createElement('p');
+        p.textContent = msg.text || '';
+        note.appendChild(p);
+        if (chatUpsellAvailable()) {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'ai-quota-upsell';
+          b.textContent = chatUpsellLabel();
+          b.addEventListener('click', openPremiumModal);
+          note.appendChild(b);
+        }
+        box.appendChild(note);
         return;
       }
       const user = msg.role === 'user';
@@ -6705,6 +6884,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       // que el audio principal en modo niño siempre lo identifique bien sin
       // depender de su posición en el historial (ver buildNarrativeText).
       hist.push({ role: 'assistant', text, isSummary: kind === 'summary' });
+      if (kind === 'text') noteChatQuotaAfterAnswer(poi.id);
       // Solo el resumen inicial intenta CLOUD_TTS: es la única narración
       // que vale la pena cachear (el chat y las revelaciones del quiz son
       // texto de un solo uso). Si no está configurado o falla, no añade
@@ -6744,6 +6924,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       const idx = hist.findIndex((m) => m.role === 'typing');
       if (idx >= 0) hist.splice(idx, 1);
       hist.push({ role: 'assistant', text: t('deepenFetchFailed') });
+      if (kind === 'text') refundChatQuota(poi.id);
     } finally {
       clearTimeout(slowTimer);
       STATE.ai.pending = false;
@@ -6761,6 +6942,14 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     const text = (input.value || '').trim();
     if (!text || STATE.ai.pending || !STATE.activePoiId) return;
     const poi = POIS.find((p) => p.id === STATE.activePoiId);
+    // Sin preguntas en este Punto de interés (o tope diario): no se envía, se
+    // deja el texto escrito tal cual y el aviso bajo el campo explica por qué.
+    if (isChatQuotaBlocked(poi.id)) {
+      renderChatQuotaHint();
+      maybeAutoOpenChatUpsell();
+      return;
+    }
+    consumeChatQuota(poi.id);
     // Igual que con los chips: si había un párrafo de "profundiza más" en
     // curso, se abandona limpiamente antes de mandar la pregunta suelta
     // (ver abandonDeepenFlow) — el input de texto nunca se bloqueó por
@@ -7048,9 +7237,20 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     queueCallTurn(t);
   };
 
+  // Se agotaron las preguntas de este Punto de interés (ver CHAT_QUOTA): se
+  // dice en voz alta y se cuelga, en vez de seguir escuchando para nada.
+  const endCallForQuota = () => {
+    const msg = t('chatQuotaCallBlocked');
+    appendCallBubble('assistant', msg);
+    setCallStatus(msg);
+    speakCallText(msg, () => closeAiCallMode());
+  };
+
   const queueCallTurn = async (userText) => {
     if (!callState.active || !callState.poi) return;
     const poi = callState.poi;
+    if (isChatQuotaBlocked(poi.id)) { endCallForQuota(); return; }
+    consumeChatQuota(poi.id);
     setCallStatus(t('callThinking'));
     setCallAvatarState(null);
     STATE.ai.pending = true;
@@ -7081,9 +7281,11 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
         concise: true
       });
       aiHistoryFor(poi.id).push({ role: 'assistant', text });
+      noteChatQuotaAfterAnswer(poi.id);
       saveState();
     } catch (e) {
       text = t('callAnswerFailed');
+      refundChatQuota(poi.id);
     } finally {
       clearTimeout(slowTimer);
       STATE.ai.pending = false;
@@ -7092,7 +7294,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     if (!callState.active) return; // se colgó mientras esperaba la respuesta
     appendCallBubble('assistant', text);
     setCallStatus(t('callSpeaking'));
-    speakCallText(text, () => askCallForMore(poi), { interruptible: true });
+    speakCallText(text, () => (isChatQuotaBlocked(poi.id) ? endCallForQuota() : askCallForMore(poi)), { interruptible: true });
   };
 
   const handleCallUserInput = (raw) => {
@@ -7127,6 +7329,10 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     STATE.audio.overrideText = null;
     const modal = $('#aiCallModal');
     if (modal) { modal.classList.remove('-open'); modal.setAttribute('aria-hidden', 'true'); }
+    // Los turnos de la llamada ya están en el historial (y pueden haber
+    // gastado preguntas): se refleja en el chat de texto que queda debajo.
+    renderAiMessages();
+    renderChatQuotaHint();
   };
 
   const openAiCallMode = () => {
@@ -7135,6 +7341,14 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     if (!poi) return;
     const modal = $('#aiCallModal');
     if (!modal) return;
+    // Sin preguntas aquí: ni se abre la llamada (el aviso bajo el campo de
+    // texto ya explica el motivo, y se resalta de nuevo por si no se vio).
+    if (isChatQuotaBlocked(poi.id)) {
+      renderChatQuotaHint();
+      showToast(chatQuotaStatus(poi.id).dailyReached ? t('chatQuotaDailyReached') : t('chatQuotaCallBlocked'), 3200);
+      maybeAutoOpenChatUpsell();
+      return;
+    }
     stopAudio(); // la audioguía y la llamada no deben sonar a la vez
     callState.active = true;
     callState.poi = poi;
@@ -8958,8 +9172,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       submit.disabled = false;
       submit.textContent = 'Entrar';
       if (result.ok) {
-        LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [] });
-        STATE.premiumCities = result.premiumCities || [];
+        LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell });
+        STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell;
         hideLicenseGate();
         revealApp(); // no-op si la app ya se había revelado antes de un bloqueo
         LICENSE.startWatching(username, lockApp);
@@ -8988,8 +9202,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     const username = getDeviceCode();
     const result = await LICENSE.check(username);
     if (!result.ok) return false;
-    LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [] });
-    STATE.premiumCities = result.premiumCities || [];
+    LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell });
+    STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell;
     revealApp();
     LICENSE.startWatching(username, lockApp);
     LICENSE.recordVisit(username);
@@ -9074,7 +9288,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       // ficha con patrocinio que se abriera (antes de que responda el
       // Worker) podría mostrar publicidad a alguien que ya la había
       // comprado, un instante hasta que llegue la revalidación de abajo.
-      STATE.premiumCities = cached.premiumCities || [];
+      STATE.premiumCities = cached.premiumCities || []; STATE.chatUpsell = !!cached.chatUpsell;
       revealApp();
       // Revalidación contra el Worker real: si ya no es válido, bloquea de
       // inmediato en vez de esperar a la siguiente apertura de la app. Si
@@ -9083,8 +9297,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       // app sigue abierta.
       LICENSE.check(cached.username).then((result) => {
         if (result.ok) {
-          LICENSE.writeStored({ username: cached.username, expires: result.expires, premiumCities: result.premiumCities || [] });
-          STATE.premiumCities = result.premiumCities || [];
+          LICENSE.writeStored({ username: cached.username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell });
+          STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell;
           LICENSE.startWatching(cached.username, lockApp);
           LICENSE.recordVisit(cached.username);
         } else if (result.reason !== 'offline') {

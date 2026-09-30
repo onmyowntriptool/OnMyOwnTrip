@@ -381,6 +381,17 @@
          "sin publicidad" regalado a mano, sin pasar por Google Play --
          ver /premium/grant en worker/proxy.js. -->
     <div class="tab-panel" id="tabPremium" role="tabpanel" hidden>
+      <!-- Interruptor de la oferta Premium en el chat (ver
+           getChatUpsellEnabled en worker/proxy.js y CHAT_QUOTA en app.js). -->
+      <section>
+        <h2>Oferta Premium en el chat</h2>
+        <p class="hint" style="margin-top:-6px">Enciéndelo cuando Google Play ya cobre. Con él apagado, el límite de 3 preguntas por Punto de interés sigue igual, pero sin enlace ni ventana de Premium. Solo se ve en la app de Android; llega a los móviles en su siguiente comprobación de licencia (al abrir la app o en menos de un minuto).</p>
+        <div class="form-actions">
+          <button type="button" class="refresh-btn" id="chatUpsellToggle" disabled>Cargando…</button>
+          <span class="error" id="chatUpsellError" hidden></span>
+        </div>
+      </section>
+
       <section>
         <h2>Acceso premium (sin publicidad)</h2>
         <p class="hint" style="margin-top:-6px">Regala "sin publicidad" a un contacto sin que pague — mismo efecto que si comprara desde la app.</p>
@@ -1231,8 +1242,44 @@
     });
   };
 
+  // Oferta Premium en el chat: sin chatUpsell en el body solo lo lee; con
+  // true/false lo cambia (ver handlePremiumAdminConfig en worker/proxy.js).
+  let chatUpsellOn = null;
+  const renderChatUpsellToggle = () => {
+    const btn = $('#chatUpsellToggle');
+    btn.disabled = chatUpsellOn == null;
+    btn.textContent = chatUpsellOn == null ? 'No disponible'
+      : chatUpsellOn ? 'Encendida — pulsar para apagar' : 'Apagada — pulsar para encender';
+  };
+  const chatUpsellRequest = async (value) => {
+    const err = $('#chatUpsellError');
+    err.hidden = true;
+    try {
+      const body = { adminKey };
+      if (typeof value === 'boolean') body.chatUpsell = value;
+      const res = await fetch(`${WORKER_BASE}/premium/admin/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error('código ' + res.status);
+      chatUpsellOn = !!(await res.json()).chatUpsell;
+    } catch (e) {
+      err.hidden = false;
+      err.textContent = 'No se pudo leer o cambiar: ' + e.message;
+    }
+    renderChatUpsellToggle();
+  };
+  $('#chatUpsellToggle').addEventListener('click', () => {
+    if (chatUpsellOn == null) return;
+    const next = !chatUpsellOn;
+    if (!confirm(next ? '¿Encender la oferta Premium en el chat para todos los usuarios de Android?' : '¿Apagar la oferta Premium en el chat?')) return;
+    chatUpsellRequest(next);
+  });
+
   const loadPremiumGrants = async () => {
     renderPremiumCityCheckboxes();
+    chatUpsellRequest();
     try {
       const res = await fetch(`${WORKER_BASE}/premium/admin/list`, {
         method: 'POST',

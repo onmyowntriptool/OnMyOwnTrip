@@ -107,8 +107,11 @@ export default {
     const isPremiumGrant = url.pathname.endsWith('/premium/grant');
     const isPremiumRevoke = url.pathname.endsWith('/premium/revoke');
     const isPremiumAdminList = url.pathname.endsWith('/premium/admin/list');
+    // Interruptor a distancia de la oferta Premium del chat (ver
+    // getChatUpsellEnabled): el panel lo lee y lo cambia desde aquí.
+    const isPremiumAdminConfig = url.pathname.endsWith('/premium/admin/config');
 
-    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify && !isPremiumGrant && !isPremiumRevoke && !isPremiumAdminList)) {
+    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify && !isPremiumGrant && !isPremiumRevoke && !isPremiumAdminList && !isPremiumAdminConfig)) {
       return new Response(JSON.stringify({ error: 'not found' }), {
         status: 404,
         headers: { ...headers, 'Content-Type': 'application/json' }
@@ -145,6 +148,7 @@ export default {
     if (isPremiumGrant) return handlePremiumGrant(request, env, headers);
     if (isPremiumRevoke) return handlePremiumRevoke(request, env, headers);
     if (isPremiumAdminList) return handlePremiumAdminList(request, env, headers);
+    if (isPremiumAdminConfig) return handlePremiumAdminConfig(request, env, headers);
 
     // Rate limiting por IP (binding "RATE_LIMITER", configurado en el panel
     // de Cloudflare → pestaña "Bindings" → Add binding → Rate Limiting).
@@ -541,7 +545,10 @@ async function handleLicenseCheck(request, env, headers) {
   // adjuntan aquí para que se refresquen solas con el mismo vigilante
   // periódico que ya revisa la licencia (LICENSE.startWatching en app.js),
   // sin necesitar una llamada aparte.
-  if (result.ok) result.premiumCities = await getPremiumCities(env, username);
+  if (result.ok) {
+    result.premiumCities = await getPremiumCities(env, username);
+    result.chatUpsell = await getChatUpsellEnabled(env);
+  }
   return respond(result);
 }
 
@@ -1362,6 +1369,17 @@ async function getPremiumCities(env, username) {
   } catch (_) { return []; }
 }
 
+// Interruptor de la oferta Premium del chat (enlace y ventana "Preguntas
+// ilimitadas con Premium", ver CHAT_QUOTA en app.js). Vive en KV y no en el
+// código para poder encenderlo cuando Google Play ya cobre sin publicar una
+// versión nueva de la app: llega a app.js junto a premiumCities en cada
+// /license/check (y en el vigilante periódico). Apagado si no existe la clave.
+const CHAT_UPSELL_KEY = 'config:chatUpsell';
+async function getChatUpsellEnabled(env) {
+  if (!env.PREMIUM) return false;
+  try { return (await env.PREMIUM.get(CHAT_UPSELL_KEY)) === 'on'; } catch (_) { return false; }
+}
+
 // Convierte una cadena base64 estándar en base64url (sin relleno) — formato
 // que exige JWT tanto en la cabecera/claims como en la firma.
 const toBase64Url = (base64) => base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -1650,6 +1668,21 @@ async function handlePremiumAdminList(request, env, headers) {
   }))).filter(Boolean);
 
   return new Response(JSON.stringify({ grants }), {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+}
+
+// Lee (sin chatUpsell en el body) o cambia (chatUpsell: true/false) el
+// interruptor de la oferta Premium del chat (ver getChatUpsellEnabled).
+async function handlePremiumAdminConfig(request, env, headers) {
+  const { error, payload } = await checkAdminAccess(request, env, headers, 'PREMIUM');
+  if (error) return error;
+
+  if (payload && typeof payload.chatUpsell === 'boolean') {
+    await env.PREMIUM.put(CHAT_UPSELL_KEY, payload.chatUpsell ? 'on' : 'off');
+  }
+  return new Response(JSON.stringify({ ok: true, chatUpsell: await getChatUpsellEnabled(env) }), {
     status: 200,
     headers: { ...headers, 'Content-Type': 'application/json' }
   });

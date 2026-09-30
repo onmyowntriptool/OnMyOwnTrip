@@ -2974,6 +2974,50 @@ html[data-mode="kids"] .bottom-sheet {
 .ai-send:active { transform: scale(0.92); }
 .ai-send[disabled] { opacity: 0.45; pointer-events: none; }
 
+/* Preguntas gratis que quedan en este Punto de interés (ver CHAT_QUOTA en
+   app.js): línea discreta bajo el campo de texto. -last avisa de la última,
+   -out de que ya no quedan (o del tope diario). */
+.ai-quota-hint {
+  margin: -6px 0 0;
+  padding: 0 22px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-soft);
+  flex-shrink: 0;
+}
+.ai-quota-hint[hidden] { display: none; }
+.ai-quota-hint.-last { color: #B45309; font-weight: 600; }
+.ai-quota-hint.-out { color: var(--color-text); font-weight: 600; }
+.ai-quota-upsell {
+  display: block;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+html[data-mode="kids"] .ai-quota-hint { display: none; }
+
+/* Aviso de límite dentro del chat (role 'notice'): nota centrada, sin
+   avatar, para que no se confunda con una respuesta de la IA. */
+.ai-msg-notice {
+  margin: 4px 8px 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px dashed var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-soft);
+  font-size: 12.5px;
+  line-height: 1.45;
+  text-align: center;
+}
+.ai-msg-notice p { margin: 0; }
+.ai-msg-notice .ai-quota-upsell { margin: 6px auto 0; }
+
 .ai-mic {
   width: 42px;
   height: 42px;
