@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OnMyOwnTrip · Tu audioguía para viajar a pie</title>
 <meta name="description" content="Audioguía con inteligencia artificial para descubrir 14 ciudades a pie: rutas narradas, un guía al que hacer preguntas en cada Punto de interés y un modo niños con retos y medallas.">
-<meta name="theme-color" content="#0B1426">
+<meta name="theme-color" content="#FFFFFF">
 <link rel="icon" type="image/png" href="img/icono.png">
 <link rel="apple-touch-icon" href="img/icono.png">
 <link rel="canonical" href="https://onmyowntrip.com/">
@@ -14,30 +14,34 @@
 <meta property="og:title" content="OnMyOwnTrip · Tu audioguía para viajar a pie">
 <meta property="og:description" content="14 ciudades, 6 países. Rutas narradas, guía con IA y modo niños.">
 <meta property="og:image" content="https://onmyowntrip.com/img/og.png">
+<link rel="preload" as="image" href="img/hero-roma.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <!--
   Portada de onmyowntrip.com. La app web vive en /app/ (ver scripts/build-site.js).
-  Configuración (enlaces de tiendas y vídeo): objeto CONFIG en el <script> del final.
+  Configuración (enlaces de tiendas y vídeos): objeto CONFIG en el <script> del final.
+  Fotos de ciudades: img/ciudad-<id>.webp (tarjetas) e img/hero-<id>.webp (portada),
+  sacadas de la heroImage de cada ciudad en data/core.js (Wikimedia Commons).
 -->
 <style>
   :root {
-    --bg: #0B1426;
-    --bg-2: #0F1E3A;
-    --surface: rgba(255, 255, 255, 0.045);
-    --surface-2: rgba(255, 255, 255, 0.07);
-    --line: rgba(255, 255, 255, 0.09);
-    --text: #EAF0FA;
-    --muted: #9DB0CB;
-    --blue: #3B82F6;
-    --teal: #2DD4BF;
-    --radius: 20px;
+    --bg: #FFFFFF;
+    --bg-alt: #F4F7FB;
+    --ink: #0B1426;
+    --text: #0F1B2D;
+    --muted: #56657A;
+    --line: #E2E8F0;
+    --blue: #2563EB;
+    --teal: #0D9488;
+    --grad: linear-gradient(135deg, #14B8A6, #2563EB);
+    --radius: 18px;
+    --shadow: 0 1px 2px rgba(15, 27, 45, .05), 0 8px 24px -12px rgba(15, 27, 45, .14);
     --maxw: 1160px;
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
   body {
     margin: 0;
     background: var(--bg);
@@ -47,166 +51,139 @@
     overflow-x: hidden;
   }
   img { display: block; max-width: 100%; }
-  figure { margin: 0; }
   a { color: inherit; }
-  h1, h2, h3 { font-family: Sora, Inter, system-ui, sans-serif; margin: 0; line-height: 1.12; letter-spacing: -0.02em; }
+  h1, h2, h3 { font-family: Sora, Inter, system-ui, sans-serif; margin: 0; line-height: 1.15; letter-spacing: -0.02em; color: var(--ink); }
   .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
 
   /* ---------- Cabecera ---------- */
   header {
-    position: sticky; top: 0; z-index: 20;
-    background: rgba(11, 20, 38, .72);
-    backdrop-filter: saturate(1.4) blur(14px);
-    -webkit-backdrop-filter: saturate(1.4) blur(14px);
-    border-bottom: 1px solid transparent;
-    transition: border-color .2s;
+    position: sticky; top: 0; z-index: 30;
+    background: rgba(255, 255, 255, .92);
+    backdrop-filter: saturate(1.4) blur(12px);
+    -webkit-backdrop-filter: saturate(1.4) blur(12px);
+    border-bottom: 1px solid var(--line);
   }
-  header.scrolled { border-bottom-color: var(--line); }
-  .nav { display: flex; align-items: center; justify-content: space-between; height: 68px; }
-  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 700 19px/1 Sora, sans-serif; }
+  .nav { display: flex; align-items: center; gap: 28px; height: 68px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 700 19px/1 Sora, sans-serif; color: var(--ink); }
   .brand img { width: 34px; height: 34px; border-radius: 9px; }
-  .nav-right { display: flex; align-items: center; gap: 10px; }
-  .lang { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); }
+  .nav-links { display: flex; gap: 24px; margin-right: auto; }
+  .nav-links a { text-decoration: none; font: 500 15px/1 Inter, sans-serif; color: var(--muted); }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+  .lang { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--bg-alt); }
   .lang button {
     border: 0; background: transparent; color: var(--muted); font: 600 13px/1 Inter, sans-serif;
     padding: 7px 11px; border-radius: 999px; cursor: pointer;
   }
-  .lang button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
+  .lang button[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(15,27,45,.12); }
   .nav-cta {
     text-decoration: none; font: 600 14px/1 Inter, sans-serif; padding: 11px 16px; border-radius: 999px;
-    background: linear-gradient(135deg, var(--teal), var(--blue)); color: #06101F;
+    background: var(--blue); color: #fff;
   }
+  .nav-cta:hover { background: #1D4ED8; }
 
-  /* ---------- Hero ---------- */
-  .hero { position: relative; padding: 72px 0 56px; overflow: hidden; }
-  .hero-shade {
-    position: absolute; inset: 0; pointer-events: none;
-    background:
-      radial-gradient(600px 500px at 0% 0%, rgba(59,130,246,.30), transparent 70%),
-      radial-gradient(560px 480px at 100% 30%, rgba(45,212,191,.22), transparent 70%),
-      linear-gradient(90deg, var(--bg) 0%, rgba(11,20,38,.85) 45%, rgba(11,20,38,.55) 100%),
-      linear-gradient(0deg, var(--bg) 0%, transparent 35%);
-  }
-  .hero-grid { position: relative; display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; }
-  .eyebrow {
-    display: inline-flex; align-items: center; gap: 8px; font: 600 13px/1 Inter, sans-serif; color: var(--teal);
-    background: rgba(45, 212, 191, .1); border: 1px solid rgba(45, 212, 191, .25); padding: 8px 13px; border-radius: 999px;
-    text-transform: uppercase; letter-spacing: .06em;
-  }
-  .eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 4px rgba(45,212,191,.2); }
-  .hero h1 { font-size: clamp(38px, 5.4vw, 64px); margin: 22px 0 18px; }
-  .hero h1 em {
-    font-style: normal;
-    background: linear-gradient(100deg, var(--teal) 10%, #7DD3FC 55%, var(--blue) 95%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  .lead { font-size: clamp(17px, 1.6vw, 19px); color: var(--muted); max-width: 540px; margin: 0 0 30px; }
-  .stats { display: flex; gap: 32px; flex-wrap: wrap; margin-top: 8px; }
-  .stat b { display: block; font: 800 30px/1 Sora, sans-serif; color: var(--text); }
-  .stat span { font-size: 14px; color: var(--muted); }
-  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 34px; }
+  /* ---------- Botones ---------- */
   .btn {
-    display: inline-flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; cursor: pointer;
     font: 600 16px/1 Inter, sans-serif; padding: 16px 22px; border-radius: 14px; border: 1px solid transparent;
-    transition: transform .15s, box-shadow .15s, background .15s;
+    transition: transform .15s, background .15s, box-shadow .15s;
   }
   .btn:hover { transform: translateY(-1px); }
-  .btn-primary { background: linear-gradient(135deg, var(--teal), var(--blue)); color: #06101F; box-shadow: 0 10px 30px -10px rgba(45,212,191,.55); }
-  .btn-ghost { background: var(--surface); border-color: var(--line); color: var(--text); }
+  .btn-primary { background: var(--grad); color: #fff; box-shadow: 0 10px 24px -10px rgba(37,99,235,.55); }
+  .btn-light { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.45); color: #fff; backdrop-filter: blur(6px); }
+  .btn-light:hover { background: rgba(255,255,255,.24); }
+  .btn-ghost { background: #fff; border-color: var(--line); color: var(--ink); }
+  .btn-ghost:hover { border-color: #CBD5E1; }
   .btn svg { width: 18px; height: 18px; flex: none; }
   .btn[aria-disabled="true"] { opacity: .5; pointer-events: none; }
 
-  .phones { position: relative; height: 560px; }
-  .phone {
-    position: absolute; width: 250px; aspect-ratio: 619 / 1100; border-radius: 34px; overflow: hidden;
-    border: 7px solid #1B2740; background: #1B2740;
-    box-shadow: 0 30px 60px -20px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06);
+  /* ---------- Hero: fotos de las ciudades que se funden ---------- */
+  .hero { position: relative; min-height: min(680px, 86vh); display: grid; align-items: center; overflow: hidden; background: var(--ink); color: #fff; }
+  .hero-photos img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+    opacity: 0; transform: scale(1.06); transition: opacity 1.4s ease, transform 7s ease-out;
   }
-  .phone img, .phone video { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .phone.p1 { left: 8%; top: 40px; transform: rotate(-6deg); }
-  .phone.p2 { right: 6%; top: 0; transform: rotate(5deg); z-index: 2; }
+  .hero-photos img.on { opacity: 1; transform: scale(1); }
+  .hero::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, rgba(8,15,30,.55) 0%, rgba(8,15,30,.45) 45%, rgba(8,15,30,.78) 100%);
+  }
+  .hero-inner { position: relative; z-index: 1; text-align: center; padding: 80px 24px 64px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px; font: 600 13px/1 Inter, sans-serif; color: #fff;
+    background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.3); padding: 8px 14px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: .06em; backdrop-filter: blur(6px);
+  }
+  .eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: #5EEAD4; }
+  .hero h1 { color: #fff; font-size: clamp(38px, 6vw, 68px); margin: 22px auto 18px; max-width: 900px; text-shadow: 0 2px 24px rgba(0,0,0,.25); }
+  .hero h1 em { font-style: normal; color: #5EEAD4; }
+  .lead { font-size: clamp(17px, 1.7vw, 20px); color: rgba(255,255,255,.88); max-width: 640px; margin: 0 auto 32px; }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .stats { display: flex; justify-content: center; gap: 44px; flex-wrap: wrap; margin-top: 52px; }
+  .stat b { display: block; font: 800 30px/1 Sora, sans-serif; color: #fff; }
+  .stat span { font-size: 14px; color: rgba(255,255,255,.75); }
+  .hero-place {
+    position: absolute; right: 20px; bottom: 16px; z-index: 1; font-size: 13px; color: rgba(255,255,255,.8);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .hero-place svg { width: 14px; height: 14px; }
 
   /* ---------- Secciones ---------- */
-  section { position: relative; padding: 64px 0; }
-  .section-head { text-align: center; max-width: 680px; margin: 0 auto 40px; }
-  .section-head h2 { font-size: clamp(28px, 3.4vw, 40px); margin-bottom: 12px; }
-  .section-head p { color: var(--muted); margin: 0; font-size: 17px; }
+  section { position: relative; padding: 88px 0; }
+  section.alt { background: var(--bg-alt); }
+  .section-head { text-align: center; max-width: 700px; margin: 0 auto 48px; }
+  .kicker { display: block; font: 600 13px/1 Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--teal); margin-bottom: 14px; }
+  .section-head h2 { font-size: clamp(28px, 3.4vw, 42px); margin-bottom: 14px; }
+  .section-head p { color: var(--muted); margin: 0; font-size: 18px; }
 
-  /* Descargas: las tres tarjetas con la misma estructura */
-  .downloads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  .dl {
-    display: flex; flex-direction: column; align-items: stretch; gap: 18px;
-    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px;
+  /* Destinos: tarjetas con foto */
+  .cities { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; }
+  .city {
+    position: relative; aspect-ratio: 4 / 5; border-radius: var(--radius); overflow: hidden; background: #CBD5E1;
+    box-shadow: var(--shadow); transition: transform .2s, box-shadow .2s; text-decoration: none; color: #fff;
   }
-  .dl.featured {
-    background: linear-gradient(160deg, rgba(45,212,191,.13), rgba(59,130,246,.10) 60%, rgba(255,255,255,.03));
-    border-color: rgba(45,212,191,.35);
+  .city:hover { transform: translateY(-4px); box-shadow: 0 18px 36px -16px rgba(15,27,45,.35); }
+  .city > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
+  .city:hover > img { transform: scale(1.05); }
+  .city::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(8,15,30,.85)); }
+  .city-txt { position: absolute; left: 16px; right: 16px; bottom: 14px; z-index: 1; }
+  .city-txt b { display: block; font: 700 18px/1.2 Sora, sans-serif; }
+  .city-txt span { font-size: 13px; color: rgba(255,255,255,.8); }
+  .city .medal {
+    position: absolute; top: 12px; right: 12px; z-index: 1; width: 46px; height: 46px; padding: 4px;
+    border-radius: 50%; background: rgba(255,255,255,.92); box-shadow: 0 4px 12px rgba(0,0,0,.2); object-fit: contain;
   }
-  .dl-top { display: flex; align-items: center; gap: 14px; }
-  .dl-icon {
-    width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; flex: none;
-    background: var(--surface-2); border: 1px solid var(--line);
-  }
-  .dl-icon svg { width: 24px; height: 24px; }
-  .dl h3 { font-size: 20px; }
-  .dl small { display: block; color: var(--muted); font-size: 14px; margin-top: 3px; }
-  .dl .btn { justify-content: center; margin-top: auto; }
-  .qr {
-    position: relative; align-self: center; width: 168px; height: 168px; padding: 10px; border-radius: 16px; background: #fff;
-    display: grid; place-items: center;
-  }
-  .qr img, .qr svg { width: 100%; height: 100%; }
-  .qr.locked img { filter: blur(5px); opacity: .45; }
-  .qr.locked::after {
-    content: attr(data-label); position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
-    font: 700 15px/1.25 Inter, sans-serif; color: #0B1426; padding: 0 18px;
-  }
-  .qr-web {
-    background: linear-gradient(160deg, rgba(45,212,191,.9), rgba(59,130,246,.9)); color: #06101F; padding: 0;
-  }
-  .qr-web svg { width: 64px; height: 64px; }
-  .qr-hint { text-align: center; color: var(--muted); font-size: 13px; margin: -6px 0 0; }
+  .cities-note { text-align: center; color: var(--muted); margin: 32px 0 0; font-size: 15px; }
 
-  /* Funciones */
-  .features { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
-  .feat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
-  .feat .ico {
-    width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 16px;
-    background: linear-gradient(135deg, rgba(45,212,191,.18), rgba(59,130,246,.18)); color: var(--teal);
-  }
-  .feat .ico svg { width: 22px; height: 22px; }
-  .feat h3 { font-size: 18px; margin-bottom: 8px; }
-  .feat p { margin: 0; color: var(--muted); font-size: 15px; }
-
-  /* Recorrido interactivo */
-  .tour { display: grid; grid-template-columns: 1fr 330px; gap: 56px; align-items: center; max-width: 980px; margin: 0 auto; }
+  /* Cómo funciona: pestañas + móvil */
+  .tour { display: grid; grid-template-columns: 1fr 320px; gap: 64px; align-items: center; max-width: 980px; margin: 0 auto; }
   .tour-tabs { display: flex; flex-direction: column; gap: 10px; }
   .tour-tab {
     display: flex; gap: 16px; align-items: flex-start; text-align: left; width: 100%; cursor: pointer;
-    background: transparent; border: 1px solid transparent; border-radius: 18px; padding: 18px 20px; color: var(--text);
-    font: inherit; transition: background .2s, border-color .2s;
+    background: transparent; border: 1px solid transparent; border-radius: 16px; padding: 18px 20px; color: var(--text);
+    font: inherit; transition: background .2s, border-color .2s, box-shadow .2s;
   }
-  .tour-tab:hover { background: var(--surface); }
-  .tour-tab[aria-selected="true"] { background: var(--surface-2); border-color: rgba(45,212,191,.35); }
+  .tour-tab:hover { background: rgba(255,255,255,.6); }
+  .tour-tab[aria-selected="true"] { background: #fff; border-color: var(--line); box-shadow: var(--shadow); }
   .tour-tab .ico {
     width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; flex: none;
-    background: var(--surface); color: var(--muted); transition: background .2s, color .2s;
+    background: #E6ECF4; color: var(--muted); transition: background .2s, color .2s;
   }
-  .tour-tab[aria-selected="true"] .ico { background: linear-gradient(135deg, var(--teal), var(--blue)); color: #06101F; }
+  .tour-tab[aria-selected="true"] .ico { background: var(--grad); color: #fff; }
   .tour-tab .ico svg { width: 21px; height: 21px; }
   .tour-tab .txt { flex: 1; min-width: 0; }
-  .tour-tab b { display: block; font: 700 17px/1.3 Sora, sans-serif; margin-bottom: 4px; }
+  .tour-tab b { display: block; font: 700 17px/1.3 Sora, sans-serif; margin-bottom: 4px; color: var(--ink); }
   .tour-tab .txt > span { display: block; color: var(--muted); font-size: 15px; }
   .tour-tab .bar { display: block; height: 3px; border-radius: 3px; background: var(--line); margin-top: 12px; overflow: hidden; visibility: hidden; }
   .tour-tab[aria-selected="true"] .bar { visibility: visible; }
-  .tour-tab .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--teal), var(--blue)); }
+  .tour-tab .bar i { display: block; height: 100%; width: 0; background: var(--grad); }
   .tour-tab[aria-selected="true"] .bar i { animation: fill 6s linear forwards; }
   .tour.paused .bar i { animation-play-state: paused !important; }
   @keyframes fill { to { width: 100%; } }
   .tour-phone {
     position: relative; width: 100%; aspect-ratio: 619 / 1100; border-radius: 40px; overflow: hidden;
-    border: 8px solid #1B2740; background: #1B2740;
-    box-shadow: 0 40px 80px -30px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.06), 0 0 90px -20px rgba(45,212,191,.35);
+    border: 8px solid var(--ink); background: var(--ink);
+    box-shadow: 0 40px 70px -30px rgba(15,27,45,.45);
   }
   .tour-phone img {
     position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
@@ -214,125 +191,155 @@
   }
   .tour-phone img.on { opacity: 1; transform: none; }
 
-  /* Vídeo */
+  /* Tutorial, dentro de "Cómo funciona" */
+  .tutorial { max-width: 960px; margin: 88px auto 0; }
+  .tutorial-head { text-align: center; margin-bottom: 28px; }
+  .tutorial-head h3 { font-size: clamp(22px, 2.4vw, 28px); margin-bottom: 8px; }
+  .tutorial-head p { margin: 0; color: var(--muted); }
+
+  /* Cajas de vídeo */
   .video-box {
-    position: relative; max-width: 960px; margin: 0 auto; aspect-ratio: 16 / 9; border-radius: 24px; overflow: hidden;
-    border: 1px solid var(--line); background: #060C18 center / cover no-repeat;
-    box-shadow: 0 40px 80px -40px rgba(0,0,0,.8);
+    position: relative; aspect-ratio: 16 / 9; border-radius: 22px; overflow: hidden;
+    background: var(--ink) center / cover no-repeat; box-shadow: 0 30px 60px -30px rgba(15,27,45,.5);
   }
   .video-box video, .video-box iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
   .video-play {
     position: absolute; inset: 0; display: grid; place-items: center; border: 0; cursor: pointer; padding: 0;
-    background: linear-gradient(0deg, rgba(6,12,24,.6), rgba(6,12,24,.2)); font: 600 16px/1 Inter, sans-serif;
+    background: linear-gradient(0deg, rgba(8,15,30,.45), rgba(8,15,30,.1)); font: 600 16px/1 Inter, sans-serif;
   }
   .video-play span {
     display: inline-flex; align-items: center; gap: 12px; padding: 16px 24px 16px 18px; border-radius: 999px;
-    background: linear-gradient(135deg, var(--teal), var(--blue)); color: #06101F;
-    box-shadow: 0 16px 40px -12px rgba(45,212,191,.6); transition: transform .15s;
+    background: var(--grad); color: #fff; box-shadow: 0 16px 40px -12px rgba(37,99,235,.6); transition: transform .15s;
   }
   .video-play:hover span { transform: scale(1.04); }
   .video-play svg { width: 24px; height: 24px; }
 
-  /* Destinos */
-  /* Un bloque por país: España ocupa todo el ancho; los países de un solo
-     destino van en fila debajo. */
-  .cities { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
-  .country { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
-  .country.wide { grid-column: 1 / -1; }
-  .country-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
-  .country-head h3 { font-size: 17px; }
-  .country-head span { font-size: 13px; color: var(--teal); white-space: nowrap; }
-  .country:not(.wide) .country-head { flex-direction: column; gap: 2px; min-height: 44px; }
-  .country-cities { display: grid; grid-template-columns: 1fr; gap: 10px; }
-  .country.wide .country-cities { grid-template-columns: repeat(9, 1fr); }
-  .city { text-align: center; padding: 12px 6px; border-radius: 14px; transition: transform .15s, background .15s; }
-  .city:hover { transform: translateY(-3px); background: var(--surface-2); }
-  .city img { width: 76px; height: 76px; margin: 0 auto 10px; object-fit: contain; }
-  .city b { display: block; font: 600 14px/1.25 Inter, sans-serif; }
+  /* Vídeo promocional en ventana */
+  .modal { border: 0; padding: 0; background: transparent; width: min(1000px, calc(100vw - 32px)); max-width: none; overflow: visible; }
+  .modal::backdrop { background: rgba(8,15,30,.82); }
+  .modal .video-box { border-radius: 16px; }
+  .modal-close {
+    position: absolute; top: -48px; right: 0; width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer;
+    background: rgba(255,255,255,.15); color: #fff; display: grid; place-items: center;
+  }
+  .modal-close svg { width: 20px; height: 20px; }
+
+  /* Por qué OnMyOwnTrip */
+  .why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 44px 40px; }
+  .why-item .ico {
+    width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; margin-bottom: 18px;
+    background: #E6F6F4; color: var(--teal);
+  }
+  .why-item .ico svg { width: 23px; height: 23px; }
+  .why-item h3 { font-size: 19px; margin-bottom: 8px; }
+  .why-item p { margin: 0; color: var(--muted); font-size: 15.5px; }
+
+  /* Planes */
+  .plans { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 900px; margin: 0 auto; }
+  .plan { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 32px; box-shadow: var(--shadow); }
+  .plan.premium { border: 2px solid var(--teal); }
+  .plan-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .plan h3 { font-size: 22px; }
+  .plan-tag { font-size: 12px; font-weight: 600; color: var(--teal); background: #E6F6F4; padding: 5px 10px; border-radius: 999px; white-space: nowrap; }
+  .plan ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+  .plan li { position: relative; padding-left: 28px; color: var(--muted); }
+  .plan li::before {
+    content: ""; position: absolute; left: 3px; top: .5em; width: 12px; height: 7px;
+    border-left: 2px solid var(--teal); border-bottom: 2px solid var(--teal); transform: rotate(-45deg);
+  }
+  .plan li b { color: var(--ink); font-weight: 600; }
+
+  /* Descargas */
+  .downloads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .dl {
+    display: flex; flex-direction: column; align-items: stretch; gap: 18px;
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow);
+  }
+  .dl.featured { border: 2px solid var(--blue); }
+  .dl-top { display: flex; align-items: center; gap: 14px; }
+  .dl-icon { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; flex: none; background: var(--bg-alt); }
+  .dl-icon svg { width: 24px; height: 24px; }
+  .dl h3 { font-size: 20px; }
+  .dl small { display: block; color: var(--muted); font-size: 14px; margin-top: 3px; }
+  .dl .btn { margin-top: auto; }
+  .qr {
+    position: relative; align-self: center; width: 168px; height: 168px; padding: 10px; border-radius: 16px; background: #fff;
+    border: 1px solid var(--line); display: grid; place-items: center;
+  }
+  .qr img, .qr svg { width: 100%; height: 100%; }
+  .qr.locked img { filter: blur(5px); opacity: .4; }
+  .qr.locked::after {
+    content: attr(data-label); position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
+    font: 700 15px/1.25 Inter, sans-serif; color: var(--ink); padding: 0 18px;
+  }
+  .qr-web { background: var(--grad); border: 0; color: #fff; padding: 0; }
+  .qr-web svg { width: 64px; height: 64px; }
+  .qr-hint { text-align: center; color: var(--muted); font-size: 13px; margin: -6px 0 0; }
 
   /* Patrocinio */
   .sponsor {
     display: flex; align-items: center; justify-content: space-between; gap: 28px; flex-wrap: wrap;
-    border-radius: 26px; padding: 40px;
-    background: linear-gradient(120deg, rgba(59,130,246,.18), rgba(45,212,191,.14));
-    border: 1px solid rgba(125, 211, 252, .25);
+    border-radius: 24px; padding: 48px; background: var(--grad); color: #fff;
   }
-  .sponsor h2 { font-size: clamp(24px, 2.8vw, 32px); margin-bottom: 10px; }
+  .sponsor h2 { color: #fff; font-size: clamp(24px, 2.8vw, 32px); margin-bottom: 10px; }
+  .sponsor p { margin: 0; color: rgba(255,255,255,.9); max-width: 580px; }
+  .sponsor .btn { background: #fff; color: var(--ink); }
 
-  /* Por qué OnMyOwnTrip: ventajas en tarjetas */
-  .why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  .why-item { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
-  .why-item .ico {
-    width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 16px;
-    background: rgba(45,212,191,.12); border: 1px solid rgba(45,212,191,.3); color: var(--teal);
-  }
-  .why-item .ico svg { width: 22px; height: 22px; }
-  .why-item h3 { font-size: 19px; margin-bottom: 8px; }
-  .why-item p { margin: 0; color: var(--muted); font-size: 15px; }
-
-  /* Planes: gratis y Premium por ciudad */
-  .plans { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 880px; margin: 0 auto; }
-  .plan { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; }
-  .plan.premium {
-    background: linear-gradient(160deg, rgba(45,212,191,.13), rgba(59,130,246,.10) 60%, rgba(255,255,255,.03));
-    border-color: rgba(45,212,191,.35);
-  }
-  .plan-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-  .plan h3 { font-size: 22px; }
-  .plan-tag { font-size: 13px; font-weight: 600; color: var(--teal); white-space: nowrap; }
-  .plan ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
-  .plan li { position: relative; padding-left: 26px; color: var(--muted); }
-  .plan li::before {
-    content: ""; position: absolute; left: 2px; top: .5em; width: 12px; height: 7px;
-    border-left: 2px solid var(--teal); border-bottom: 2px solid var(--teal); transform: rotate(-45deg);
-  }
-  .plan li b { color: var(--text); font-weight: 600; }
-  .sponsor p { margin: 0; color: var(--muted); max-width: 560px; }
-
-  footer { border-top: 1px solid var(--line); padding: 30px 0 calc(30px + env(safe-area-inset-bottom, 0px)); color: var(--muted); font-size: 14px; }
-  .foot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-  .foot nav { display: flex; gap: 20px; flex-wrap: wrap; }
+  /* Pie */
+  footer { background: var(--ink); color: #A9B7CC; font-size: 14px; padding: 56px 0 calc(28px + env(safe-area-inset-bottom, 0px)); }
+  .foot { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 32px; }
+  .foot .brand { color: #fff; margin-bottom: 12px; }
+  .foot p { margin: 0; max-width: 300px; }
+  .foot h4 { margin: 0 0 12px; font: 600 13px/1 Inter, sans-serif; text-transform: uppercase; letter-spacing: .08em; color: #fff; }
+  .foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .foot a { text-decoration: none; }
-  .foot a:hover { color: var(--text); }
+  .foot a:hover { color: #fff; }
+  .foot-bottom { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,.1); margin-top: 40px; padding-top: 22px; font-size: 13px; }
+  .credits { max-width: 560px; text-align: right; }
+  .credits summary { cursor: pointer; }
+  .credits p { margin: 10px 0 6px; max-width: none; }
+  .credits ul { gap: 3px; }
+  .credits a { text-decoration: underline; text-underline-offset: 2px; }
+  @media (max-width: 760px) { .credits { text-align: left; } }
 
-  :focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; border-radius: 8px; }
+  :focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 8px; }
 
   /* ---------- Responsive ---------- */
   @media (max-width: 1000px) {
-    .hero-grid { grid-template-columns: 1fr; }
-    .phones { height: 470px; max-width: 520px; margin: 0 auto; width: 100%; }
-    .phone { width: 210px; }
-    .features { grid-template-columns: repeat(2, 1fr); }
-    .cities { grid-template-columns: repeat(3, 1fr); }
-    .country.wide .country-cities { grid-template-columns: repeat(5, 1fr); }
-    .tour { grid-template-columns: 1fr 280px; gap: 32px; }
+    .nav-links { display: none; }
+    .tour { grid-template-columns: 1fr 270px; gap: 36px; }
+    .why { grid-template-columns: repeat(2, 1fr); }
+    .foot { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 760px) {
     .wrap { padding: 0 16px; }
-    .hero { padding: 40px 0 24px; }
-    .downloads { grid-template-columns: 1fr; }
-    .plans, .why { grid-template-columns: 1fr; }
-    .why-item { padding: 20px; }
-    .plan { padding: 22px; }
-    .cities { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-    .country { padding: 14px; }
-    .country.wide .country-cities { grid-template-columns: repeat(3, 1fr); gap: 6px; }
-    .country-head { flex-direction: column; gap: 2px; }
-    .city img { width: 64px; height: 64px; }
-    .city b { font-size: 13px; }
+    .nav { gap: 12px; }
     .nav-cta { display: none; }
-    .phones { height: 380px; }
-    .phone { width: 170px; border-width: 5px; border-radius: 26px; }
-    .phone.p1 { left: 4%; }
-    .phone.p2 { right: 4%; }
-    .sponsor { padding: 28px 22px; }
-    section { padding: 48px 0; }
+    section { padding: 60px 0; }
+    .section-head { margin-bottom: 32px; }
+    .section-head p { font-size: 16px; }
+    .hero { min-height: 0; }
+    .hero-inner { padding: 64px 16px 56px; }
+    .stats { gap: 22px 28px; margin-top: 40px; }
+    .stat b { font-size: 24px; }
+    .cities { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .city { aspect-ratio: 1 / 1; border-radius: 14px; }
+    .city-txt { left: 12px; right: 12px; bottom: 10px; }
+    .city-txt b { font-size: 15px; }
+    .city .medal { width: 36px; height: 36px; top: 8px; right: 8px; padding: 3px; }
     .tour { grid-template-columns: 1fr; gap: 28px; }
-    .tour-phone { width: 240px; margin: 0 auto; order: -1; border-radius: 32px; border-width: 6px; }
+    .tour-phone { width: 230px; margin: 0 auto; order: -1; border-radius: 32px; border-width: 6px; }
     .tour-tab { padding: 14px 16px; }
     .tour-tab .txt > span { display: none; }
     .tour-tab[aria-selected="true"] .txt > span { display: block; }
-    .video-box { border-radius: 16px; }
+    .tutorial { margin-top: 56px; }
+    .video-box { border-radius: 14px; }
+    .why { grid-template-columns: 1fr; gap: 28px; }
+    .plans, .downloads { grid-template-columns: 1fr; }
+    .plan, .dl { padding: 22px; }
+    .sponsor { padding: 30px 22px; }
+    .foot { grid-template-columns: 1fr; gap: 26px; }
+    .hero-place { display: none; }
   }
   /* En el móvil no tiene sentido escanear un QR de la propia pantalla */
   @media (max-width: 760px), (hover: none) and (pointer: coarse) {
@@ -340,7 +347,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
-    .btn, .city, .tour-phone img { transition: none; }
+    .btn, .city, .city > img, .tour-phone img, .hero-photos img { transition: none; }
   }
 </style>
 </head>
@@ -349,6 +356,12 @@
 <header>
   <div class="wrap nav">
     <a class="brand" href="/"><img src="img/icono.png" alt="" width="34" height="34">OnMyOwnTrip</a>
+    <nav class="nav-links" aria-label="Secciones">
+      <a href="#destinos" data-i18n="navDest">Destinos</a>
+      <a href="#como-funciona" data-i18n="navHow">Cómo funciona</a>
+      <a href="#planes" data-i18n="navPlans">Precios</a>
+      <a href="#descargar" data-i18n="navGet">Descargar</a>
+    </nav>
     <div class="nav-right">
       <div class="lang" role="group" aria-label="Idioma / Language">
         <button type="button" data-lang="es" aria-pressed="true">ES</button>
@@ -361,82 +374,52 @@
 
 <main>
   <div class="hero">
-    <div class="hero-shade" aria-hidden="true"></div>
-    <div class="wrap hero-grid">
-      <div>
-        <span class="eyebrow"><i></i><span data-i18n="eyebrow">Audioguía inteligente</span></span>
-        <h1 data-i18n-html="title">Descubre cada ciudad <em>a tu ritmo</em></h1>
-        <p class="lead" data-i18n="lead">Rutas narradas a pie, un guía con inteligencia artificial al que hacer preguntas en cada Punto de interés y un modo niños con retos y medallas.</p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="#descargar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M6 10l6 6 6-6M5 20h14"/></svg>
-            <span data-i18n="ctaGet">Consigue la app</span>
-          </a>
-          <a class="btn btn-ghost" href="#video" id="heroVideoBtn">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.4-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5Z"/></svg>
-            <span data-i18n="ctaVideo">Ver el vídeo</span>
-          </a>
-        </div>
-        <div class="stats">
-          <div class="stat"><b>14</b><span data-i18n="statCities">destinos</span></div>
-          <div class="stat"><b>6</b><span data-i18n="statCountries">países</span></div>
-          <div class="stat"><b>500+</b><span data-i18n="statPlaces">lugares narrados</span></div>
-          <div class="stat"><b>ES · EN</b><span data-i18n="statLangs">dos idiomas</span></div>
-        </div>
+    <div class="hero-photos" id="heroPhotos" aria-hidden="true"></div>
+    <div class="wrap hero-inner">
+      <span class="eyebrow"><i></i><span data-i18n="eyebrow">Audioguía inteligente</span></span>
+      <h1 data-i18n-html="title">Descubre cada ciudad <em>a tu ritmo</em></h1>
+      <p class="lead" data-i18n="lead">Rutas narradas a pie, un guía con inteligencia artificial al que hacer preguntas en cada Punto de interés y un modo niños con retos y medallas.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#descargar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M6 10l6 6 6-6M5 20h14"/></svg>
+          <span data-i18n="ctaGet">Consigue la app</span>
+        </a>
+        <button class="btn btn-light" type="button" id="heroVideoBtn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.4-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5Z"/></svg>
+          <span data-i18n="ctaVideo">Ver el vídeo</span>
+        </button>
       </div>
-      <div class="phones" aria-hidden="true">
-        <div class="phone p1"><img src="img/mapa-madrid.webp" alt="" width="619" height="1100"></div>
-        <div class="phone p2"><video id="heroVideo" muted loop playsinline preload="none" poster="img/promo-poster.webp" width="540" height="960"></video></div>
+      <div class="stats">
+        <div class="stat"><b>14</b><span data-i18n="statCities">destinos</span></div>
+        <div class="stat"><b>6</b><span data-i18n="statCountries">países</span></div>
+        <div class="stat"><b>500+</b><span data-i18n="statPlaces">lugares narrados</span></div>
+        <div class="stat"><b>ES · EN</b><span data-i18n="statLangs">dos idiomas</span></div>
       </div>
+    </div>
+    <div class="hero-place" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+      <span id="heroPlace"></span>
     </div>
   </div>
 
-  <section id="descargar">
+  <section id="destinos">
     <div class="wrap">
       <div class="section-head">
-        <h2 data-i18n="dlTitle">Elige cómo usarla</h2>
-        <p data-i18n="dlSub">En tu móvil Android, en tu iPhone o directamente en el navegador, sin instalar nada.</p>
+        <span class="kicker" data-i18n="citiesKicker">Destinos</span>
+        <h2 data-i18n="citiesTitle">14 destinos, y creciendo</h2>
+        <p data-i18n="citiesSub">Cada ciudad tiene sus rutas, su contenido narrado y su propia medalla.</p>
       </div>
-      <div class="downloads">
-        <article class="dl" data-store="android">
-          <div class="dl-top">
-            <div class="dl-icon"><svg viewBox="0 0 24 24"><path fill="#2DD4BF" d="M4.2 2.6 13.6 12l-9.4 9.4a1.3 1.3 0 0 1-.5-1V3.6c0-.4.2-.8.5-1Z"/><path fill="#3B82F6" d="m16.7 8.9-3.1 3.1-9.4-9.4 11.7 6.2.8.1Z"/><path fill="#7DD3FC" d="m16.7 15.1-.8.1-11.7 6.2 9.4-9.4 3.1 3.1Z"/><path fill="#EAF0FA" d="m16.7 8.9 3.4 1.8c1 .6 1 2 0 2.6l-3.4 1.8-3.1-3.1 3.1-3.1Z"/></svg></div>
-            <div><h3>Google Play</h3><small data-i18n="android">Para móviles Android</small></div>
-          </div>
-          <div class="qr"><img src="img/qr-play.png" alt="" width="148" height="148"></div>
-          <p class="qr-hint" data-i18n="qrHint">Escanéalo con la cámara de tu móvil</p>
-          <a class="btn btn-ghost" data-store-link href="#" target="_blank" rel="noopener"><span data-i18n="openPlay">Abrir en Google Play</span></a>
-        </article>
-
-        <article class="dl" data-store="ios">
-          <div class="dl-top">
-            <div class="dl-icon"><svg viewBox="0 0 24 24" fill="#EAF0FA"><path d="M16.4 12.6c0-2.4 2-3.5 2.1-3.6-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8 1.5 0 1.9.8 3.2.8 1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8-.1 0-2.5-1-2.5-3.9ZM14 5.5c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.6 2.8-1.4Z"/></svg></div>
-            <div><h3>App Store</h3><small data-i18n="ios">Para iPhone</small></div>
-          </div>
-          <div class="qr"><img src="img/qr-play.png" alt="" width="148" height="148"></div>
-          <p class="qr-hint" data-i18n="qrHint">Escanéalo con la cámara de tu móvil</p>
-          <a class="btn btn-ghost" data-store-link href="#" target="_blank" rel="noopener"><span data-i18n="openIos">Abrir en la App Store</span></a>
-        </article>
-
-        <article class="dl featured">
-          <div class="dl-top">
-            <div class="dl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg></div>
-            <div><h3 data-i18n="webTitle">Versión web</h3><small data-i18n="webSmall">En cualquier navegador</small></div>
-          </div>
-          <div class="qr qr-web" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
-          <p class="qr-hint" data-i18n="webHint">Sin instalar nada, en el móvil o el ordenador</p>
-          <a class="btn btn-primary" href="/app/"><span data-i18n="openWeb">Abrir la versión web</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-        </article>
-      </div>
+      <div class="cities" id="cities"></div>
+      <p class="cities-note" data-i18n="citiesNote">Pronto, más ciudades.</p>
     </div>
   </section>
 
-  <section>
+  <section class="alt" id="como-funciona">
     <div class="wrap">
       <div class="section-head">
-        <h2 data-i18n="tourTitle">Así funciona</h2>
-        <p data-i18n="tourSub">Pensada para caminar con el móvil en la mano y la vista en la ciudad.</p>
+        <span class="kicker" data-i18n="tourKicker">Cómo funciona</span>
+        <h2 data-i18n="tourTitle">Pensada para caminar</h2>
+        <p data-i18n="tourSub">Con el móvil en la mano y la vista en la ciudad.</p>
       </div>
       <div class="tour" id="tour">
         <div class="tour-tabs" role="tablist" aria-label="Funciones">
@@ -464,24 +447,23 @@
           <img src="img/ninos-premios.webp" alt="" loading="lazy" width="619" height="1100">
         </div>
       </div>
-    </div>
-  </section>
 
-  <section id="tutorial">
-    <div class="wrap">
-      <div class="section-head">
-        <h2 data-i18n="tutTitle">Aprende a usarla en 2 minutos</h2>
-        <p data-i18n="tutSub">Un tutorial paso a paso con todo lo que puedes hacer en la app.</p>
+      <div class="tutorial" id="tutorial">
+        <div class="tutorial-head">
+          <h3 data-i18n="tutTitle">Aprende a usarla en 2 minutos</h3>
+          <p data-i18n="tutSub">Un tutorial paso a paso con todo lo que puedes hacer en la app.</p>
+        </div>
+        <div class="video-box" id="tutorialBox"></div>
       </div>
-      <div class="video-box" id="tutorialBox"></div>
     </div>
   </section>
 
   <section id="porque">
     <div class="wrap">
       <div class="section-head">
-        <h2 data-i18n="whyTitle">Por qué OnMyOwnTrip</h2>
-        <p data-i18n="whySub">Una audioguía pensada para viajar a tu aire, no para seguir un guion.</p>
+        <span class="kicker" data-i18n="whyKicker">Por qué OnMyOwnTrip</span>
+        <h2 data-i18n="whyTitle">Viaja a tu aire, no con un guion</h2>
+        <p data-i18n="whySub">Todo lo que necesitas para descubrir una ciudad por tu cuenta.</p>
       </div>
       <div class="why">
         <article class="why-item">
@@ -518,9 +500,10 @@
     </div>
   </section>
 
-  <section id="planes">
+  <section class="alt" id="planes">
     <div class="wrap">
       <div class="section-head">
+        <span class="kicker" data-i18n="plansKicker">Precios</span>
         <h2 data-i18n="plansTitle">Gratis para viajar, Premium si quieres más</h2>
         <p data-i18n="plansSub">Todo lo esencial es gratis. Premium se compra por ciudad, sin suscripción.</p>
       </div>
@@ -547,54 +530,107 @@
     </div>
   </section>
 
-  <section id="video" hidden>
+  <section id="descargar">
     <div class="wrap">
       <div class="section-head">
-        <h2 data-i18n="videoTitle">Míralo en acción</h2>
-        <p data-i18n="videoSub">Un paseo por Madrid, Segovia, Roma, Estambul y Ciudad de México con OnMyOwnTrip en la mano.</p>
+        <span class="kicker" data-i18n="dlKicker">Descargar</span>
+        <h2 data-i18n="dlTitle">Elige cómo usarla</h2>
+        <p data-i18n="dlSub">En tu móvil Android, en tu iPhone o directamente en el navegador, sin instalar nada.</p>
       </div>
-      <div class="video-box" id="videoBox">
-        <button class="video-play" type="button" id="videoPlay">
-          <span><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.4-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5Z"/></svg><b data-i18n="play">Reproducir vídeo</b></span>
-        </button>
+      <div class="downloads">
+        <article class="dl" data-store="android">
+          <div class="dl-top">
+            <div class="dl-icon"><svg viewBox="0 0 24 24"><path fill="#14B8A6" d="M4.2 2.6 13.6 12l-9.4 9.4a1.3 1.3 0 0 1-.5-1V3.6c0-.4.2-.8.5-1Z"/><path fill="#2563EB" d="m16.7 8.9-3.1 3.1-9.4-9.4 11.7 6.2.8.1Z"/><path fill="#38BDF8" d="m16.7 15.1-.8.1-11.7 6.2 9.4-9.4 3.1 3.1Z"/><path fill="#0B1426" d="m16.7 8.9 3.4 1.8c1 .6 1 2 0 2.6l-3.4 1.8-3.1-3.1 3.1-3.1Z"/></svg></div>
+            <div><h3>Google Play</h3><small data-i18n="android">Para móviles Android</small></div>
+          </div>
+          <div class="qr"><img src="img/qr-play.png" alt="" width="148" height="148"></div>
+          <p class="qr-hint" data-i18n="qrHint">Escanéalo con la cámara de tu móvil</p>
+          <a class="btn btn-ghost" data-store-link href="#" target="_blank" rel="noopener"><span data-i18n="openPlay">Abrir en Google Play</span></a>
+        </article>
+
+        <article class="dl" data-store="ios">
+          <div class="dl-top">
+            <div class="dl-icon"><svg viewBox="0 0 24 24" fill="#0B1426"><path d="M16.4 12.6c0-2.4 2-3.5 2.1-3.6-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8 1.5 0 1.9.8 3.2.8 1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8-.1 0-2.5-1-2.5-3.9ZM14 5.5c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.6 2.8-1.4Z"/></svg></div>
+            <div><h3>App Store</h3><small data-i18n="ios">Para iPhone</small></div>
+          </div>
+          <div class="qr"><img src="img/qr-play.png" alt="" width="148" height="148"></div>
+          <p class="qr-hint" data-i18n="qrHint">Escanéalo con la cámara de tu móvil</p>
+          <a class="btn btn-ghost" data-store-link href="#" target="_blank" rel="noopener"><span data-i18n="openIos">Abrir en la App Store</span></a>
+        </article>
+
+        <article class="dl featured">
+          <div class="dl-top">
+            <div class="dl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg></div>
+            <div><h3 data-i18n="webTitle">Versión web</h3><small data-i18n="webSmall">En cualquier navegador</small></div>
+          </div>
+          <div class="qr qr-web" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
+          <p class="qr-hint" data-i18n="webHint">Sin instalar nada, en el móvil o el ordenador</p>
+          <a class="btn btn-primary" href="/app/"><span data-i18n="openWeb">Abrir la versión web</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </article>
       </div>
     </div>
   </section>
 
-  <section id="destinos">
-    <div class="wrap">
-      <div class="section-head">
-        <h2 data-i18n="citiesTitle">14 destinos, y creciendo</h2>
-        <p data-i18n="citiesSub">Cada ciudad tiene sus rutas, su contenido narrado y su propia medalla.</p>
-      </div>
-      <div class="cities" id="cities"></div>
-    </div>
-  </section>
-
-  <section>
+  <section class="alt">
     <div class="wrap">
       <div class="sponsor">
         <div>
           <h2 data-i18n="spTitle">¿Tienes un negocio en una de estas ciudades?</h2>
           <p data-i18n="spText">Aparece en la app justo cuando los viajeros pasan cerca de tu puerta: restaurantes, cafeterías, hoteles y experiencias.</p>
         </div>
-        <a class="btn btn-ghost" href="/app/patrocinador"><span data-i18n="spCta">Quiero aparecer</span>
+        <a class="btn" href="/app/patrocinador"><span data-i18n="spCta">Quiero aparecer</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       </div>
     </div>
   </section>
 </main>
 
+<dialog class="modal" id="videoModal">
+  <button class="modal-close" type="button" id="videoClose" aria-label="Cerrar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+  </button>
+  <div class="video-box" id="videoBox"></div>
+</dialog>
+
 <footer>
-  <div class="wrap foot">
-    <span>&copy; 2026 OnMyOwnTrip&trade;</span>
-    <nav>
-      <a href="/app/" data-i18n="fApp">App web</a>
-      <a href="/app/privacidad" data-i18n="fPrivacy">Privacidad</a>
-      <a href="/app/patrocinador" data-i18n="fSponsors">Patrocinadores</a>
-      <a href="https://www.youtube.com/@OnMyOwnTrip" target="_blank" rel="noopener">YouTube</a>
-      <a href="mailto:contacto@onmyowntrip.com">contacto@onmyowntrip.com</a>
-    </nav>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a class="brand" href="/"><img src="img/icono.png" alt="" width="34" height="34">OnMyOwnTrip</a>
+        <p data-i18n="fTagline">Tu audioguía con inteligencia artificial para descubrir ciudades a pie.</p>
+      </div>
+      <div>
+        <h4 data-i18n="fColApp">La app</h4>
+        <ul>
+          <li><a href="/app/" data-i18n="fApp">App web</a></li>
+          <li><a href="#descargar" data-i18n="navGet">Descargar</a></li>
+          <li><a href="#destinos" data-i18n="navDest">Destinos</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 data-i18n="fColInfo">Información</h4>
+        <ul>
+          <li><a href="/app/patrocinador" data-i18n="fSponsors">Patrocinadores</a></li>
+          <li><a href="/app/privacidad" data-i18n="fPrivacy">Privacidad</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 data-i18n="fColContact">Contacto</h4>
+        <ul>
+          <li><a href="mailto:contacto@onmyowntrip.com">contacto@onmyowntrip.com</a></li>
+          <li><a href="https://www.youtube.com/@OnMyOwnTrip" target="_blank" rel="noopener">YouTube</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>&copy; 2026 OnMyOwnTrip&trade;</span>
+      <details class="credits">
+        <summary data-i18n="fPhotos">Créditos de las fotos</summary>
+        <p data-i18n="fPhotosNote">Fotos de Wikimedia Commons, recortadas y comprimidas para esta web.</p>
+        <ul id="photoCredits"></ul>
+      </details>
+    </div>
   </div>
 </footer>
 
@@ -604,26 +640,26 @@
   // CONFIGURACIÓN
   //  - stores: URL de la ficha de cada tienda. Vacío = "Próximamente"
   //    (QR borroso y botón desactivado). Con URL, el QR se genera solo.
-  //  - youtube: id del vídeo (lo que va tras "v=" en la URL de YouTube).
-  //    Vacío = se usa el vídeo propio videoFile; si tampoco hay, la sección
-  //    del vídeo y el botón "Ver el vídeo" no se muestran.
-  //  - heroVideo: el promocional, sin sonido y en bucle, dentro del móvil
-  //    de la portada (img/promo-poster.webp mientras carga).
+  //  - youtube: id del vídeo promocional (lo que va tras "v=" en YouTube).
+  //    Se abre en una ventana desde el botón "Ver el vídeo" de la portada.
+  //    Vacío = se usa videoFile; si tampoco hay, el botón no se muestra.
+  //  - heroCities: ciudades cuya foto rota en la portada (img/hero-<id>.webp).
+  //  - tutorial: uno por idioma, cambia con ES/EN.
   // ---------------------------------------------------------------------
   var CONFIG = {
     stores: { android: '', ios: '' },
     youtube: 'WvfB4NUT9iY',
     videoFile: '',
-    heroVideo: 'img/promo-loop.mp4',
-    // Tutorial de la sección "Aprende a usarla": uno por idioma, cambia con ES/EN.
+    heroCities: ['roma', 'segovia', 'estambul', 'barcelona', 'cdmx'],
     tutorial: {
       es: { src: 'video/tutorial-es.mp4', poster: 'img/tutorial-poster-es.webp' },
       en: { src: 'video/tutorial-en.mp4', poster: 'img/tutorial-poster-en.webp' }
     }
   };
 
-  // Destinos agrupados por país (id de la medalla, nombre ES, nombre EN).
-  // Ciudad nueva: añádela a su país; país nuevo: añade un bloque.
+  // Destinos agrupados por país (id de la ciudad, nombre ES, nombre EN).
+  // Ciudad nueva: añádela a su país y crea img/ciudad-<id>.webp y
+  // img/medalla-<id>.webp; país nuevo: añade un bloque.
   var COUNTRIES = [
     { es: 'España', en: 'Spain', cities: [
       ['madrid', 'Madrid', 'Madrid'],
@@ -636,42 +672,68 @@
       ['peniscola', 'Peñíscola', 'Peñíscola'],
       ['buitrago-del-lozoya', 'Buitrago del Lozoya', 'Buitrago del Lozoya']
     ] },
-    { es: 'México', en: 'Mexico', cities: [['cdmx', 'Ciudad de México', 'Mexico City']] },
     { es: 'Italia', en: 'Italy', cities: [['roma', 'Roma', 'Rome']] },
     { es: 'Ciudad del Vaticano', en: 'Vatican City', cities: [['vaticano', 'Vaticano', 'Vatican City']] },
-    { es: 'Alemania', en: 'Germany', cities: [['berlin', 'Berlín', 'Berlin']] },
-    { es: 'Turquía', en: 'Türkiye', cities: [['estambul', 'Estambul', 'Istanbul']] }
+    { es: 'Turquía', en: 'Türkiye', cities: [['estambul', 'Estambul', 'Istanbul']] },
+    { es: 'México', en: 'Mexico', cities: [['cdmx', 'Ciudad de México', 'Mexico City']] },
+    { es: 'Alemania', en: 'Germany', cities: [['berlin', 'Berlín', 'Berlin']] }
   ];
 
+  // Créditos de las fotos (Wikimedia Commons, CC BY-SA: exige citar autor,
+  // licencia y enlace). Foto nueva: añade su línea (autor, licencia, archivo).
+  var PHOTO_CREDITS = {
+    'toledo': ['Fernando', 'CC BY-SA 4.0', 'FP_Toledo_Alcazar_2025_-_Views.jpg'],
+    'madrid': ['Tim Adams', 'CC BY-SA 4.0', 'Palacio_Real_de_Madrid_Julio_2016_(cropped).jpg'],
+    'alcala-de-henares': ['FDV', 'CC BY-SA 4.0', 'Universidad-Alcala-180819.jpg'],
+    'buitrago-del-lozoya': ['Diego Sanz Siguero', 'CC BY-SA 3.0', 'Muralla_y_barbacana_de_Buitrago_del_Lozoya.jpg'],
+    'peniscola': ['Adolfobrigido', 'CC BY-SA 4.0', 'Peñíscola._Castillo_del_Papa_Luna_19.jpg'],
+    'cdmx': ['ProtoplasmaKid', 'CC BY-SA 4.0', 'Catedral_Metropolitana_de_la_Ciudad_de_México_1.jpg'],
+    'berlin': ['Patrick Joel Photography', 'CC BY-SA 4.0', 'Brandenburger_Tor,_Berlin,_Germany.jpg'],
+    'roma': ['FeaturedPics', 'CC BY-SA 4.0', 'Colosseo_2020.jpg'],
+    'vaticano': ['Diliff', 'CC BY-SA 3.0', 'St_Peter\'s_Square,_Vatican_City_-_April_2007.jpg'],
+    'estambul': ['Adli Wahid', 'CC BY-SA 3.0', 'Hagia_Sophia_(228968325).jpeg'],
+    'segovia': ['Bernard Gagnon', 'CC BY-SA 3.0', 'Aqueduct_of_Segovia_08.jpg'],
+    'barcelona': ['Canaan', 'CC BY-SA 4.0', 'SF_maig_2_cropped.jpg'],
+    'malaga': ['Fernando', 'CC BY-SA 4.0', 'Alcazaba_de_Málaga_overview.jpg'],
+    'alicante': ['Artistosteles', 'CC BY-SA 4.0', 'Castello_de_Santa_Bàrbara_Alicante.jpg']
+  };
+  var LICENSE_URL = {
+    'CC BY-SA 3.0': 'https://creativecommons.org/licenses/by-sa/3.0/',
+    'CC BY-SA 4.0': 'https://creativecommons.org/licenses/by-sa/4.0/'
+  };
+
   var EN = {
+    navDest: 'Destinations', navHow: 'How it works', navPlans: 'Pricing', navGet: 'Download',
     navCta: 'Open the web app',
     eyebrow: 'Smart audio guide',
     title: 'Discover every city <em>at your own pace</em>',
     lead: 'Narrated walking routes, an AI guide you can ask questions at every point of interest, and a kids mode with challenges and medals.',
     ctaGet: 'Get the app', ctaVideo: 'Watch the video',
     statCities: 'destinations', statCountries: 'countries', statPlaces: 'narrated places', statLangs: 'two languages',
-    dlTitle: 'Choose how to use it',
-    dlSub: 'On your Android phone, on your iPhone or right in your browser, with nothing to install.',
-    android: 'For Android phones', ios: 'For iPhone',
-    qrHint: 'Scan it with your phone camera',
-    openPlay: 'Open in Google Play', openIos: 'Open in the App Store',
-    webTitle: 'Web version', webSmall: 'In any browser',
-    webHint: 'Nothing to install, on your phone or computer',
-    openWeb: 'Open the web version',
-    tourTitle: 'How it works',
-    tourSub: 'Designed for walking with your phone in hand and your eyes on the city.',
+    citiesKicker: 'Destinations',
+    citiesTitle: '14 destinations, and growing',
+    citiesSub: 'Every city has its own routes, narrated content and its own medal.',
+    citiesNote: 'More cities coming soon.',
+    tourKicker: 'How it works',
+    tourTitle: 'Made for walking',
+    tourSub: 'With your phone in hand and your eyes on the city.',
     t1t: 'Routes and map', t1d: 'Walking tours with every stop on the map, plus nearby fountains and toilets when you need them.',
     t2t: 'Narrated audio guide', t2d: 'Listen to the story of each point of interest as you walk, in a natural voice.',
     t3t: 'Ask your guide', t3d: 'An AI guide answers about the point of interest in front of you: history, legends and fun facts. Free, 3 questions at each one.',
     t4t: 'Kids mode', t4d: 'Challenges, quizzes and medals so the little ones enjoy the trip too.',
-    whyTitle: 'Why OnMyOwnTrip',
-    whySub: 'An audio guide made for travelling your own way, not for following a script.',
+    tutTitle: 'Learn to use it in 2 minutes',
+    tutSub: 'A step-by-step tutorial covering everything you can do in the app.',
+    playTutorial: 'Watch the tutorial',
+    whyKicker: 'Why OnMyOwnTrip',
+    whyTitle: 'Travel your way, not by a script',
+    whySub: 'Everything you need to discover a city on your own.',
     w1t: 'No paying per route', w1d: 'Every point of interest in the city, free. No buying tours one by one.',
     w2t: 'Your route, not ours', w2d: 'Explore in any order, come and go as you like, or follow one of the recommended routes.',
     w3t: 'A guide that answers', w3d: "You don't just listen: ask in writing, by voice or in a call with your guide.",
     w4t: 'Point and discover', w4d: 'Aim your camera at what is in front of you and the app tells you what it is.',
     w5t: 'Made for families', w5d: 'A kids mode with its own narration, challenges and a medal in every city.',
     w6t: 'Useful, not just interesting', w6d: 'Drinking fountains, nearby toilets, satellite view and directions to every point of interest.',
+    plansKicker: 'Pricing',
     plansTitle: 'Free to travel, Premium if you want more',
     plansSub: 'Everything essential is free. Premium is bought per city, with no subscription.',
     freeTitle: 'Free',
@@ -684,41 +746,54 @@
     prem2: '<b>Unlimited questions</b> to the AI guide',
     prem3: '<b>No ads</b>',
     prem4: '<b>One-time payment</b> in the Android app',
-    videoTitle: 'See it in action',
-    videoSub: 'A walk through Madrid, Segovia, Rome, Istanbul and Mexico City with OnMyOwnTrip in hand.',
-    play: 'Play video',
-    tutTitle: 'Learn to use it in 2 minutes',
-    tutSub: 'A step-by-step tutorial covering everything you can do in the app.',
-    playTutorial: 'Watch the tutorial',
-    citiesTitle: '14 destinations, and growing',
-    citiesSub: 'Every city has its own routes, narrated content and its own medal.',
+    dlKicker: 'Download',
+    dlTitle: 'Choose how to use it',
+    dlSub: 'On your Android phone, on your iPhone or right in your browser, with nothing to install.',
+    android: 'For Android phones', ios: 'For iPhone',
+    qrHint: 'Scan it with your phone camera',
+    openPlay: 'Open in Google Play', openIos: 'Open in the App Store',
+    webTitle: 'Web version', webSmall: 'In any browser',
+    webHint: 'Nothing to install, on your phone or computer',
+    openWeb: 'Open the web version',
     spTitle: 'Own a business in one of these cities?',
     spText: 'Show up in the app right when travellers walk past your door: restaurants, cafés, hotels and experiences.',
     spCta: 'Get featured',
+    fTagline: 'Your AI audio guide for discovering cities on foot.',
+    fColApp: 'The app', fColInfo: 'Information', fColContact: 'Contact',
     fApp: 'Web app', fPrivacy: 'Privacy', fSponsors: 'Sponsors',
+    fPhotos: 'Photo credits',
+    fPhotosNote: 'Photos from Wikimedia Commons, cropped and compressed for this site.',
+    close: 'Close',
     soon: 'Coming soon'
   };
 
-  EN.oneDest = '1 destination'; EN.nDest = 'destinations';
-  var ES = { soon: 'Próximamente', oneDest: '1 destino', nDest: 'destinos', playTutorial: 'Ver el tutorial' };
+  var ES = { soon: 'Próximamente', playTutorial: 'Ver el tutorial', close: 'Cerrar' };
   document.querySelectorAll('[data-i18n]').forEach(function (el) { ES[el.dataset.i18n] = el.textContent; });
   document.querySelectorAll('[data-i18n-html]').forEach(function (el) { ES[el.dataset.i18nHtml] = el.innerHTML; });
 
   var lang = 'es';
   var tr = function () { return lang === 'en' ? EN : ES; };
 
+  // Nombre de una ciudad en el idioma actual, a partir de su id.
+  function cityName(id) {
+    for (var i = 0; i < COUNTRIES.length; i++) {
+      for (var j = 0; j < COUNTRIES[i].cities.length; j++) {
+        var c = COUNTRIES[i].cities[j];
+        if (c[0] === id) return lang === 'en' ? c[2] : c[1];
+      }
+    }
+    return '';
+  }
+
   function renderCities() {
     var en = lang === 'en';
-    var t = tr();
     document.getElementById('cities').innerHTML = COUNTRIES.map(function (country) {
-      var n = country.cities.length;
-      var count = n === 1 ? t.oneDest : n + ' ' + t.nDest;
-      return '<div class="country' + (n > 1 ? ' wide' : '') + '">' +
-        '<div class="country-head"><h3>' + (en ? country.en : country.es) + '</h3><span>' + count + '</span></div>' +
-        '<div class="country-cities">' + country.cities.map(function (c) {
-          return '<div class="city"><img src="img/medalla-' + c[0] + '.webp" alt="" loading="lazy" width="352" height="352">' +
-            '<b>' + (en ? c[2] : c[1]) + '</b></div>';
-        }).join('') + '</div></div>';
+      return country.cities.map(function (c) {
+        return '<a class="city" href="/app/">' +
+          '<img src="img/ciudad-' + c[0] + '.webp" alt="" loading="lazy" width="600" height="750">' +
+          '<img class="medal" src="img/medalla-' + c[0] + '.webp" alt="" loading="lazy" width="46" height="46">' +
+          '<span class="city-txt"><b>' + (en ? c[2] : c[1]) + '</b><span>' + (en ? country.en : country.es) + '</span></span></a>';
+      }).join('');
     }).join('');
   }
 
@@ -764,6 +839,19 @@
     });
   }
 
+  function renderCredits() {
+    document.getElementById('photoCredits').innerHTML = Object.keys(PHOTO_CREDITS).map(function (id) {
+      var c = PHOTO_CREDITS[id];
+      return '<li>' + cityName(id) + ': <a href="https://commons.wikimedia.org/wiki/File:' + encodeURI(c[2]) +
+        '" target="_blank" rel="noopener">' + c[0] + '</a>, <a href="' + LICENSE_URL[c[1]] + '" target="_blank" rel="noopener">' + c[1] + '</a></li>';
+    }).join('');
+  }
+
+  var heroIndex = 0;
+  function renderHeroPlace() {
+    document.getElementById('heroPlace').textContent = cityName(CONFIG.heroCities[heroIndex]);
+  }
+
   function setLang(next) {
     lang = next === 'en' ? 'en' : 'es';
     var t = tr();
@@ -771,9 +859,12 @@
     document.querySelectorAll('[data-i18n]').forEach(function (el) { if (t[el.dataset.i18n] != null) el.textContent = t[el.dataset.i18n]; });
     document.querySelectorAll('[data-i18n-html]').forEach(function (el) { if (t[el.dataset.i18nHtml] != null) el.innerHTML = t[el.dataset.i18nHtml]; });
     document.querySelectorAll('.lang button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
+    document.getElementById('videoClose').setAttribute('aria-label', t.close);
     renderCities();
     renderStores();
     renderTutorial();
+    renderHeroPlace();
+    renderCredits();
     try { localStorage.setItem('portada_lang', lang); } catch (_) {}
   }
 
@@ -784,8 +875,32 @@
   try { saved = localStorage.getItem('portada_lang'); } catch (_) {}
   setLang(saved || ((navigator.language || 'es').toLowerCase().indexOf('es') === 0 ? 'es' : 'en'));
 
-  var header = document.querySelector('header');
-  window.addEventListener('scroll', function () { header.classList.toggle('scrolled', window.scrollY > 8); }, { passive: true });
+  // ---- Portada: la primera foto carga ya; las demás, cuando termina la
+  // página, y rotan cada 6 s (sin rotar con "reducir movimiento").
+  (function () {
+    var box = document.getElementById('heroPhotos');
+    var imgs = CONFIG.heroCities.map(function (id, i) {
+      var img = document.createElement('img');
+      img.alt = ''; img.width = 1280; img.height = 853;
+      if (i === 0) { img.src = 'img/hero-' + id + '.webp'; img.className = 'on'; }
+      else img.dataset.src = 'img/hero-' + id + '.webp';
+      box.appendChild(img);
+      return img;
+    });
+    if (imgs.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    window.addEventListener('load', function () {
+      imgs.forEach(function (img) { if (img.dataset.src) img.src = img.dataset.src; });
+      setInterval(function () {
+        if (document.hidden) return;
+        var next = (heroIndex + 1) % imgs.length;
+        if (!imgs[next].complete) return;
+        imgs[heroIndex].classList.remove('on');
+        imgs[next].classList.add('on');
+        heroIndex = next;
+        renderHeroPlace();
+      }, 6000);
+    });
+  })();
 
   // ---- Recorrido interactivo: rota solo cada 6 s, se detiene al pasar el
   // ratón por encima y salta a la pestaña que se pulse.
@@ -812,49 +927,27 @@
     } else start();
   })();
 
-  // ---- Vídeo de fondo: solo en conexiones que no pidan ahorrar datos y
-  // sin "reducir movimiento"; se pausa cuando el hero sale de pantalla.
+  // ---- Vídeo promocional en ventana: YouTube (se carga solo al abrir, sin
+  // cookies hasta entonces) o, si no hay id, el vídeo propio.
   (function () {
-    var v = document.getElementById('heroVideo');
-    var conn = navigator.connection || {};
-    if (!CONFIG.heroVideo || conn.saveData || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    v.src = CONFIG.heroVideo;
-    var play = function () { var p = v.play(); if (p && p.catch) p.catch(function () {}); };
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (e) { e[0].isIntersecting ? play() : v.pause(); }).observe(v);
-    } else play();
-  })();
-
-  // ---- Vídeo promocional: YouTube (se carga solo al pulsar, sin cookies
-  // hasta entonces) o, si no hay id, el vídeo propio.
-  (function () {
-    var section = document.getElementById('video');
+    var modal = document.getElementById('videoModal');
     var box = document.getElementById('videoBox');
-    var btn = document.getElementById('videoPlay');
-    var heroBtn = document.getElementById('heroVideoBtn');
-    if (CONFIG.youtube) {
-      box.style.backgroundImage = 'url(https://i.ytimg.com/vi/' + CONFIG.youtube + '/maxresdefault.jpg)';
-      section.hidden = false;
-      btn.addEventListener('click', function () {
-        box.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + CONFIG.youtube +
-          '?autoplay=1&rel=0&playsinline=1" title="OnMyOwnTrip" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>';
-      });
-    } else if (CONFIG.videoFile) {
-      var probe = document.createElement('video');
-      probe.preload = 'metadata';
-      probe.addEventListener('loadedmetadata', function () {
-        section.hidden = false;
-        btn.addEventListener('click', function () {
-          var v = document.createElement('video');
-          v.src = CONFIG.videoFile; v.controls = true; v.autoplay = true; v.playsInline = true;
-          box.innerHTML = ''; box.appendChild(v);
-        });
-      });
-      probe.addEventListener('error', function () { heroBtn.hidden = true; });
-      probe.src = CONFIG.videoFile;
-    } else {
-      heroBtn.hidden = true;
-    }
+    var btn = document.getElementById('heroVideoBtn');
+    if ((!CONFIG.youtube && !CONFIG.videoFile) || typeof modal.showModal !== 'function') { btn.hidden = true; return; }
+    btn.addEventListener('click', function () {
+      box.innerHTML = CONFIG.youtube
+        ? '<iframe src="https://www.youtube-nocookie.com/embed/' + CONFIG.youtube +
+          '?autoplay=1&rel=0&playsinline=1" title="OnMyOwnTrip" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>'
+        : '<video src="' + CONFIG.videoFile + '" controls autoplay playsinline></video>';
+      modal.showModal();
+    });
+    // Vaciar la caja corta el vídeo; se hace al cerrar por cualquier vía (botón,
+    // clic fuera o tecla Esc) y no solo en el evento "close", que llega tarde.
+    function closeModal() { box.innerHTML = ''; if (modal.open) modal.close(); }
+    document.getElementById('videoClose').addEventListener('click', closeModal);
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+    modal.addEventListener('cancel', function () { box.innerHTML = ''; });
+    modal.addEventListener('close', function () { box.innerHTML = ''; });
   })();
 
   // Quien ya tenía onmyowntrip.com abierto antes de que existiera esta
