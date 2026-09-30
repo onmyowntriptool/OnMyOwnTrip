@@ -1,6 +1,9 @@
 {
   "_ayuda": "Variables de la presentación. Edita esto y ejecuta: node scripts/presentacion/build.js — ver README.md en esta carpeta.",
 
+  "publico": "adultos",
+  "salida": "presentacion",
+
   "evento": {
     "titulo": "Día Mundial del Turismo 2026",
     "tema": "Turismo e inteligencia artificial: rediseñando el sector",

@@ -5,17 +5,34 @@ Fuente de la presentación web publicada en
 
 ```
 scripts/presentacion/
-  evento.json      variables (lo que cambia de un evento a otro)
-  slides/NN-*.html una diapositiva por archivo, con {{variables}}
-  plantilla.html   carcasa de la página: estilos, animaciones, navegación
-  build.js         genera presentacion/index.html + presentacion/img/
+  evento.json            evento por defecto (adultos / inversores)
+  eventos/<evento>.json  otros eventos (p. ej. charlas en colegios)
+  slides/NN-*.html       diapositivas para adultos, con {{variables}}
+  slides-ninos/NN-*.html diapositivas para niños (5-12 años)
+  plantilla.html         carcasa de la página: estilos, animaciones, navegación
+  build.js               genera <salida>/index.html + <salida>/img/
 ```
 
 Generar:
 
 ```
-node scripts/presentacion/build.js
+node scripts/presentacion/build.js                                   # evento.json
+node scripts/presentacion/build.js eventos/ceip-leopoldo-calvo-sotelo.json
 ```
+
+Cada JSON de evento lleva dos variables que deciden qué se genera:
+
+- `"publico"`: `"adultos"` (usa `slides/`: problema, negocio, inversión…) o
+  `"ninos"` (usa `slides-ninos/`: qué es la IA, cómo se hace una app, Modo
+  Niños, mochila, niveles, medallas y un juego de adivinar ciudades).
+- `"salida"`: carpeta publicada. `presentacion` →
+  <https://onmyowntrip.com/presentacion/>; `presentacion/<nombre>` →
+  `https://onmyowntrip.com/presentacion/<nombre>/`. Cada evento en su propia
+  carpeta, así uno no pisa a otro.
+
+Para un colegio nuevo: copiar `eventos/ceip-leopoldo-calvo-sotelo.json` con
+otro nombre, cambiar `evento.titulo` (el nombre del colegio), `salida` y, si
+se quiere, el orden de las medallas (`destinos.orden`), y generar.
 
 Al terminar imprime las cifras calculadas, a dónde apunta el QR y una lista
 **REVISAR** si algo no cuadra (ciudad sin medalla, medalla sin ciudad,

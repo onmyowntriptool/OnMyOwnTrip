@@ -1,0 +1,31 @@
+{
+  "_ayuda": "Charla para niños de 5 a 12 años. Generar con: node scripts/presentacion/build.js eventos/ceip-leopoldo-calvo-sotelo.json",
+
+  "publico": "ninos",
+  "salida": "presentacion/ceip-leopoldo-calvo-sotelo",
+
+  "evento": {
+    "titulo": "CEIP Leopoldo Calvo-Sotelo",
+    "tema": "Hoy descubrimos qué es la inteligencia artificial y cómo se crea una app para viajar",
+    "lugar": "CEIP Leopoldo Calvo-Sotelo",
+    "fecha": ""
+  },
+
+  "ponente": {
+    "nombre": "David G. Henriquez",
+    "nombre_corto": "David",
+    "cargo": "Fundador",
+    "email": "contacto@onmyowntrip.com"
+  },
+
+  "destinos": {
+    "_nota": "Orden de las medallas (ids de data/core.js). Una ciudad nueva que no esté aquí se añade al final y el build avisa.",
+    "orden": ["madrid", "barcelona", "toledo", "segovia", "malaga", "alicante", "alcala-de-henares", "peniscola", "buitrago-del-lozoya", "roma", "vaticano", "berlin", "estambul", "cdmx"],
+    "nombres": { "madrid": "Madrid" },
+    "paises": { "vaticano": "Ciudad del Vaticano" }
+  },
+
+  "descarga": {
+    "qr_url": "https://onmyowntrip.com/"
+  }
+}

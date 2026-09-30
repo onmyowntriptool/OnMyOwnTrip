@@ -419,7 +419,7 @@
   // Preparación de cada diapositiva: luces de fondo, orden de entrada.
   slides.forEach((sl) => {
     const bg = sl.getAttribute('style') || '';
-    const light = /background:#F6F2EA|background:#F5A524/.test(bg);
+    const light = /background:#(F6F2EA|F5A524|FFF8E7|FFC83D)/.test(bg);
     sl.insertAdjacentHTML('afterbegin', '<div class="glow g1' + (light ? ' light' : '') + '"></div><div class="glow g2' + (light ? ' light' : '') + '"></div>');
     let i = 0;
     sl.querySelectorAll('h1,h2,h3,p,li,img,table,svg.k-icon').forEach((el) => {
@@ -430,7 +430,7 @@
     });
     sl.querySelectorAll('div').forEach((d) => {
       const st = d.getAttribute('style') || '';
-      if (/border-radius:24px/.test(st) && /background:#(FFFDF8|13254A|FBF3E2)/.test(st)) d.classList.add('lift');
+      if (/border-radius:(24|32)px/.test(st) && /background:#(FFFDF8|13254A|FBF3E2|FFFDF7|2E2A6B)/.test(st)) d.classList.add('lift');
     });
     sl.querySelectorAll('img.k-qr').forEach((q) => q.parentElement.classList.add('qr-card'));
     sl.querySelectorAll('img.k-icon').forEach((q) => q.classList.replace('k-icon', 'k-icon-img'));
