@@ -1130,6 +1130,21 @@
    * KV o a las herramientas de desarrollador para forzar el resultado
    * localmente, pero ya no es tan trivial como leer un fichero público).
    * =======================================================*/
+  // Versión y plataforma que se mandan con cada comprobación de licencia
+  // (ver recordAppVersion y updatePolicyFor en worker/proxy.js). La versión
+  // sale del propio "Beta VXX" de index.html, que ya se sube en cada
+  // cambio, para no tener que mantener el mismo número en dos sitios.
+  const appVersionNumber = () => {
+    const m = (document.getElementById('appVersion')?.textContent || '').match(/V(\d+(?:\.\d+)?)/);
+    return m ? m[1] : '';
+  };
+  const appPlatform = () => {
+    try {
+      return (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform())
+        ? Capacitor.getPlatform() : 'web';
+    } catch (_) { return 'web'; }
+  };
+
   const LICENSE = (() => {
     const STORAGE = 'omot_license_v1';
     const baseUrl = (typeof window !== 'undefined' && window.LLM_CONFIG && window.LLM_CONFIG.baseUrl) || '';
@@ -1174,7 +1189,7 @@
           res = await fetch(ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, kind }),
+            body: JSON.stringify({ username, kind, appVersion: appVersionNumber(), platform: appPlatform() }),
             signal: controller.signal
           });
         } finally {
@@ -1244,7 +1259,7 @@
         const result = await check(username, 'watch');
         if (result.ok) {
           writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell });
-          STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell;
+          STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; applyUpdatePolicy(result.updatePolicy);
         } else if (result.reason !== 'offline') {
           stopWatching();
           clearStored();
@@ -1353,6 +1368,12 @@
     chatQuotaCallBlocked: { es: { adult: 'Has usado tus preguntas sobre este Punto de interés por hoy. Puedes seguir preguntando en los demás Puntos de interés.', kids: 'Has usado tus preguntas sobre este Punto de interés por hoy. Puedes seguir preguntando en los demás Puntos de interés.' }, en: { adult: "You've used your questions about this point of interest for today. You can keep asking at the other points of interest.", kids: "You've used your questions about this point of interest for today. You can keep asking at the other points of interest." } },
     chatQuotaUpsell: { es: { adult: 'Preguntas ilimitadas en {city} con Premium', kids: 'Preguntas ilimitadas en {city} con Premium' }, en: { adult: 'Unlimited questions in {city} with Premium', kids: 'Unlimited questions in {city} with Premium' } },
     premiumHintChat: { es: { adult: 'Sin publicidad y con preguntas ilimitadas al guía. Elige una ciudad, o todas de una vez.', kids: 'Sin publicidad y con preguntas ilimitadas al guía. Elige una ciudad, o todas de una vez.' }, en: { adult: 'No ads and unlimited questions to the guide. Pick a city, or all of them at once.', kids: 'No ads and unlimited questions to the guide. Pick a city, or all of them at once.' } },
+    // Aviso de actualización de la app nativa (ver applyUpdatePolicy).
+    updateTitle: { es: { adult: 'Hay una versión nueva', kids: 'Hay una versión nueva' }, en: { adult: 'A new version is available', kids: 'A new version is available' } },
+    updateSoftText: { es: { adult: 'Actualiza la app para tener las últimas mejoras y correcciones.', kids: 'Actualiza la app para tener las últimas mejoras y correcciones.' }, en: { adult: 'Update the app to get the latest improvements and fixes.', kids: 'Update the app to get the latest improvements and fixes.' } },
+    updateHardText: { es: { adult: 'Esta versión ya no funciona correctamente. Actualiza la app para seguir usándola.', kids: 'Esta versión ya no funciona correctamente. Actualiza la app para seguir usándola.' }, en: { adult: 'This version no longer works properly. Update the app to keep using it.', kids: 'This version no longer works properly. Update the app to keep using it.' } },
+    updateGo: { es: { adult: 'Actualizar', kids: 'Actualizar' }, en: { adult: 'Update', kids: 'Update' } },
+    updateLater: { es: { adult: 'Más tarde', kids: 'Más tarde' }, en: { adult: 'Later', kids: 'Later' } },
     backToMenu: { es: { adult: 'Menú principal', kids: 'Menú principal' }, en: { adult: 'Main menu', kids: 'Main menu' } },
     // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
     // etiquetas visibles de las tres filas siempre presentes en .header-bottom
@@ -3090,6 +3111,52 @@
     } catch (_) {
       return 'ANONIMO';
     }
+  };
+
+  // Aviso de actualización (política que manda el Worker con la licencia,
+  // ver updatePolicyFor en worker/proxy.js; se configura en el panel,
+  // pestaña "Acceso premium"). Solo en la app nativa: la web se actualiza
+  // sola. Por debajo de "hard" es obligatorio (sin botón de cerrar); por
+  // debajo de "soft" se puede posponer, y no vuelve a salir ese mismo día
+  // salvo que el mínimo suba. Si el mínimo baja mientras el aviso
+  // obligatorio está abierto, se cierra en la siguiente comprobación.
+  const UPDATE_SNOOZE_KEY = 'omot_update_snooze_v1';
+  const closeUpdateNotice = () => {
+    const modal = $('#updateModal');
+    if (modal) { modal.classList.remove('-open'); modal.setAttribute('aria-hidden', 'true'); modal.dataset.mandatory = ''; }
+  };
+  const showUpdateNotice = (url, mandatory, onLater) => {
+    const modal = $('#updateModal');
+    if (!modal) return;
+    $('#updateTitle').textContent = t('updateTitle');
+    $('#updateText').textContent = t(mandatory ? 'updateHardText' : 'updateSoftText');
+    const go = $('#updateGoBtn');
+    go.textContent = t('updateGo');
+    go.onclick = () => window.open(url, '_blank');
+    const later = $('#updateLaterBtn');
+    later.textContent = t('updateLater');
+    later.hidden = mandatory;
+    later.onclick = () => { if (onLater) onLater(); closeUpdateNotice(); };
+    modal.dataset.mandatory = mandatory ? '1' : '';
+    modal.classList.add('-open');
+    modal.setAttribute('aria-hidden', 'false');
+  };
+  const applyUpdatePolicy = (policy) => {
+    if (!policy || !isNativeApp()) return;
+    const current = Number(appVersionNumber()) || 0;
+    const hard = Number(policy.hard) || 0;
+    const soft = Number(policy.soft) || 0;
+    if (!current || !policy.url) return;
+    if (hard && current < hard) { showUpdateNotice(policy.url, true); return; }
+    if ($('#updateModal')?.dataset.mandatory) closeUpdateNotice();
+    if (!soft || current >= soft || $('#updateModal')?.classList.contains('-open')) return;
+    const today = new Date().toISOString().slice(0, 10);
+    let snooze = null;
+    try { snooze = JSON.parse(localStorage.getItem(UPDATE_SNOOZE_KEY) || 'null'); } catch (_) {}
+    if (snooze && snooze.day === today && snooze.soft === soft) return;
+    showUpdateNotice(policy.url, false, () => {
+      try { localStorage.setItem(UPDATE_SNOOZE_KEY, JSON.stringify({ day: today, soft })); } catch (_) {}
+    });
   };
 
   // productId de Play Console -> tiene que coincidir EXACTAMENTE con
@@ -9216,7 +9283,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       submit.textContent = 'Entrar';
       if (result.ok) {
         LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell });
-        STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell;
+        STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; applyUpdatePolicy(result.updatePolicy);
         hideLicenseGate();
         revealApp(); // no-op si la app ya se había revelado antes de un bloqueo
         LICENSE.startWatching(username, lockApp);
@@ -9246,7 +9313,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     const result = await LICENSE.check(username);
     if (!result.ok) return false;
     LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell });
-    STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell;
+    STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; applyUpdatePolicy(result.updatePolicy);
     revealApp();
     LICENSE.startWatching(username, lockApp);
     LICENSE.recordVisit(username);
@@ -9341,7 +9408,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       LICENSE.check(cached.username).then((result) => {
         if (result.ok) {
           LICENSE.writeStored({ username: cached.username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell });
-          STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell;
+          STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; applyUpdatePolicy(result.updatePolicy);
           LICENSE.startWatching(cached.username, lockApp);
           LICENSE.recordVisit(cached.username);
         } else if (result.reason !== 'offline') {

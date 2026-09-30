@@ -3985,6 +3985,9 @@ html[data-mode="kids"] .ai-input-wrap {
   transition: opacity 0.2s ease;
 }
 .premium-modal.-open { opacity: 1; visibility: visible; }
+/* El aviso de actualización (obligatorio o no) va por encima de todo lo demás. */
+.update-modal { z-index: 9000; }
+.update-modal .premium-restore-btn[hidden] { display: none; }
 .premium-card {
   width: min(92vw, 420px);
   max-height: min(85vh, 85dvh);

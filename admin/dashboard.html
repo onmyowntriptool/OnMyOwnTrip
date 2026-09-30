@@ -392,6 +392,38 @@
         </div>
       </section>
 
+      <!-- Versiones en uso y aviso de actualización (ver getAppVersionStats
+           y updatePolicyFor en worker/proxy.js, applyUpdatePolicy en app.js). -->
+      <section>
+        <h2>Versiones de la app</h2>
+        <p class="hint" style="margin-top:-6px">Qué versión usa cada persona, según su última apertura de la app. Solo cuentan las versiones desde la V92, que es la primera que lo envía.</p>
+        <div class="table-wrap">
+          <table id="appVersionsTable">
+            <thead><tr><th>Plataforma</th><th>Versión</th><th>Usuarios</th><th>Activos 7 días</th><th>Última vez</th></tr></thead>
+            <tbody><tr><td colspan="5" class="empty">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <div class="form-card">
+          <h3>Aviso de actualización</h3>
+          <p class="hint">Por número de versión (el de "Beta V92" → 92). Si la app tiene una versión <b>menor</b> que el aviso, sale "Hay una versión nueva" con botón a la tienda y opción de "Más tarde" (una vez al día). Si es menor que la obligatoria, no se puede cerrar. 0 = desactivado. La web no lo necesita: se actualiza sola.</p>
+          <div class="form-grid">
+            <div class="field"><label for="updAndroidSoft">Android: aviso si es menor que</label><input type="number" id="updAndroidSoft" min="0" step="1"></div>
+            <div class="field"><label for="updAndroidHard">Android: obligatorio si es menor que</label><input type="number" id="updAndroidHard" min="0" step="1"></div>
+            <div class="field -span2"><label for="updAndroidUrl">Android: enlace a la tienda</label><input type="url" id="updAndroidUrl"></div>
+            <div class="field"><label for="updIosSoft">iPhone: aviso si es menor que</label><input type="number" id="updIosSoft" min="0" step="1"></div>
+            <div class="field"><label for="updIosHard">iPhone: obligatorio si es menor que</label><input type="number" id="updIosHard" min="0" step="1"></div>
+            <div class="field -span2"><label for="updIosUrl">iPhone: enlace a la tienda</label><input type="url" id="updIosUrl"></div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="refresh-btn" id="updSaveBtn">Guardar aviso</button>
+            <span class="error" id="updError" hidden></span>
+          </div>
+        </div>
+      </section>
+
       <section>
         <h2>Acceso premium (sin publicidad)</h2>
         <p class="hint" style="margin-top:-6px">Regala "sin publicidad" a un contacto sin que pague — mismo efecto que si comprara desde la app.</p>
@@ -1251,25 +1283,73 @@
     btn.textContent = chatUpsellOn == null ? 'No disponible'
       : chatUpsellOn ? 'Encendida — pulsar para apagar' : 'Apagada — pulsar para encender';
   };
-  const chatUpsellRequest = async (value) => {
+  // Versiones en uso y aviso de actualización: llegan en la misma respuesta
+  // de /premium/admin/config que el interruptor de arriba.
+  const PLATFORM_LABELS = { web: 'Web', android: 'Android', ios: 'iPhone' };
+  const renderAppVersions = (versions) => {
+    const tbody = $('#appVersionsTable tbody');
+    if (!versions || !versions.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">Aún no hay datos: llegan cuando alguien abre la V92 o posterior.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = versions.map((v) => `<tr><td>${escapeHtml(PLATFORM_LABELS[v.platform] || v.platform)}</td><td>V${escapeHtml(v.version)}</td><td>${v.users}</td><td>${v.active7d}</td><td>${escapeHtml(v.lastSeen)}</td></tr>`).join('');
+  };
+  const renderUpdatePolicy = (policy) => {
+    if (!policy) return;
+    ['android', 'ios'].forEach((p) => {
+      const cap = p === 'android' ? 'Android' : 'Ios';
+      const pol = policy[p] || {};
+      $(`#upd${cap}Soft`).value = pol.soft || 0;
+      $(`#upd${cap}Hard`).value = pol.hard || 0;
+      $(`#upd${cap}Url`).value = pol.url || '';
+    });
+  };
+  const chatUpsellRequest = async (value, updatePolicy) => {
     const err = $('#chatUpsellError');
     err.hidden = true;
     try {
       const body = { adminKey };
       if (typeof value === 'boolean') body.chatUpsell = value;
+      if (updatePolicy) body.updatePolicy = updatePolicy;
       const res = await fetch(`${WORKER_BASE}/premium/admin/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
       if (!res.ok) throw new Error('código ' + res.status);
-      chatUpsellOn = !!(await res.json()).chatUpsell;
+      const data = await res.json();
+      chatUpsellOn = !!data.chatUpsell;
+      renderAppVersions(data.versions);
+      renderUpdatePolicy(data.updatePolicy);
     } catch (e) {
       err.hidden = false;
       err.textContent = 'No se pudo leer o cambiar: ' + e.message;
     }
     renderChatUpsellToggle();
   };
+  $('#updSaveBtn').addEventListener('click', async () => {
+    const err = $('#updError');
+    err.hidden = true;
+    const read = (cap) => ({
+      soft: Number($(`#upd${cap}Soft`).value) || 0,
+      hard: Number($(`#upd${cap}Hard`).value) || 0,
+      url: $(`#upd${cap}Url`).value.trim()
+    });
+    const policy = { android: read('Android'), ios: read('Ios') };
+    const bad = ['android', 'ios'].find((p) => policy[p].hard && policy[p].soft && policy[p].hard > policy[p].soft);
+    if (bad) {
+      err.hidden = false;
+      err.textContent = 'La versión obligatoria no puede ser mayor que la del aviso.';
+      return;
+    }
+    if ((policy.android.hard || policy.ios.hard) && !confirm('Hay un aviso OBLIGATORIO: quien tenga una versión menor no podrá usar la app hasta actualizar. ¿Guardar?')) return;
+    const btn = $('#updSaveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    await chatUpsellRequest(undefined, policy);
+    btn.disabled = false;
+    btn.textContent = 'Guardar aviso';
+  });
   $('#chatUpsellToggle').addEventListener('click', () => {
     if (chatUpsellOn == null) return;
     const next = !chatUpsellOn;

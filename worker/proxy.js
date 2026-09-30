@@ -548,6 +548,12 @@ async function handleLicenseCheck(request, env, headers) {
   if (result.ok) {
     result.premiumCities = await getPremiumCities(env, username);
     result.chatUpsell = await getChatUpsellEnabled(env);
+    // Versión y plataforma que manda la app (ver LICENSE.check en app.js):
+    // se apunta para el panel y se le devuelve su aviso de actualización.
+    const platform = String((payload && payload.platform) || '');
+    const appVersion = String((payload && payload.appVersion) || '');
+    await recordAppVersion(env, username, appVersion, platform);
+    result.updatePolicy = updatePolicyFor(await getUpdatePolicy(env), platform);
   }
   return respond(result);
 }
@@ -1380,6 +1386,72 @@ async function getChatUpsellEnabled(env) {
   try { return (await env.PREMIUM.get(CHAT_UPSELL_KEY)) === 'on'; } catch (_) { return false; }
 }
 
+// ============================================================
+// VERSIONES DE LA APP Y AVISO DE ACTUALIZACIÓN
+// Las apps nativas llevan el código dentro del APK/IPA y solo se actualizan
+// desde la tienda, así que pueden quedarse atrás respecto a la web. Cada
+// /license/check trae la versión ("91") y la plataforma (web/android/ios):
+//  - se guarda en ACCESS_LOG como "appver:<username>" con los datos en la
+//    METADATA, para que el panel lo lea todo con un solo list(). Solo se
+//    escribe si cambia la versión/plataforma o una vez al día (d = último
+//    día visto): la app consulta cada minuto y KV limita las escrituras.
+//  - se devuelve la política de actualización de su plataforma (clave
+//    config:updatePolicy en PREMIUM, junto a config:chatUpsell): por debajo
+//    de "soft" la app muestra un aviso que se puede posponer; por debajo de
+//    "hard", uno obligatorio. La web no tiene política: se actualiza sola.
+// ============================================================
+const UPDATE_POLICY_KEY = 'config:updatePolicy';
+const APP_PLATFORMS = ['web', 'android', 'ios'];
+const DEFAULT_STORE_URLS = {
+  android: 'https://play.google.com/store/apps/details?id=com.onmyowntrip',
+  ios: 'https://testflight.apple.com/join/Xkg3nZTk'
+};
+const isAppVersion = (v) => /^\d{1,4}(\.\d{1,3})?$/.test(v);
+
+async function recordAppVersion(env, username, version, platform) {
+  if (!env.ACCESS_LOG || !isAppVersion(version) || !APP_PLATFORMS.includes(platform)) return;
+  const key = `appver:${username}`;
+  const day = new Date().toISOString().slice(0, 10);
+  try {
+    const { metadata } = await env.ACCESS_LOG.getWithMetadata(key);
+    if (metadata && metadata.v === version && metadata.p === platform && metadata.d === day) return;
+    await env.ACCESS_LOG.put(key, '1', { metadata: { v: version, p: platform, d: day } });
+  } catch (_) { /* informativo: nunca debe romper la comprobación de licencia */ }
+}
+
+async function getUpdatePolicy(env) {
+  if (!env.PREMIUM) return {};
+  try { return (await env.PREMIUM.get(UPDATE_POLICY_KEY, 'json')) || {}; } catch (_) { return {}; }
+}
+
+function updatePolicyFor(policy, platform) {
+  if (platform !== 'android' && platform !== 'ios') return null;
+  const p = (policy && policy[platform]) || {};
+  return { soft: Number(p.soft) || 0, hard: Number(p.hard) || 0, url: p.url || DEFAULT_STORE_URLS[platform] };
+}
+
+// Recuento para el panel: cuántos usuarios hay en cada plataforma+versión,
+// y cuántos de ellos han abierto la app en los últimos 7 días.
+async function getAppVersionStats(env) {
+  if (!env.ACCESS_LOG) return [];
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  const groups = {};
+  let cursor;
+  do {
+    const page = await env.ACCESS_LOG.list({ prefix: 'appver:', cursor, limit: 1000 });
+    page.keys.forEach((k) => {
+      const m = k.metadata;
+      if (!m || !m.v || !m.p) return;
+      const g = groups[`${m.p}|${m.v}`] || (groups[`${m.p}|${m.v}`] = { platform: m.p, version: m.v, users: 0, active7d: 0, lastSeen: '' });
+      g.users += 1;
+      if (m.d >= weekAgo) g.active7d += 1;
+      if (m.d > g.lastSeen) g.lastSeen = m.d;
+    });
+    cursor = page.list_complete ? null : page.cursor;
+  } while (cursor);
+  return Object.values(groups).sort((a, b) => a.platform.localeCompare(b.platform) || Number(b.version) - Number(a.version));
+}
+
 // Convierte una cadena base64 estándar en base64url (sin relleno) — formato
 // que exige JWT tanto en la cabecera/claims como en la firma.
 const toBase64Url = (base64) => base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -1673,8 +1745,12 @@ async function handlePremiumAdminList(request, env, headers) {
   });
 }
 
-// Lee (sin chatUpsell en el body) o cambia (chatUpsell: true/false) el
-// interruptor de la oferta Premium del chat (ver getChatUpsellEnabled).
+// Configuración del panel (pestaña "Acceso premium"). Sin nada en el body
+// solo la lee; con chatUpsell (true/false) cambia el interruptor de la
+// oferta Premium del chat (ver getChatUpsellEnabled); con updatePolicy
+// ({ android: { soft, hard, url }, ios: {...} }) guarda los avisos de
+// actualización (ver updatePolicyFor). Devuelve además el recuento de
+// versiones en uso (getAppVersionStats).
 async function handlePremiumAdminConfig(request, env, headers) {
   const { error, payload } = await checkAdminAccess(request, env, headers, 'PREMIUM');
   if (error) return error;
@@ -1682,7 +1758,23 @@ async function handlePremiumAdminConfig(request, env, headers) {
   if (payload && typeof payload.chatUpsell === 'boolean') {
     await env.PREMIUM.put(CHAT_UPSELL_KEY, payload.chatUpsell ? 'on' : 'off');
   }
-  return new Response(JSON.stringify({ ok: true, chatUpsell: await getChatUpsellEnabled(env) }), {
+  if (payload && payload.updatePolicy && typeof payload.updatePolicy === 'object') {
+    const clean = {};
+    ['android', 'ios'].forEach((p) => {
+      const src = payload.updatePolicy[p] || {};
+      const num = (v) => (isAppVersion(String(v)) ? Number(v) : 0);
+      const url = /^https:\/\/\S+$/.test(String(src.url || '')) ? String(src.url) : '';
+      clean[p] = { soft: num(src.soft), hard: num(src.hard), url };
+    });
+    await env.PREMIUM.put(UPDATE_POLICY_KEY, JSON.stringify(clean));
+  }
+  const policy = await getUpdatePolicy(env);
+  return new Response(JSON.stringify({
+    ok: true,
+    chatUpsell: await getChatUpsellEnabled(env),
+    updatePolicy: { android: updatePolicyFor(policy, 'android'), ios: updatePolicyFor(policy, 'ios') },
+    versions: await getAppVersionStats(env)
+  }), {
     status: 200,
     headers: { ...headers, 'Content-Type': 'application/json' }
   });
