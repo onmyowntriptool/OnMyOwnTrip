@@ -467,6 +467,16 @@
     </div>
   </section>
 
+  <section id="tutorial">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="tutTitle">Aprende a usarla en 2 minutos</h2>
+        <p data-i18n="tutSub">Un tutorial paso a paso con todo lo que puedes hacer en la app.</p>
+      </div>
+      <div class="video-box" id="tutorialBox"></div>
+    </div>
+  </section>
+
   <section id="porque">
     <div class="wrap">
       <div class="section-head">
@@ -604,7 +614,12 @@
     stores: { android: '', ios: '' },
     youtube: 'WvfB4NUT9iY',
     videoFile: '',
-    heroVideo: 'img/promo-loop.mp4'
+    heroVideo: 'img/promo-loop.mp4',
+    // Tutorial de la sección "Aprende a usarla": uno por idioma, cambia con ES/EN.
+    tutorial: {
+      es: { src: 'video/tutorial-es.mp4', poster: 'img/tutorial-poster-es.webp' },
+      en: { src: 'video/tutorial-en.mp4', poster: 'img/tutorial-poster-en.webp' }
+    }
   };
 
   // Destinos agrupados por país (id de la medalla, nombre ES, nombre EN).
@@ -672,6 +687,9 @@
     videoTitle: 'See it in action',
     videoSub: 'A walk through Madrid, Segovia, Rome, Istanbul and Mexico City with OnMyOwnTrip in hand.',
     play: 'Play video',
+    tutTitle: 'Learn to use it in 2 minutes',
+    tutSub: 'A step-by-step tutorial covering everything you can do in the app.',
+    playTutorial: 'Watch the tutorial',
     citiesTitle: '14 destinations, and growing',
     citiesSub: 'Every city has its own routes, narrated content and its own medal.',
     spTitle: 'Own a business in one of these cities?',
@@ -682,7 +700,7 @@
   };
 
   EN.oneDest = '1 destination'; EN.nDest = 'destinations';
-  var ES = { soon: 'Próximamente', oneDest: '1 destino', nDest: 'destinos' };
+  var ES = { soon: 'Próximamente', oneDest: '1 destino', nDest: 'destinos', playTutorial: 'Ver el tutorial' };
   document.querySelectorAll('[data-i18n]').forEach(function (el) { ES[el.dataset.i18n] = el.textContent; });
   document.querySelectorAll('[data-i18n-html]').forEach(function (el) { ES[el.dataset.i18nHtml] = el.innerHTML; });
 
@@ -729,6 +747,23 @@
     });
   }
 
+  // Tutorial: portada del idioma actual con botón de reproducir; el vídeo
+  // solo se descarga al pulsar. Cambiar de idioma corta el que suene.
+  function renderTutorial() {
+    var box = document.getElementById('tutorialBox');
+    var tut = CONFIG.tutorial && CONFIG.tutorial[lang];
+    if (!box || !tut || box.dataset.lang === lang) return;
+    box.dataset.lang = lang;
+    box.style.backgroundImage = 'url(' + tut.poster + ')';
+    box.innerHTML = '<button class="video-play" type="button"><span><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.4-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5Z"/></svg><b>' +
+      tr().playTutorial + '</b></span></button>';
+    box.firstChild.addEventListener('click', function () {
+      var v = document.createElement('video');
+      v.src = tut.src; v.poster = tut.poster; v.controls = true; v.autoplay = true; v.playsInline = true;
+      box.innerHTML = ''; box.appendChild(v);
+    });
+  }
+
   function setLang(next) {
     lang = next === 'en' ? 'en' : 'es';
     var t = tr();
@@ -738,6 +773,7 @@
     document.querySelectorAll('.lang button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
     renderCities();
     renderStores();
+    renderTutorial();
     try { localStorage.setItem('portada_lang', lang); } catch (_) {}
   }
 
