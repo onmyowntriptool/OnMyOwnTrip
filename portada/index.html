@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OnMyOwnTrip · Tu audioguía para viajar a pie</title>
-<meta name="description" content="Audioguía con inteligencia artificial para descubrir 14 ciudades a pie: rutas narradas, un guía al que preguntar lo que quieras y un modo niños con retos y medallas.">
+<meta name="description" content="Audioguía con inteligencia artificial para descubrir 14 ciudades a pie: rutas narradas, un guía al que hacer preguntas en cada Punto de interés y un modo niños con retos y medallas.">
 <meta name="theme-color" content="#0B1426">
 <link rel="icon" type="image/png" href="img/icono.png">
 <link rel="apple-touch-icon" href="img/icono.png">
@@ -258,6 +258,24 @@
     border: 1px solid rgba(125, 211, 252, .25);
   }
   .sponsor h2 { font-size: clamp(24px, 2.8vw, 32px); margin-bottom: 10px; }
+
+  /* Planes: gratis y Premium por ciudad */
+  .plans { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 880px; margin: 0 auto; }
+  .plan { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; }
+  .plan.premium {
+    background: linear-gradient(160deg, rgba(45,212,191,.13), rgba(59,130,246,.10) 60%, rgba(255,255,255,.03));
+    border-color: rgba(45,212,191,.35);
+  }
+  .plan-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+  .plan h3 { font-size: 22px; }
+  .plan-tag { font-size: 13px; font-weight: 600; color: var(--teal); white-space: nowrap; }
+  .plan ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+  .plan li { position: relative; padding-left: 26px; color: var(--muted); }
+  .plan li::before {
+    content: ""; position: absolute; left: 2px; top: .5em; width: 12px; height: 7px;
+    border-left: 2px solid var(--teal); border-bottom: 2px solid var(--teal); transform: rotate(-45deg);
+  }
+  .plan li b { color: var(--text); font-weight: 600; }
   .sponsor p { margin: 0; color: var(--muted); max-width: 560px; }
 
   footer { border-top: 1px solid var(--line); padding: 30px 0 calc(30px + env(safe-area-inset-bottom, 0px)); color: var(--muted); font-size: 14px; }
@@ -282,6 +300,8 @@
     .wrap { padding: 0 16px; }
     .hero { padding: 40px 0 24px; }
     .downloads { grid-template-columns: 1fr; }
+    .plans { grid-template-columns: 1fr; }
+    .plan { padding: 22px; }
     .cities { grid-template-columns: repeat(2, 1fr); gap: 12px; }
     .country { padding: 14px; }
     .country.wide .country-cities { grid-template-columns: repeat(3, 1fr); gap: 6px; }
@@ -334,7 +354,7 @@
       <div>
         <span class="eyebrow"><i></i><span data-i18n="eyebrow">Audioguía inteligente</span></span>
         <h1 data-i18n-html="title">Descubre cada ciudad <em>a tu ritmo</em></h1>
-        <p class="lead" data-i18n="lead">Rutas narradas a pie, un guía con inteligencia artificial al que preguntar lo que quieras delante de cada monumento y un modo niños con retos y medallas.</p>
+        <p class="lead" data-i18n="lead">Rutas narradas a pie, un guía con inteligencia artificial al que hacer preguntas en cada Punto de interés y un modo niños con retos y medallas.</p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#descargar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M6 10l6 6 6-6M5 20h14"/></svg>
@@ -414,11 +434,11 @@
           </button>
           <button class="tour-tab" role="tab" aria-selected="false" data-shot="1">
             <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><rect x="3" y="14" width="5" height="7" rx="2"/><rect x="16" y="14" width="5" height="7" rx="2"/></svg></span>
-            <span class="txt"><b data-i18n="t2t">Audioguía narrada</b><span data-i18n="t2d">Escucha la historia de cada monumento mientras caminas, con voz natural.</span><span class="bar"><i></i></span></span>
+            <span class="txt"><b data-i18n="t2t">Audioguía narrada</b><span data-i18n="t2d">Escucha la historia de cada Punto de interés mientras caminas, con voz natural.</span><span class="bar"><i></i></span></span>
           </button>
           <button class="tour-tab" role="tab" aria-selected="false" data-shot="2">
             <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/><path d="M9 10h6M9 14h4"/></svg></span>
-            <span class="txt"><b data-i18n="t3t">Pregunta lo que quieras</b><span data-i18n="t3d">Un guía con IA te responde sobre el lugar que tienes delante: historia, leyendas y curiosidades.</span><span class="bar"><i></i></span></span>
+            <span class="txt"><b data-i18n="t3t">Pregunta a tu guía</b><span data-i18n="t3d">Un guía con IA te responde sobre el Punto de interés que tienes delante: historia, leyendas y curiosidades. Gratis, 3 preguntas en cada uno.</span><span class="bar"><i></i></span></span>
           </button>
           <button class="tour-tab" role="tab" aria-selected="false" data-shot="3">
             <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="m8.5 14-1.5 8 5-3 5 3-1.5-8"/></svg></span>
@@ -431,6 +451,35 @@
           <img src="img/chat-ia-roma.webp" alt="" loading="lazy" width="619" height="1100">
           <img src="img/ninos-premios.webp" alt="" loading="lazy" width="619" height="1100">
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="planes">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="plansTitle">Gratis para viajar, Premium si quieres más</h2>
+        <p data-i18n="plansSub">Todo lo esencial es gratis. Premium se compra por ciudad, sin suscripción.</p>
+      </div>
+      <div class="plans">
+        <article class="plan">
+          <div class="plan-head"><h3 data-i18n="freeTitle">Gratis</h3></div>
+          <ul>
+            <li data-i18n-html="free1"><b>Todos los Puntos de interés</b>, el mapa y las rutas</li>
+            <li data-i18n-html="free2"><b>Audioguía narrada</b> e información de cada lugar</li>
+            <li data-i18n-html="free3"><b>3 preguntas al guía IA</b> en cada Punto de interés, y se renuevan cada día</li>
+            <li data-i18n-html="free4"><b>Modo niños</b> con retos y medallas</li>
+          </ul>
+        </article>
+        <article class="plan premium">
+          <div class="plan-head"><h3 data-i18n="premTitle">Premium por ciudad</h3><span class="plan-tag" data-i18n="premSoon">Próximamente</span></div>
+          <ul>
+            <li data-i18n-html="prem1"><b>Para la ciudad que elijas</b>, o para todas a la vez</li>
+            <li data-i18n-html="prem2"><b>Preguntas ilimitadas</b> al guía IA</li>
+            <li data-i18n-html="prem3"><b>Sin publicidad</b></li>
+            <li data-i18n-html="prem4"><b>Pago único</b> desde la app de Android</li>
+          </ul>
+        </article>
       </div>
     </div>
   </section>
@@ -530,7 +579,7 @@
     navCta: 'Open the web app',
     eyebrow: 'Smart audio guide',
     title: 'Discover every city <em>at your own pace</em>',
-    lead: 'Narrated walking routes, an AI guide you can ask anything in front of each monument, and a kids mode with challenges and medals.',
+    lead: 'Narrated walking routes, an AI guide you can ask questions at every point of interest, and a kids mode with challenges and medals.',
     ctaGet: 'Get the app', ctaVideo: 'Watch the video',
     statCities: 'destinations', statCountries: 'countries', statPlaces: 'narrated places', statLangs: 'two languages',
     dlTitle: 'Choose how to use it',
@@ -544,9 +593,21 @@
     tourTitle: 'How it works',
     tourSub: 'Designed for walking with your phone in hand and your eyes on the city.',
     t1t: 'Routes and map', t1d: 'Walking tours with every stop on the map, plus nearby fountains and toilets when you need them.',
-    t2t: 'Narrated audio guide', t2d: 'Listen to the story of each monument as you walk, in a natural voice.',
-    t3t: 'Ask anything', t3d: 'An AI guide answers about the place in front of you: history, legends and fun facts.',
+    t2t: 'Narrated audio guide', t2d: 'Listen to the story of each point of interest as you walk, in a natural voice.',
+    t3t: 'Ask your guide', t3d: 'An AI guide answers about the point of interest in front of you: history, legends and fun facts. Free, 3 questions at each one.',
     t4t: 'Kids mode', t4d: 'Challenges, quizzes and medals so the little ones enjoy the trip too.',
+    plansTitle: 'Free to travel, Premium if you want more',
+    plansSub: 'Everything essential is free. Premium is bought per city, with no subscription.',
+    freeTitle: 'Free',
+    free1: '<b>Every point of interest</b>, the map and the routes',
+    free2: '<b>Narrated audio guide</b> and information for each place',
+    free3: '<b>3 questions to the AI guide</b> at each point of interest, renewed every day',
+    free4: '<b>Kids mode</b> with challenges and medals',
+    premTitle: 'Premium per city', premSoon: 'Coming soon',
+    prem1: '<b>For the city you choose</b>, or all of them at once',
+    prem2: '<b>Unlimited questions</b> to the AI guide',
+    prem3: '<b>No ads</b>',
+    prem4: '<b>One-time payment</b> in the Android app',
     videoTitle: 'See it in action',
     videoSub: 'A walk through Madrid, Segovia, Rome, Istanbul and Mexico City with OnMyOwnTrip in hand.',
     play: 'Play video',

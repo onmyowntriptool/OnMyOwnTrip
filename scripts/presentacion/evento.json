@@ -34,7 +34,7 @@
 
   "destinos": {
     "_nota": "Orden de las medallas en la diapositiva 8 (ids de data/core.js). Una ciudad nueva que no esté aquí se añade al final y el build avisa.",
-    "orden": ["cdmx", "roma", "vaticano", "berlin", "estambul", "madrid", "barcelona", "toledo", "segovia", "malaga", "alcala-de-henares", "peniscola", "buitrago-del-lozoya"],
+    "orden": ["cdmx", "roma", "vaticano", "berlin", "estambul", "madrid", "barcelona", "toledo", "segovia", "malaga", "alicante", "alcala-de-henares", "peniscola", "buitrago-del-lozoya"],
     "nombres": { "madrid": "Madrid" },
     "paises": { "vaticano": "Ciudad del Vaticano" }
   },
