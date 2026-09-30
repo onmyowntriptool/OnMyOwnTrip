@@ -2348,11 +2348,49 @@
   // foto, tiene que poder reconocer cualquier punto, esté o no filtrado).
   const nearbyPoiCandidates = (coords, limit = 5) => {
     if (!coords || !POIS || !POIS.length) return [];
+    // Sin las fichas efímeras de escaneos anteriores (ver
+    // openAdHocScanResult): mientras siguen abiertas están en POIS, justo en
+    // el punto de la foto, y se colaban como primer candidato.
     return POIS
+      .filter((p) => !p.isAdHocScan)
       .map((p) => ({ poi: p, dist: haversineMeters([coords.lat, coords.lng], p.coords) }))
       .sort((a, b) => a.dist - b.dist)
       .slice(0, limit)
       .map(({ poi }) => ({ id: poi.id, name: pickDual(poi.name), subtitle: pickDual(poi.subtitle) }));
+  };
+
+  // Busca entre TODOS los Puntos de interés de la ciudad uno cuyo nombre
+  // coincida con el que dio la IA en una identificación abierta. Solo se
+  // mandan a la IA los 5 más cercanos por GPS, y en zonas densas el lugar
+  // famoso puede quedarse fuera (probado: desde la Plaza Mayor de Segovia,
+  // la Catedral no entra entre los 5 y salía "No estaba en mis datos"); sin
+  // ubicación no se manda ninguno. Coincide si todas las palabras
+  // significativas del nombre más corto están en el otro (mínimo dos, para
+  // no casar por una sola palabra suelta como "Segovia"), en cualquiera de
+  // los nombres del POI (idiomas y modos). Si hay varios posibles, gana el
+  // de nombre idéntico; si sigue habiendo empate, no se elige ninguno.
+  const SCAN_NAME_STOPWORDS = new Set(['de', 'del', 'la', 'las', 'el', 'los', 'y', 'a', 'en', 'the', 'of', 'and']);
+  const scanNameTokens = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((w) => w && !SCAN_NAME_STOPWORDS.has(w));
+  const poiNameStrings = (name) => (typeof name === 'string' ? [name]
+    : (name && typeof name === 'object') ? Object.values(name).flatMap(poiNameStrings) : []);
+  const findPoiByScannedName = (scannedName) => {
+    const target = scanNameTokens(scannedName);
+    if (target.length < 2) return null;
+    const hits = POIS.filter((p) => !p.isAdHocScan).map((p) => {
+      let exact = false, ok = false;
+      poiNameStrings(p.name).forEach((n) => {
+        const toks = scanNameTokens(n);
+        if (toks.length < 2) return;
+        const [short, long] = toks.length <= target.length ? [toks, target] : [target, toks];
+        if (short.every((w) => long.includes(w))) ok = true;
+        if (toks.join(' ') === target.join(' ')) exact = true;
+      });
+      return ok ? { poi: p, exact } : null;
+    }).filter(Boolean);
+    if (hits.length === 1) return hits[0].poi;
+    const exactHits = hits.filter((h) => h.exact);
+    return exactHits.length === 1 ? exactHits[0].poi : null;
   };
 
   const setScanning = (on) => {
@@ -2514,6 +2552,11 @@
       }
       if (result.type === 'match') {
         openScannedPoi(result.poiId);
+      } else if (result.type === 'openended' && findPoiByScannedName(result.name)) {
+        // La IA lo reconoció pero no estaba entre los candidatos cercanos:
+        // si la app ya tiene ese Punto de interés, se abre su ficha
+        // verificada en vez de una "sin verificar" (ver findPoiByScannedName).
+        openScannedPoi(findPoiByScannedName(result.name).id);
       } else if (result.type === 'openended') {
         logUnrecognizedScan({ type: 'openended', name: result.name, coords, imageDataUrl });
         openAdHocScanResult(result, imageDataUrl, coords);
