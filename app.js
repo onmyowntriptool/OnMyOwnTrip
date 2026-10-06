@@ -1964,7 +1964,7 @@
     if (!byCity) {
       if (!loadedRoutePathCities.has(cityId)) {
         loadedRoutePathCities.add(cityId);
-        loadScriptOnce(`data/layers/route-paths-${cityId}.js?v=1`)
+        loadScriptOnce(`data/layers/route-paths-${cityId}.js?v=2`)
           .then(() => { if (isRouteMode() && STATE.cityId === cityId) renderMarkers(); })
           .catch(() => {});
       }
