@@ -1515,6 +1515,8 @@
     ariaAudioPlayer: { es: { adult: 'Reproductor de audio', kids: 'Reproductor de audio' }, en: { adult: 'Audio player', kids: 'Audio player' } },
     ariaAudioProgressGroup: { es: { adult: 'Progreso', kids: 'Progreso' }, en: { adult: 'Progress', kids: 'Progress' } },
     ariaProgressBar: { es: { adult: 'Barra de progreso', kids: 'Barra de progreso' }, en: { adult: 'Progress bar', kids: 'Progress bar' } },
+    ariaChatExpand: { es: { adult: 'Ampliar la conversación', kids: 'Ampliar la conversación' }, en: { adult: 'Expand the conversation', kids: 'Expand the conversation' } },
+    ariaChatCollapse: { es: { adult: 'Reducir la conversación', kids: 'Reducir la conversación' }, en: { adult: 'Shrink the conversation', kids: 'Shrink the conversation' } },
     ariaAiMessages: { es: { adult: 'Conversación con la guía IA', kids: 'Conversación con la guía IA' }, en: { adult: 'Conversation with the AI guide', kids: 'Conversation with the AI guide' } },
     ariaAiMic: { es: { adult: 'Preguntar por voz', kids: 'Preguntar por voz' }, en: { adult: 'Ask by voice', kids: 'Ask by voice' } },
     ariaAiSend: { es: { adult: 'Enviar pregunta', kids: 'Enviar pregunta' }, en: { adult: 'Send question', kids: 'Send question' } },
@@ -1950,6 +1952,46 @@
     });
   };
 
+  // Trazado a pie de las rutas recomendadas (data/layers/route-paths-<id>.js,
+  // generado por scripts/build-route-paths.js). Antes las paradas se unían
+  // con líneas rectas que atravesaban manzanas (tester Khanh, feedback #31).
+  // Se descarga la primera vez que se abre una ruta de la ciudad y vuelve a
+  // pintar el mapa al llegar; si falta el fichero o la lista de paradas ya
+  // no coincide con la actual, devuelve null y se usa la línea recta.
+  const loadedRoutePathCities = new Set();
+  const getRoutePath = (cityId, routeId, list) => {
+    const byCity = window.ROUTE_PATHS && window.ROUTE_PATHS[cityId];
+    if (!byCity) {
+      if (!loadedRoutePathCities.has(cityId)) {
+        loadedRoutePathCities.add(cityId);
+        loadScriptOnce(`data/layers/route-paths-${cityId}.js?v=1`)
+          .then(() => { if (isRouteMode() && STATE.cityId === cityId) renderMarkers(); })
+          .catch(() => {});
+      }
+      return null;
+    }
+    const path = byCity[routeId];
+    if (!path || path.stops.length !== list.length || path.stops.some((id, i) => id !== list[i].id)) return null;
+    return path;
+  };
+  // Punto situado a una fracción (0..1) de la longitud de un trazado: así la
+  // etiqueta de distancia queda encima de la calle, no en el punto medio
+  // en línea recta, que con un trazado curvo puede caer lejos del camino.
+  const pointAlongPath = (coords, fraction) => {
+    let total = 0;
+    for (let i = 1; i < coords.length; i++) total += haversineMeters(coords[i - 1], coords[i]);
+    let target = total * fraction;
+    for (let i = 1; i < coords.length; i++) {
+      const seg = haversineMeters(coords[i - 1], coords[i]);
+      if (seg >= target && seg > 0) {
+        const t = target / seg;
+        return [coords[i - 1][0] + (coords[i][0] - coords[i - 1][0]) * t, coords[i - 1][1] + (coords[i][1] - coords[i - 1][1]) * t];
+      }
+      target -= seg;
+    }
+    return coords[coords.length - 1];
+  };
+
   const renderMarkers = () => {
     markersLayer.clearLayers();
     clusterLayer.clearLayers();
@@ -1977,17 +2019,27 @@
       ? scannablePois.filter(isPoiInActiveRoute).sort((a, b) => a.essential.order - b.essential.order)
       : (routeMode ? [] : scannablePois);
     if (routeMode && list.length > 1) {
-      L.polyline(list.map((p) => p.coords), {
+      // Trazado a pie real por calles (ver getRoutePath); mientras se
+      // descarga, o si las paradas han cambiado desde que se generó, se
+      // pinta la línea recta de siempre.
+      const walked = getRoutePath(STATE.cityId, STATE.activeRoute, list);
+      // Un tramo null (agua de por medio, ver el script) va en línea recta.
+      const line = walked
+        ? walked.legs.flatMap((l, i) => (l ? l.c : [list[i].coords, list[i + 1].coords]))
+        : list.map((p) => p.coords);
+      L.polyline(line, {
         color: routeColor,
         weight: 3, opacity: 0.8, dashArray: '2 10', lineCap: 'round'
       }).addTo(markersLayer);
       for (let i = 1; i < list.length; i++) {
         const a = list[i - 1].coords, b = list[i].coords;
-        const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        const leg = walked && walked.legs[i - 1];
+        const mid = leg ? pointAlongPath(leg.c, 0.5) : [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        const meters = leg ? leg.d : haversineMeters(a, b);
         L.marker(mid, {
           icon: L.divIcon({
             className: 'route-distance-wrap',
-            html: `<span class="route-distance" style="--route-color:${routeColor}">${formatDistance(haversineMeters(a, b))}</span>`,
+            html: `<span class="route-distance" style="--route-color:${routeColor}">${formatDistance(meters)}</span>`,
             iconSize: [0, 0]
           }),
           interactive: false,
@@ -6535,6 +6587,9 @@
       wrap.appendChild(bubble);
       box.appendChild(wrap);
     });
+    // El botón de ampliar solo tiene sentido con algo que leer.
+    const expandBtn = $('#aiExpandBtn');
+    if (expandBtn) expandBtn.hidden = history.length === 0;
   };
 
   // statusText (opcional): pasados unos segundos sin respuesta (ver el
@@ -7052,9 +7107,38 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       if (STATE.activePoiId === poi.id) updateAudioUi(); // reactiva el play si se había deshabilitado (ver arriba)
       renderAiMessages();
       renderAiSuggestions();
-      scrollAiToBottom();
+      // Respuesta a una pregunta escrita: se lleva al PRINCIPIO de la
+      // respuesta, no al final. Con scrollAiToBottom una respuesta larga
+      // quedaba mostrando su última línea y había que subir para empezar a
+      // leer (tester Khanh, feedback #34).
+      if (kind === 'text') scrollAiToLastAnswerStart();
+      else scrollAiToBottom();
       saveState();
     }
+  };
+
+  // Modo lectura del chat (tester Khanh, feedback #34: "la caja de la
+  // respuesta es muy pequeña y hay que hacer scroll"). Esconde la foto y los
+  // chips para que la conversación ocupe casi toda la ficha; el reproductor
+  // se queda porque la respuesta también se narra. Se activa solo al enviar
+  // una pregunta escrita y se puede alternar con el botón de la esquina.
+  const setChatExpanded = (on) => {
+    if (!els.sheet) return;
+    els.sheet.classList.toggle('-chat-expanded', !!on);
+    const btn = $('#aiExpandBtn');
+    if (btn) {
+      btn.setAttribute('aria-pressed', String(!!on));
+      btn.setAttribute('aria-label', t(on ? 'ariaChatCollapse' : 'ariaChatExpand'));
+    }
+  };
+  const scrollAiToLastAnswerStart = () => {
+    const box = $('#aiMessages');
+    if (!box) return;
+    const answers = box.querySelectorAll('.ai-msg:not(.-user):not(.-typing)');
+    const last = answers[answers.length - 1];
+    if (!last) return scrollAiToBottom();
+    // Se deja asomar la pregunta del usuario justo encima, como contexto.
+    box.scrollTo({ top: Math.max(0, last.offsetTop - box.offsetTop - 48), behavior: 'smooth' });
   };
 
   const sendUserAiMessage = () => {
@@ -7081,6 +7165,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     aiHistoryFor(poi.id).push({ role: 'user', text });
     input.value = '';
     $('#aiSend')?.setAttribute('disabled', 'true');
+    setChatExpanded(true);
     renderAiMessages();
     scrollAiToBottom();
     queueAiMessage({ poi, kind: 'text', userText: text });
@@ -7090,6 +7175,9 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     const input = $('#aiInput');
     const sendBtn = $('#aiSend');
     if (!input || !sendBtn) return;
+    $('#aiExpandBtn')?.addEventListener('click', () => {
+      setChatExpanded(!els.sheet.classList.contains('-chat-expanded'));
+    });
     sendBtn.addEventListener('click', sendUserAiMessage);
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -7566,6 +7654,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     flushSponsorDemoMetrics();
     STATE.sheet = 'closed';
     STATE.activePoiId = null;
+    setChatExpanded(false);
     els.backdrop.classList.remove('-open');
     els.sheet.classList.remove('-open');
     try { els.sheet.setAttribute('aria-hidden', 'true'); } catch (_) {}
@@ -7743,6 +7832,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       sheetHead.setAttribute('data-tinted', 'true');
     }
 
+    // Cada ficha nueva arranca en su vista normal (foto + audio + chips).
+    setChatExpanded(false);
     setSheetThumbImage(poi.image, pickDual(poi.name));
     $('.sheet-cat-badge', els.sheet).textContent = pickDual(meta.label)
       + (poi.fictional ? t('fictionalBadge') : '');

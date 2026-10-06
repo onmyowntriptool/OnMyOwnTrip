@@ -2782,6 +2782,47 @@ html[data-mode="kids"] .bottom-sheet {
   gap: 10px;
   scrollbar-width: thin;
 }
+/* Botón de ampliar/reducir la conversación (feedback #34): flota sobre la
+   esquina superior derecha de la caja del chat, sin ocupar una fila propia. */
+.ai-expand-btn {
+  align-self: flex-end;
+  position: relative;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  margin: 0 22px -36px 0;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+.ai-expand-btn[hidden] { display: none; }
+/* Franja libre arriba para que el botón no tape el primer mensaje. */
+.ai-expand-btn:not([hidden]) + .ai-messages { padding-top: 40px; }
+.ai-expand-btn svg { width: 15px; height: 15px; }
+.ai-expand-btn .-collapse,
+.bottom-sheet.-chat-expanded .ai-expand-btn .-expand { display: none; }
+.bottom-sheet.-chat-expanded .ai-expand-btn .-collapse { display: block; }
+/* Modo lectura: la ficha ocupa su alto máximo y la conversación se queda
+   con todo el espacio libre. Fuera la foto grande y los chips; el
+   reproductor sigue, porque la respuesta también se narra. */
+.bottom-sheet.-chat-expanded {
+  height: 84vh;
+  height: 84dvh;
+}
+.bottom-sheet.-chat-expanded .sheet-thumb-wrap,
+.bottom-sheet.-chat-expanded .ai-suggestions { display: none; }
+.bottom-sheet.-chat-expanded .ai-messages {
+  flex: 1 1 auto;
+  max-height: none;
+  min-height: 0;
+}
+html[data-mode="kids"] .ai-expand-btn { display: none; }
 .ai-messages::-webkit-scrollbar { width: 4px; }
 .ai-messages::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
 
