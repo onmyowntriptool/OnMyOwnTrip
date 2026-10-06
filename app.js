@@ -3637,8 +3637,24 @@
   // propio (no se reutiliza cloudAudioEl de la ficha para no heredar sus
   // onended de la narración principal).
   let sponsorAudioEl = null;
+  // BUG REAL (testers en Toledo, feedback #42: "se escuchaba A+B"): este
+  // <audio> propio no lo paraba stopAudio(), y la comprobación tras la
+  // descarga (overrideText === text) seguía siendo cierta después de
+  // cambiar de punto, porque nadie limpia overrideText al cambiar. Si el
+  // anuncio o el cierre de A llegaba por red cuando ya estabas en B, sonaba
+  // encima de la narración de B. Ahora cada locución lleva un turno
+  // (overrideAudioToken) que stopAudio() invalida, y además se para aquí.
+  let overrideAudioToken = 0;
+  const stopOverrideAudio = () => {
+    overrideAudioToken++;
+    if (sponsorAudioEl) {
+      sponsorAudioEl.onended = sponsorAudioEl.onerror = null;
+      sponsorAudioEl.pause();
+    }
+  };
   const speakOverrideText = (text, onDone) => {
     const done = () => { if (typeof onDone === 'function') onDone(); };
+    const token = ++overrideAudioToken;
     STATE.audio.overrideText = text;
     if (SPEECH.isSupported()) {
       SPEECH.speak(() => { STATE.audio.overrideText = null; done(); });
@@ -3658,8 +3674,9 @@
     CLOUD_TTS.fetchAndCache(text).then((url) => {
       // Si mientras llegaba el audio ya se pasó a otra cosa, no sonar
       // encima de lo nuevo (mismo criterio que speakTutorialStep).
-      if (url && STATE.audio.overrideText === text) playCloudUrl(url);
-      else { STATE.audio.overrideText = null; done(); }
+      if (url && token === overrideAudioToken && STATE.audio.overrideText === text) playCloudUrl(url);
+      else if (token === overrideAudioToken) { STATE.audio.overrideText = null; done(); }
+      // Turno caducado (se paró o se cambió de punto): no suena ni encadena nada.
     });
   };
 
@@ -8536,7 +8553,11 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
         STATE.audio.playing = true;
         updateAudioUi();
         CLOUD_TTS.fetchAndCache(textForCloud).then((url) => {
-          if (url && STATE.activePoiId === poiId) {
+          // Caducado: ya hay otra narración (otro punto, o se paró y se
+          // volvió a pulsar). Ni suena ni toca el estado del reproductor,
+          // que ahora pertenece a la narración nueva (feedback #42).
+          if (STATE.activePoiId !== poiId || STATE.audio.playId !== myPlayId) return;
+          if (url) {
             startCloudAudio(url, silent, myPlayId);
           } else {
             STATE.audio.playing = false;
@@ -8637,6 +8658,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     clearInterval(STATE.audio.timer);
     STATE.audio.timer = null;
     SPEECH.cancel();
+    stopOverrideAudio();
     if (cloudAudioEl) {
       cloudAudioEl.pause();
       cloudAudioEl.onended = cloudAudioEl.onerror = cloudAudioEl.ontimeupdate = cloudAudioEl.onloadedmetadata = null;
@@ -9480,8 +9502,72 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     });
   };
 
+  // Botón "atrás" de Android (app nativa). Sin esto, Capacitor cierra la
+  // app entera en cuanto no hay historial web, que es siempre: el tester
+  // Edgar abrió la búsqueda (o "sin anunciantes"), pulsó atrás y se le
+  // cerró la app (feedback #39). Ahora cierra la capa que esté más arriba,
+  // en orden de "más encima" a "más abajo", y solo con todo cerrado manda
+  // la app a segundo plano (como el botón de inicio), sin matarla.
+  const isOpenModal = (sel) => {
+    const el = $(sel);
+    return !!(el && el.classList.contains('-open'));
+  };
+  const closeGenericModal = (sel) => {
+    const el = $(sel);
+    if (!el) return;
+    el.classList.remove('-open');
+    el.setAttribute('aria-hidden', 'true');
+  };
+  const isShown = (sel) => {
+    const el = $(sel);
+    return !!(el && !el.hidden);
+  };
+  const handleBackButton = () => {
+    const layers = [
+      [() => isOpenModal('#imageLightbox'), closeLightbox],
+      [() => isOpenModal('#badgeZoomModal'), closeBadgeZoom],
+      [() => isOpenModal('#cameraModal'), closeCameraCapture],
+      [() => isOpenModal('#directionsConfirmModal'), () => closeGenericModal('#directionsConfirmModal')],
+      [() => isOpenModal('#resetConfirmModal'), () => closeGenericModal('#resetConfirmModal')],
+      [() => isOpenModal('#deviceCodeModal'), () => closeGenericModal('#deviceCodeModal')],
+      [() => isOpenModal('#premiumModal'), closePremiumModal],
+      [() => isOpenModal('#aiCallModal'), closeAiCallMode],
+      [() => isOpenModal('#poiSearchModal'), closePoiSearch],
+      [() => isOpenModal('#visitSummaryModal'), closeVisitSummary],
+      [() => isOpenModal('#rewardChestModal'), closeRewardChest],
+      [() => isOpenModal('#scanLogModal'), closeScanLogModal],
+      [() => isOpenModal('#cityIntroModal'), () => closeCityIntro()],
+      [() => isShown('#sponsorDemoMenuModal'), () => { $('#sponsorDemoMenuModal').hidden = true; }],
+      [() => isShown('#scanMenu'), () => { $('#scanMenu').hidden = true; }],
+      [() => isShown('#tutorialOverlay'), () => closeTutorial()],
+      [() => els.routeIntro && !els.routeIntro.hidden, closeRouteIntro],
+      [isAppMenuOpen, closeAppMenu],
+      [() => STATE.sheet !== 'closed', closeSheet]
+    ];
+    // Un aviso de actualización obligatoria no se puede saltar con "atrás".
+    const updateModal = $('#updateModal');
+    if (updateModal && updateModal.classList.contains('-open')) {
+      if (updateModal.dataset.mandatory) return false;
+      closeUpdateNotice();
+      return true;
+    }
+    for (const [isOpen, close] of layers) {
+      if (isOpen()) { close(); return true; }
+    }
+    return false;
+  };
+  const wireNativeBackButton = () => {
+    const AppPlugin = isNativeApp() && Capacitor.Plugins && Capacitor.Plugins.App;
+    if (!AppPlugin) return;
+    AppPlugin.addListener('backButton', () => {
+      if (handleBackButton()) return;
+      AppPlugin.minimizeApp();
+    });
+  };
+
   const init = () => {
     loadState();
+    wireNativeBackButton();
     document.documentElement.dataset.mode = STATE.mode;
     document.documentElement.dataset.lang = STATE.lang;
     const gateTitleEl = $('#licenseGateTitle');
