@@ -204,7 +204,7 @@ export default {
 //      OpenAI que Gemini, así que la app no nota el cambio.
 // Un 400 de la petición original (fallo nuestro, no de capacidad) se devuelve
 // tal cual sin gastar intentos. Todo cabe en el tiempo que espera la app:
-// 90 s en el chat y 15 s en el reconocimiento de fotos (ver app.js).
+// 90 s en el chat y 35 s en el reconocimiento de fotos (ver app.js).
 // La cabecera X-OMOT-Provider dice quién respondió, para depurar.
 // ---------------------------------------------------------------------------
 // 3.8-flash: mismo precio que 3.6-flash y medido 2026-09-29 en 1,5-4 s frente
@@ -248,7 +248,7 @@ async function handleChatWithFallback(rawBody, env, headers) {
 
   const hasImage = Array.isArray(payload.messages) && payload.messages.some((m) =>
     Array.isArray(m.content) && m.content.some((p) => p && p.type === 'image_url'));
-  const deadline = Date.now() + (hasImage ? 14000 : 85000);
+  const deadline = Date.now() + (hasImage ? 32000 : 85000);
   const left = () => deadline - Date.now();
 
   const callGemini = (model, cap) => fetchWithTimeout(GEMINI_URL, {
@@ -257,10 +257,12 @@ async function handleChatWithFallback(rawBody, env, headers) {
     body: JSON.stringify({ ...payload, model })
   }, Math.min(cap, left()));
 
-  // Reparto del tiempo: en fotos (15 s en la app) no hay margen para el
-  // reintento ni el modelo alternativo; se salta directo a Claude.
+  // Reparto del tiempo en fotos (35 s en la app, 32 s aquí): 14 s para
+  // Gemini y el resto para Claude. Antes eran 7 s + ~7 s dentro de 15 s, y
+  // en cuanto Gemini iba algo lento la respuesta llegaba tarde a la app
+  // ("tiempo agotado" con datos móviles, tester William, 2026-10-09).
   const plan = hasImage
-    ? [['gemini', GEMINI_PRIMARY_MODEL, 7000]]
+    ? [['gemini', GEMINI_PRIMARY_MODEL, 14000]]
     : [['gemini', GEMINI_PRIMARY_MODEL, 30000], ['wait', 1000], ['gemini', GEMINI_PRIMARY_MODEL, 20000], ['gemini', GEMINI_FALLBACK_MODEL, 18000]];
 
   let last = null;

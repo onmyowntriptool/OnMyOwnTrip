@@ -171,8 +171,13 @@
       // Worker o el modelo tardando de más) deja la promesa pendiente para
       // siempre: ni error ni respuesta, así que la app parece no responder
       // aunque en realidad sigue "esperando" sin que el usuario lo sepa.
+      // 35 s (antes 15): con 15 s, en cuanto Gemini tardaba más de 7 s el
+      // Worker pasaba a Claude con el tiempo justo y, sumando la subida de
+      // la foto por datos móviles, la app abortaba antes de recibir la
+      // respuesta ("tiempo agotado", tester William en iPhone). Debe ser
+      // algo mayor que el plazo de fotos del Worker (32 s, ver proxy.js).
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const timeoutId = setTimeout(() => controller.abort(), 35000);
       let res;
       try {
         res = await fetch(url, {
@@ -1387,6 +1392,7 @@
     locationFailed: { es: { adult: 'No se pudo obtener tu ubicación. Inténtalo de nuevo.', kids: 'No he podido encontrarte ahora mismo.' }, en: { adult: "We couldn't get your location. Please try again.", kids: "I couldn't find you right now." } },
     distanceFromYou: { es: { adult: '📍 A ', kids: '📍 A ' }, en: { adult: '📍 ', kids: '📍 ' } },
     distanceFromYouSuffix: { es: { adult: '', kids: ' de ti' }, en: { adult: ' away', kids: ' away' } },
+    scanStillAnalyzing: { es: { adult: 'Sigue analizando, la IA va un poco lenta…', kids: 'Ya casi… sigo mirando tu foto 🔍' }, en: { adult: 'Still analyzing, the AI is a bit slow…', kids: 'Almost there… still looking at your photo 🔍' } },
     scanAnalyzing: { es: { adult: 'Analizando tu foto…', kids: 'Mirando tu foto… 🔍' }, en: { adult: 'Analyzing your photo…', kids: 'Looking at your photo… 🔍' } },
     scanNoLocation: { es: { adult: 'No se pudo obtener tu ubicación; analizo la foto de todos modos.', kids: 'No sé dónde estás, pero miro la foto igual 🔍' }, en: { adult: "Couldn't get your location; analyzing the photo anyway.", kids: "I don't know where you are, but I'll look at the photo anyway 🔍" } },
     scanNoAiOffline: { es: { adult: 'No se puede analizar la foto sin conexión a la IA.', kids: 'No puedo analizar fotos sin conexión a la IA 😅' }, en: { adult: "Can't analyze the photo without an AI connection.", kids: "I can't look at photos without an AI connection 😅" } },
@@ -2570,7 +2576,10 @@
     // Feedback inmediato: localizarte + que la IA mire la foto puede tardar
     // varios segundos, y sin esto el único indicio de que algo está
     // pasando es el pulso sutil del botón — fácil de no notar.
-    showToast(t('scanAnalyzing'), 6000);
+    showToast(t('scanAnalyzing'), 12000);
+    // Si la IA tarda (hasta ~30 s en momentos de saturación), un segundo
+    // aviso evita que parezca que la app se ha colgado.
+    const slowScanTimer = setTimeout(() => showToast(t('scanStillAnalyzing'), 20000), 12000);
     try {
       let coords = STATE.userLocation;
       try {
@@ -2661,6 +2670,11 @@
       }
     } finally {
       setScanning(false);
+      // Fuera los avisos de "analizando" si siguen en pantalla (un error ya
+      // los habrá sustituido por su propio mensaje).
+      clearTimeout(slowScanTimer);
+      const toastEl = $('#app-toast');
+      if (toastEl && [t('scanAnalyzing'), t('scanStillAnalyzing')].includes(toastEl.textContent)) toastEl.classList.remove('-show');
     }
   };
 
