@@ -1874,7 +1874,11 @@
       if (mapEl._leaflet_id) delete mapEl._leaflet_id;
     }
     const city = CURRENT_CITY || CITIES.toledo;
-    const cityMinZoom = city.minZoom || 11;
+    // 1,5 niveles más de margen para alejar que el minZoom de cada ciudad
+    // (feedback de David: con la rueda se topaba enseguida con el límite y no
+    // se podía ver la ciudad entera). Los límites de arrastre (maxBounds)
+    // siguen igual, así que no se puede salir de la zona de la ciudad.
+    const cityMinZoom = (city.minZoom || 11) - 1.5;
     // maxZoom explícito en el propio mapa (BUG REAL, V101): antes lo fijaba
     // la capa de teselas clásica (maxZoom 19). Al cambiar al mapa vectorial
     // por defecto (OpenFreeMap, ver applyBaseStyle) esa capa se quita y la
@@ -1882,7 +1886,12 @@
     // leaflet.markercluster, que recalcula sus grupos para cada nivel de zoom
     // desde el máximo hacia abajo, se quedaba en un bucle infinito al activar
     // una ruta: la app entera se congelaba.
-    map = L.map('map', { zoomControl: false, attributionControl: true, scrollWheelZoom: true, maxBoundsViscosity: 0.7, maxZoom: 19 })
+    // scrollWheelZoom 'center': con la rueda del ratón (web en ordenador,
+    // emulador) se acerca/aleja sobre el centro del mapa y no sobre el
+    // puntero; si no, al alejar el mapa se desplazaba de lado y la ciudad
+    // acababa en un borde o fuera de la pantalla. Pellizcar con dos dedos en
+    // el móvil sigue haciendo zoom sobre los dedos, como siempre.
+    map = L.map('map', { zoomControl: false, attributionControl: true, scrollWheelZoom: 'center', maxBoundsViscosity: 0.7, maxZoom: 19 })
       .setView(city.center, city.zoom);
     map.setMaxBounds(L.latLngBounds(city.bounds[0], city.bounds[1]).pad(0.25));
     // Iconos de capas más pequeños con el mapa alejado (ver #map.-layers-far
@@ -1895,6 +1904,9 @@
       // Muy alejado (ciudad entera): puntitos de color, para no enterrar
       // los pines y grupos de puntos de interés bajo cientos de iconos.
       el.classList.toggle('-layers-very-far', z < 14);
+      // Ciudad entera (más alejado que la vista inicial de cualquier ciudad):
+      // se oculta el pin del patrocinador (ver #map.-city-wide en styles.css).
+      el.classList.toggle('-city-wide', z < (CURRENT_CITY ? CURRENT_CITY.zoom - 1.2 : 12.5));
     };
     map.on('zoomend', updateLayerIconScale);
     updateLayerIconScale();
@@ -1934,9 +1946,18 @@
     // En modo ruta no se agrupa nunca: los pines llevan un número de orden
     // y una línea que los conecta, agruparlos rompería esa lectura.
     clusterLayer = L.markerClusterGroup({
+      // Sin animación de agrupar/desagrupar (BUG REAL, V104.2): con varios
+      // pasos de zoom seguidos (rueda del ratón, pellizco rápido) el fundido
+      // de leaflet.markercluster podía quedarse a medias y las burbujas se
+      // quedaban invisibles (opacity 0) para siempre: al alejar el mapa
+      // "desaparecían" todos los puntos de interés.
+      animate: false,
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
-      maxClusterRadius: 55,
+      // Con el mapa alejado se agrupa menos (radio más pequeño): antes, al
+      // alejar del todo, los 56 sitios de Barcelona acababan en una sola
+      // burbuja "56" que no decía nada.
+      maxClusterRadius: (z) => (z <= 12 ? 32 : z <= 13 ? 42 : 55),
       iconCreateFunction: makeClusterIcon
     });
     // Capa independiente de fuentes de agua potable: no se agrupa con

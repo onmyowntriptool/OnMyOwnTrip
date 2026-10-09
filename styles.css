@@ -4504,3 +4504,9 @@ html[data-mode="kids"] .ai-input-wrap {
 .plan-tab.-new { color: #BE185D; border-style: dashed; background: transparent; }
 .plan-manage { display: flex; gap: 14px; margin: 8px 2px 0; }
 .plan-manage button { padding: 0; border: none; background: none; color: var(--color-text-soft); font: inherit; font-size: 12px; font-weight: 700; text-decoration: underline; cursor: pointer; }
+/* Mapa muy alejado (feedback de David al hacer zoom out): las burbujas de
+   grupo no encogen por debajo del 80% para que su número siga leyéndose, y
+   el icono del patrocinador se oculta a escala de ciudad entera, donde no
+   aporta nada y tapaba la burbuja de los puntos de interés. */
+.custom-pin.-cluster { transform: scale(max(var(--pin-scale, 1), 0.8)); }
+#map.-city-wide .sponsor-demo-pin { display: none; }
