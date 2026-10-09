@@ -2783,15 +2783,18 @@ html[data-mode="kids"] .bottom-sheet {
   scrollbar-width: thin;
 }
 /* Herramientas del chat (feedback #34): letra más pequeña/grande y
-   ampliar/reducir la conversación. Flotan sobre la esquina superior derecha
-   de la caja del chat, sin ocupar una fila propia. */
+   ampliar/reducir la conversación. Columna vertical en su propia franja a
+   la derecha de la caja del chat (la caja deja ese hueco libre con
+   padding-right), así nunca tapan el texto, y como viven fuera del scroll
+   se quedan quietas mientras se lee. */
 .ai-chat-tools {
   align-self: flex-end;
   position: relative;
   z-index: 2;
   display: flex;
+  flex-direction: column;
   gap: 4px;
-  margin: 0 22px -38px 0;
+  margin: 6px 20px -112px 0;
   padding: 3px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-surface) 88%, transparent);
@@ -2799,8 +2802,8 @@ html[data-mode="kids"] .bottom-sheet {
   flex-shrink: 0;
 }
 .ai-chat-tools[hidden] { display: none; }
-/* Franja libre arriba para que los botones no tapen el primer mensaje. */
-.ai-chat-tools:not([hidden]) + .ai-messages { padding-top: 40px; }
+/* Franja libre a la derecha para la columna de botones. */
+.ai-chat-tools:not([hidden]) + .ai-messages { padding-right: 46px; min-height: 120px; }
 .ai-tool-btn {
   width: 30px;
   height: 30px;
