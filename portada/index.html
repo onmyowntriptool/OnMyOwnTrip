@@ -248,6 +248,16 @@
     border-left: 2px solid var(--teal); border-bottom: 2px solid var(--teal); transform: rotate(-45deg);
   }
   .plan li b { color: var(--ink); font-weight: 600; }
+  .plan-includes { background: var(--bg-alt); border: 1px dashed var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
+  .plan-includes strong { display: block; color: var(--ink); font-size: 15px; margin-bottom: 8px; }
+  .plan .plan-includes ul { gap: 6px; }
+  .plan .plan-includes li { font-size: 14px; }
+  .plan-extra-label { margin: 0 0 12px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--teal); }
+  .plan ul.extras li::before {
+    content: "+"; border: 0; transform: none; width: 18px; height: 18px; left: 0; top: .15em;
+    display: grid; place-items: center; font-weight: 700; font-size: 14px; line-height: 1;
+    color: #fff; background: var(--teal); border-radius: 50%;
+  }
 
   /* Descargas */
   .downloads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
@@ -519,7 +529,16 @@
         </article>
         <article class="plan premium">
           <div class="plan-head"><h3 data-i18n="premTitle">Premium por ciudad</h3><span class="plan-tag" data-i18n="premSoon">Próximamente</span></div>
-          <ul>
+          <div class="plan-includes">
+            <strong data-i18n="premIncl">Todo lo del plan Gratis</strong>
+            <ul>
+              <li data-i18n="premIncl1">Todos los Puntos de interés, el mapa y las rutas</li>
+              <li data-i18n="premIncl2">Audioguía narrada e información de cada lugar</li>
+              <li data-i18n="premIncl3">Modo niños con retos y medallas</li>
+            </ul>
+          </div>
+          <p class="plan-extra-label" data-i18n="premExtra">Y además</p>
+          <ul class="extras">
             <li data-i18n-html="prem1"><b>Para la ciudad que elijas</b>, o para todas a la vez</li>
             <li data-i18n-html="prem2"><b>Preguntas ilimitadas</b> al guía IA</li>
             <li data-i18n-html="prem3"><b>Sin publicidad</b></li>
@@ -742,6 +761,11 @@
     free3: '<b>3 questions to the AI guide</b> at each point of interest, renewed every day',
     free4: '<b>Kids mode</b> with challenges and medals',
     premTitle: 'Premium per city', premSoon: 'Coming soon',
+    premIncl: 'Everything in the Free plan',
+    premIncl1: 'Every point of interest, the map and the routes',
+    premIncl2: 'Narrated audio guide and information for each place',
+    premIncl3: 'Kids mode with challenges and medals',
+    premExtra: 'Plus',
     prem1: '<b>For the city you choose</b>, or all of them at once',
     prem2: '<b>Unlimited questions</b> to the AI guide',
     prem3: '<b>No ads</b>',
