@@ -1392,6 +1392,7 @@
     // etiquetas visibles de las tres filas siempre presentes en .header-bottom
     // (Inicio/Filtros/Capas) — ver #changeCityLabel/#filtersToggleLabel/#layersLabel.
     menuHomeLabel: { es: { adult: 'Inicio', kids: 'Inicio' }, en: { adult: 'Home', kids: 'Home' } },
+    menuRoutesLabel: { es: { adult: 'Rutas', kids: '¡Lo Top!' }, en: { adult: 'Routes', kids: 'Top Spots!' } },
     menuFiltersLabel: { es: { adult: 'Filtros', kids: 'Filtros' }, en: { adult: 'Filters', kids: 'Filters' } },
     menuLayersLabel: { es: { adult: 'Capas', kids: 'Capas' }, en: { adult: 'Layers', kids: 'Layers' } },
     audioguideCompleted: { es: { adult: 'Audioguía completada', kids: '¡Fin del cuento! 🎉' }, en: { adult: 'Audio guide completed', kids: 'The End! 🎉' } },
@@ -1866,7 +1867,14 @@
     }
     const city = CURRENT_CITY || CITIES.toledo;
     const cityMinZoom = city.minZoom || 11;
-    map = L.map('map', { zoomControl: false, attributionControl: true, scrollWheelZoom: true, maxBoundsViscosity: 0.7 })
+    // maxZoom explícito en el propio mapa (BUG REAL, V101): antes lo fijaba
+    // la capa de teselas clásica (maxZoom 19). Al cambiar al mapa vectorial
+    // por defecto (OpenFreeMap, ver applyBaseStyle) esa capa se quita y la
+    // vectorial no declara máximo, así que getMaxZoom() pasaba a Infinity y
+    // leaflet.markercluster, que recalcula sus grupos para cada nivel de zoom
+    // desde el máximo hacia abajo, se quedaba en un bucle infinito al activar
+    // una ruta: la app entera se congelaba.
+    map = L.map('map', { zoomControl: false, attributionControl: true, scrollWheelZoom: true, maxBoundsViscosity: 0.7, maxZoom: 19 })
       .setView(city.center, city.zoom);
     map.setMaxBounds(L.latLngBounds(city.bounds[0], city.bounds[1]).pad(0.25));
     // Iconos de capas más pequeños con el mapa alejado (ver #map.-layers-far
@@ -3875,13 +3883,13 @@
       // El usuario pudo cambiar de ciudad (otro mapa) mientras cargaba.
       if (forMap !== map || !L.maplibreGL) return;
       if (vectorLayer) return;
-      vectorLayer = L.maplibreGL({ style: VECTOR_STYLE_URL, attribution: VECTOR_ATTRIBUTION, minZoom });
+      vectorLayer = L.maplibreGL({ style: VECTOR_STYLE_URL, attribution: VECTOR_ATTRIBUTION, minZoom, maxZoom: 19 });
       applyBaseStyle();
     }).catch((e) => console.warn('[mapa] Sin mapa vectorial, se queda OpenStreetMap', e));
   };
 
   const BASE_STYLE_NAMES = {
-    clean: { es: 'Mapa limpio', en: 'Clean map' },
+    clean: { es: 'Por defecto', en: 'Default' },
     classic: { es: 'Mapa clásico', en: 'Classic map' },
     satellite: { es: 'Satélite', en: 'Satellite' }
   };
@@ -4092,14 +4100,16 @@
     openAppMenu('routes');
   };
 
+  // Fila "Rutas" del menú: con una ruta activa muestra su nombre en el color
+  // de esa ruta; si no, "Rutas".
   const updateEssentialPillLabel = () => {
-    const pill = els.filters && els.filters.querySelector('.pill[data-category="essential"]');
-    if (!pill) return;
+    const btn = $('#routesBtn');
+    const label = $('#routesLabel');
+    if (!btn || !label) return;
     const active = STATE.category === 'essential' && getCityRoutes().find((r) => r.id === STATE.activeRoute);
-    pill.innerHTML = `<span class="pill-icon">${ROUTE_ICON_SVG()}</span><span>${
-      active ? pickDual(active.name) : t('essentialFallback')
-    }</span>`;
-    pill.style.setProperty('--pill-color', (active && active.color) || getCssVar('--color-primary'));
+    label.textContent = active ? pickDual(active.name).replace(/<br>/g, ' ') : t('menuRoutesLabel');
+    btn.classList.toggle('-route-active', !!active);
+    btn.style.setProperty('--route-color', (active && active.color) || getCssVar('--color-primary'));
   };
 
   // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo).
@@ -4115,12 +4125,13 @@
   // menú (icono único ">>") por si esta no convence. BORRAR este bloque si
   // se retira el experimento del todo.
   const APP_MENU_LEVEL_IDS = { filters: 'appMenuFilters', layers: 'appMenuLayers', routes: 'appMenuRoutes' };
-  const APP_MENU_TRIGGERS = { filters: '#filtersToggleBtn', layers: '#layersBtn' };
+  const APP_MENU_TRIGGERS = { filters: '#filtersToggleBtn', layers: '#layersBtn', routes: '#routesBtn' };
   // Quinta vuelta: "routes" ya no comparte disparador propio, pero SÍ
   // comparte slot con "filters" (vive anidado dentro de Filtros, ver
   // index.html) — por eso apunta al mismo slot que "filters" en vez de
   // tener uno para sí mismo.
-  const APP_MENU_SLOTS = { filters: 'filtersMenuSlot', routes: 'filtersMenuSlot', layers: 'layersMenuSlot' };
+  // Rutas tiene ya fila y desplegable propios (antes vivía dentro de Filtros).
+  const APP_MENU_SLOTS = { filters: 'filtersMenuSlot', routes: 'routesMenuSlot', layers: 'layersMenuSlot' };
   const showAppMenuLevel = (level) => {
     Object.entries(APP_MENU_LEVEL_IDS).forEach(([key, id]) => {
       const el = $(`#${id}`);
@@ -4131,10 +4142,11 @@
     .filter(([, id]) => !$(`#${id}`)?.hidden)
     .map(([key]) => key);
   const isAppMenuSlotOpen = (slotId) => !!$(`#${slotId}`)?.classList.contains('-open');
-  const isAppMenuOpen = () => isAppMenuSlotOpen('filtersMenuSlot') || isAppMenuSlotOpen('layersMenuSlot');
+  const isAppMenuOpen = () => isAppMenuSlotOpen('filtersMenuSlot') || isAppMenuSlotOpen('layersMenuSlot') || isAppMenuSlotOpen('routesMenuSlot');
   const closeAllAppMenuSlots = () => {
     $('#filtersMenuSlot')?.classList.remove('-open');
     $('#layersMenuSlot')?.classList.remove('-open');
+    $('#routesMenuSlot')?.classList.remove('-open');
   };
   // Abre el panel del nivel indicado en su propio slot, justo debajo de su
   // botón disparador (ver .app-menu-slot en el CSS) — cierra cualquier otro
@@ -4148,6 +4160,7 @@
     // de su botón: es un nivel anidado dentro de Filtros, no uno propio.
     $(APP_MENU_TRIGGERS.filters)?.setAttribute('aria-expanded', String(APP_MENU_SLOTS[level] === 'filtersMenuSlot'));
     $(APP_MENU_TRIGGERS.layers)?.setAttribute('aria-expanded', String(APP_MENU_SLOTS[level] === 'layersMenuSlot'));
+    $(APP_MENU_TRIGGERS.routes)?.setAttribute('aria-expanded', String(APP_MENU_SLOTS[level] === 'routesMenuSlot'));
   };
   const closeAppMenu = () => {
     closeAllAppMenuSlots();
@@ -4214,6 +4227,14 @@
     // nivel que indique su propio atributo. BORRAR este bloque si se
     // retira el experimento.
     $('#filtersToggleBtn')?.addEventListener('click', () => toggleAppMenuLevel('filters'));
+    // "Rutas": con varias rutas abre su lista; con una sola, la activa directa.
+    $('#routesBtn')?.addEventListener('click', () => {
+      if (isAppMenuSlotOpen('routesMenuSlot')) { closeAppMenu(); return; }
+      const routes = getCityRoutes();
+      if (routes.length > 1) { openRoutePicker(routes); return; }
+      activateRoute(routes[0].id);
+      closeAppMenu();
+    });
     $('#layersBtn')?.addEventListener('click', () => toggleAppMenuLevel('layers'));
     $$('[data-menu-back]').forEach((b) => {
       b.addEventListener('click', () => openAppMenu(b.dataset.menuBack || 'filters'));
@@ -4247,8 +4268,8 @@
       // verdad). Los clics dentro de #tutorialOverlay quedan exentos: ese
       // panel gestiona el menú él mismo (ver tutorialOpenMenu).
       if (isAppMenuOpen() && !e.target.closest('#tutorialOverlay')) {
-        const slots = [$('#filtersMenuSlot'), $('#layersMenuSlot')];
-        const btns = [$(APP_MENU_TRIGGERS.filters), $(APP_MENU_TRIGGERS.layers)];
+        const slots = [$('#filtersMenuSlot'), $('#layersMenuSlot'), $('#routesMenuSlot')];
+        const btns = [$(APP_MENU_TRIGGERS.filters), $(APP_MENU_TRIGGERS.layers), $(APP_MENU_TRIGGERS.routes)];
         const insideSlot = slots.some((s) => s && s.contains(e.target));
         const insideTrigger = btns.some((b) => b && b.contains(e.target));
         if (!insideSlot && !insideTrigger) closeAppMenu();
@@ -4283,7 +4304,7 @@
     // "Todos" — con Filtros/Capas siempre visibles ya no hace tanta falta
     // como con el icono único de antes, pero se deja igual de útil.
     // BORRAR si se retira el experimento.
-    $('#filtersToggleBtn')?.classList.toggle('-active', STATE.category !== CATEGORIES.ALL);
+    $('#filtersToggleBtn')?.classList.toggle('-active', STATE.category !== CATEGORIES.ALL && STATE.category !== 'essential');
   };
 
   // Niveles del explorador (modo niño): umbrales de puntos pensados para
@@ -4862,6 +4883,11 @@
       text: { es: 'Este botón te lleva al menú principal para cambiar de ciudad o de modo, adultos o niños. Tranquilo: tu progreso no se borra al volver.', en: "This button takes you to the main menu to change city or mode, Adults or Kids. Don't worry: your progress isn't erased when you go back." }
     },
     {
+      target: '#routesBtn',
+      title: { es: 'Rutas recomendadas', en: 'Recommended routes' },
+      text: { es: 'Son recorridos temáticos: agrupan varias paradas con un orden sugerido, para centrarte en un itinerario concreto en vez de explorar sin rumbo.', en: 'These are themed walks: they group several stops in a suggested order, so you can follow a specific itinerary instead of exploring aimlessly.' }
+    },
+    {
       // FIX (reportado: "el tutorial quedó desactualizado tras mover los
       // iconos de lugar"): la barra de filtros ya no está siempre visible
       // -- vive dentro de un panel que se despliega al tocar este botón
@@ -4879,12 +4905,6 @@
       openMenu: 'filters',
       title: { es: '«Todos»', en: '"All"' },
       text: { es: 'Muestra en el mapa todos los puntos de interés de la ciudad, sin ningún filtro aplicado.', en: "Shows every point of interest in the city on the map, with no filter applied." }
-    },
-    {
-      target: '.pill[data-category="essential"]',
-      openMenu: 'filters',
-      title: { es: '«Recomendaciones»', en: '"Highlights"' },
-      text: { es: 'Son rutas temáticas: agrupan varias paradas en un recorrido con un orden sugerido, para centrarte en un itinerario concreto en vez de explorar sin rumbo.', en: 'These are themed routes: they group several stops into a route with a suggested order, so you can focus on a specific itinerary instead of exploring aimlessly.' }
     },
     {
       target: '.pill[data-category="rincones-ocultos"]',
@@ -4978,7 +4998,7 @@
     {
       target: '#satelliteBtn',
       title: { es: 'Estilo del mapa', en: 'Map style' },
-      text: { es: 'Cada toque cambia el estilo del mapa: limpio (el de por defecto), clásico con todo el detalle, o una foto de satélite real de la zona.', en: 'Each tap changes the map style: clean (the default), classic with full detail, or a real satellite photo of the area.' }
+      text: { es: 'Cada toque cambia el estilo del mapa: el de por defecto, el clásico con todo el detalle, o una foto de satélite real de la zona.', en: 'Each tap changes the map style: the default one, the classic one with full detail, or a real satellite photo of the area.' }
     }
   ];
   let tutorialSteps = KIDS_TUTORIAL_STEPS;
@@ -5852,6 +5872,8 @@
     if (changeCityLabelEl) changeCityLabelEl.textContent = t('menuHomeLabel');
     const filtersToggleBtnEl = $('#filtersToggleBtn');
     if (filtersToggleBtnEl) filtersToggleBtnEl.setAttribute('aria-label', t('menuFiltersLabel'));
+    $('#routesBtn')?.setAttribute('aria-label', t('menuRoutesLabel'));
+    updateEssentialPillLabel();
     const filtersToggleLabelEl = $('#filtersToggleLabel');
     if (filtersToggleLabelEl) filtersToggleLabelEl.textContent = t('menuFiltersLabel');
     const layersBtnEl = $('#layersBtn');

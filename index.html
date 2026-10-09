@@ -46,7 +46,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-  <link rel="stylesheet" href="styles.css?v=150" />
+  <link rel="stylesheet" href="styles.css?v=151" />
 </head>
 <body>
   <!-- PANTALLA DE ACCESO: se muestra ANTES que la de bienvenida cuando no
@@ -153,7 +153,7 @@
       </div>
     </div>
 
-    <span class="onboarding-version" id="appVersion">Beta V100.1</span>
+    <span class="onboarding-version" id="appVersion">Beta V101</span>
     <button type="button" class="onboarding-reset" id="obResetBtn">Reiniciar app</button>
     <a class="onboarding-legal" href="privacidad.html" id="obPrivacyLink">Privacidad y créditos</a>
   </div>
@@ -330,6 +330,26 @@
           <span id="changeCityLabel">Inicio</span>
         </button>
 
+        <!-- Rutas recomendadas como fila propia del menú (antes era una opción
+             dentro de Filtros): abre su propia lista de rutas debajo y, con una
+             ruta activa, muestra su nombre en el color de la ruta (ver
+             updateEssentialPillLabel en app.js). -->
+        <button type="button" class="menu-row-btn" id="routesBtn" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 22V4"></path>
+            <path d="M4 4h12l-2 4 2 4H4"></path>
+          </svg>
+          <span id="routesLabel">Rutas</span>
+        </button>
+
+        <div class="app-menu-slot" id="routesMenuSlot">
+          <div class="app-menu-slot-inner">
+            <div class="app-menu-level" id="appMenuRoutes">
+              <div id="routePicker"></div>
+            </div>
+          </div>
+        </div>
+
         <button type="button" class="menu-row-btn" id="filtersToggleBtn" aria-label="Filtros" aria-haspopup="true" aria-expanded="false">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M4 4h16l-6.5 8.5V19l-3 1.5v-8L4 4Z"></path>
@@ -343,9 +363,6 @@
               <nav class="filters" id="filters" role="tablist" aria-label="Filtrar puntos de interés">
                 <button type="button" class="pill" data-category="all" data-active="true">
                   <span>Todos</span>
-                </button>
-                <button type="button" class="pill" data-category="essential" data-active="false">
-                  <span>Rutas recomendadas</span>
                 </button>
                 <button type="button" class="pill" data-category="rincones-ocultos" data-active="false">
                   <span>Puntos de interés</span>
@@ -361,23 +378,6 @@
                      CATEGORIES.GASTRONOMY sigue existiendo en los datos (pines, colores),
                      solo se retira el filtro para no tener dos formas de buscar comida. -->
               </nav>
-            </div>
-
-            <!-- EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo):
-                 tercer nivel para elegir ruta, en vez del selector flotante de antes
-                 (#routePicker con position:absolute) — ese se solapaba de forma fea con
-                 este mismo menú, porque se posicionaba junto a la píldora "Rutas
-                 recomendadas" que ahora vive DENTRO del propio menú, no en la cabecera.
-                 Aquí simplemente sustituye el contenido del nivel "filters" por este,
-                 con su propio "‹" para volver — comparte el mismo slot que "filters"
-                 porque es un nivel anidado dentro de Filtros, no un panel propio.
-                 BORRAR si se retira el experimento. -->
-            <div class="app-menu-level" id="appMenuRoutes" hidden>
-              <button type="button" class="dropdown-option -back" data-menu-back="filters">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><polyline points="15 6 9 12 15 18"></polyline></svg>
-                <span>Rutas recomendadas</span>
-              </button>
-              <div id="routePicker"></div>
             </div>
           </div>
         </div>
@@ -845,8 +845,8 @@
   <!-- El "?v=N" de data.js/app.js/styles.css evita que el móvil se quede con
        una versión vieja en caché: sube este número en cada cambio a esos
        archivos para forzar que se vuelvan a descargar. -->
-  <script src="data/core.js?v=39"></script>
-  <script src="app.js?v=279"></script>
+  <script src="data/core.js?v=40"></script>
+  <script src="app.js?v=281"></script>
   <!-- Service Worker: cachea el shell de la app y las imágenes de POIs ya
        vistas, para que la audioguía siga funcionando con conexión
        intermitente (típico caminando por cascos históricos). Ruta relativa

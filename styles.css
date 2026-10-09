@@ -4285,3 +4285,8 @@ html[data-mode="kids"] .ai-input-wrap {
 #map.-layers-very-far .restroom-pin,
 #map.-layers-very-far .food-pin,
 #map.-layers-very-far .hotel-pin { transform: scale(0.36); border-width: 3px; }
+
+/* Fila "Rutas" del menú con una ruta activa: nombre de la ruta en su color
+   (ver updateEssentialPillLabel en app.js). */
+#routesBtn.-route-active { color: var(--route-color); }
+#routesBtn.-route-active span { max-width: 9.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

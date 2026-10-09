@@ -93,8 +93,8 @@ const CITIES = {
       {
         id: 'main',
         name: {
-          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
-          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+          es: { adult: 'Imperdibles', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Must-sees', kids: 'The Top Spots! 🚩' }
         },
         color: '#F59E0B',
         intro: {
@@ -188,8 +188,8 @@ const CITIES = {
       {
         id: 'main',
         name: {
-          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
-          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+          es: { adult: 'Imperdibles', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Must-sees', kids: 'The Top Spots! 🚩' }
         },
         color: '#F59E0B',
         intro: {
@@ -293,8 +293,8 @@ const CITIES = {
       {
         id: 'main',
         name: {
-          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
-          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+          es: { adult: 'Imperdibles', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Must-sees', kids: 'The Top Spots! 🚩' }
         },
         color: '#F59E0B',
         intro: {
@@ -360,8 +360,8 @@ const CITIES = {
       {
         id: 'main',
         name: {
-          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
-          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+          es: { adult: 'Imperdibles', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Must-sees', kids: 'The Top Spots! 🚩' }
         },
         color: '#F59E0B',
         intro: {
@@ -406,8 +406,8 @@ const CITIES = {
       {
         id: 'main',
         name: {
-          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
-          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+          es: { adult: 'Imperdibles', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Must-sees', kids: 'The Top Spots! 🚩' }
         },
         color: '#F59E0B',
         intro: {
@@ -559,8 +559,8 @@ const CITIES = {
       {
         id: 'main',
         name: {
-          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
-          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+          es: { adult: 'Imperdibles', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Must-sees', kids: 'The Top Spots! 🚩' }
         },
         color: '#F59E0B',
         intro: {
@@ -645,8 +645,8 @@ const CITIES = {
       {
         id: 'main',
         name: {
-          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
-          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+          es: { adult: 'Imperdibles', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Must-sees', kids: 'The Top Spots! 🚩' }
         },
         color: '#F59E0B',
         intro: {
@@ -734,8 +734,8 @@ const CITIES = {
       {
         id: 'main',
         name: {
-          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
-          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+          es: { adult: 'Imperdibles', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Must-sees', kids: 'The Top Spots! 🚩' }
         },
         color: '#F5C518',
         intro: {
@@ -786,8 +786,8 @@ const CITIES = {
       {
         id: 'main',
         name: {
-          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
-          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+          es: { adult: 'Imperdibles', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Must-sees', kids: 'The Top Spots! 🚩' }
         },
         color: '#F59E0B',
         intro: {
@@ -909,8 +909,8 @@ const CITIES = {
       {
         id: 'main',
         name: {
-          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
-          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+          es: { adult: 'Imperdibles', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Must-sees', kids: 'The Top Spots! 🚩' }
         },
         color: '#F59E0B',
         intro: {
@@ -1015,8 +1015,8 @@ const CITIES = {
       {
         id: 'main',
         name: {
-          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
-          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+          es: { adult: 'Imperdibles', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Must-sees', kids: 'The Top Spots! 🚩' }
         },
         color: '#F59E0B',
         intro: {
@@ -1139,8 +1139,8 @@ const CITIES = {
       {
         id: 'main',
         name: {
-          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
-          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+          es: { adult: 'Imperdibles', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Must-sees', kids: 'The Top Spots! 🚩' }
         },
         color: '#F59E0B',
         intro: {
@@ -1244,8 +1244,8 @@ const CITIES = {
       {
         id: 'main',
         name: {
-          es: { adult: 'Recomendaciones', kids: '¡Lo Top! 🚩' },
-          en: { adult: 'Highlights', kids: 'The Top Spots! 🚩' }
+          es: { adult: 'Imperdibles', kids: '¡Lo Top! 🚩' },
+          en: { adult: 'Must-sees', kids: 'The Top Spots! 🚩' }
         },
         color: '#F59E0B',
         intro: {
