@@ -2026,9 +2026,62 @@
 
   const PLANS = (() => { try { return JSON.parse(localStorage.getItem(PLAN_KEY) || '{}') || {}; } catch (_) { return {}; } })();
   const savePlans = () => { try { localStorage.setItem(PLAN_KEY, JSON.stringify(PLANS)); } catch (_) {} };
+  // Varios planes con nombre por ciudad (petición de David): { active, list:
+  // [{ id, name, stops }] }. El formato antiguo (un único { stops } por
+  // ciudad, V103) se convierte solo en el primer plan de la lista.
+  const defaultPlanName = (n) => (n <= 1 ? PT('Mi plan', 'My plan') : `${PT('Plan', 'Plan')} ${n}`);
+  const getCityPlans = () => {
+    let c = PLANS[STATE.cityId];
+    if (!c || !Array.isArray(c.list)) {
+      const oldStops = c && Array.isArray(c.stops) ? c.stops : [];
+      c = { active: 'p1', list: [{ id: 'p1', name: defaultPlanName(1), stops: oldStops }] };
+      PLANS[STATE.cityId] = c;
+    }
+    if (!c.list.length) c.list.push({ id: 'p1', name: defaultPlanName(1), stops: [] });
+    if (!c.list.some((p) => p.id === c.active)) c.active = c.list[0].id;
+    return c;
+  };
+  // El plan ACTIVO de la ciudad: al que añade el botón de la ficha y el que
+  // se dibuja en el mapa.
   const getPlan = () => {
-    if (!PLANS[STATE.cityId]) PLANS[STATE.cityId] = { stops: [] };
-    return PLANS[STATE.cityId];
+    const c = getCityPlans();
+    return c.list.find((p) => p.id === c.active);
+  };
+  const setActivePlan = (id) => {
+    const c = getCityPlans();
+    if (!c.list.some((p) => p.id === id)) return;
+    c.active = id;
+    savePlans();
+    onPlanChanged();
+  };
+  const createPlan = () => {
+    const c = getCityPlans();
+    const suggested = defaultPlanName(c.list.length + 1);
+    const name = window.prompt(PT('Nombre del nuevo plan:', 'Name of the new plan:'), suggested);
+    if (name === null) return;
+    const id = `p${Date.now().toString(36)}`;
+    c.list.push({ id, name: name.trim().slice(0, 40) || suggested, stops: [] });
+    c.active = id;
+    savePlans();
+    onPlanChanged();
+  };
+  const renameActivePlan = () => {
+    const plan = getPlan();
+    const name = window.prompt(PT('Nuevo nombre del plan:', 'New name for the plan:'), plan.name);
+    if (name === null || !name.trim()) return;
+    plan.name = name.trim().slice(0, 40);
+    savePlans();
+    onPlanChanged();
+  };
+  const deleteActivePlan = () => {
+    const c = getCityPlans();
+    const plan = getPlan();
+    if (!window.confirm(PT(`¿Borrar el plan «${plan.name}»?`, `Delete the plan "${plan.name}"?`))) return;
+    c.list = c.list.filter((p) => p.id !== plan.id);
+    if (!c.list.length) c.list.push({ id: 'p1', name: defaultPlanName(1), stops: [] });
+    c.active = c.list[0].id;
+    savePlans();
+    onPlanChanged();
   };
   // Paradas del plan que siguen existiendo en los datos de la ciudad.
   const planPois = () => getPlan().stops.map((s) => POIS.find((p) => p.id === s.id)).filter(Boolean);
@@ -2171,7 +2224,7 @@
     fitMapToPois(pois);
     if (STATE.activePoiId && !isInPlan(STATE.activePoiId)) closeSheet();
     saveState();
-    showToast(PT('Tu plan: sigue el orden numerado en el mapa.', 'Your plan: follow the numbered order on the map.'), 3000);
+    showToast(PT(`«${getPlan().name}»: sigue el orden numerado en el mapa.`, `"${getPlan().name}": follow the numbered order on the map.`), 3000);
   };
   const exitPlanOnMap = () => {
     STATE.activeRoute = null;
@@ -2221,9 +2274,19 @@
   const renderPlanPanel = () => {
     const el = planPanelEl();
     if (!el || !CURRENT_CITY) return;
-    $('#planTitle').textContent = PT('Mi plan', 'My plan');
-    $('#planCity').textContent = CURRENT_CITY.name;
     const plan = getPlan();
+    const cityPlans = getCityPlans();
+    $('#planTitle').textContent = plan.name;
+    $('#planCity').textContent = CURRENT_CITY.name;
+    // Pestañas con todos los planes de la ciudad + "Nuevo".
+    const tabsEl = $('#planTabs');
+    if (tabsEl) {
+      tabsEl.innerHTML = cityPlans.list.map((p) => `<button type="button" class="plan-tab${p.id === plan.id ? ' -active' : ''}" data-plan="${escHtml(p.id)}">${escHtml(p.name)} <span>${p.stops.length}</span></button>`).join('')
+        + `<button type="button" class="plan-tab -new" data-plan="__new__">+ ${escHtml(PT('Nuevo', 'New'))}</button>`;
+    }
+    const renameBtn = $('#planRenameBtn'), deleteBtn = $('#planDeleteBtn');
+    if (renameBtn) renameBtn.textContent = PT('Renombrar', 'Rename');
+    if (deleteBtn) deleteBtn.textContent = PT('Borrar plan', 'Delete plan');
     const pois = planPois();
     const listEl = $('#planList'), emptyEl = $('#planEmpty'), totalEl = $('#planTotal'), actionsEl = $('#planActions');
     if (!pois.length) {
@@ -2278,6 +2341,14 @@
   const wirePlan = () => {
     $('#planBtn')?.addEventListener('click', () => (isPlanPanelOpen() ? closePlanPanel() : openPlanPanel()));
     $('#planCloseBtn')?.addEventListener('click', closePlanPanel);
+    $('#planTabs')?.addEventListener('click', (e) => {
+      const tab = e.target.closest('.plan-tab');
+      if (!tab) return;
+      if (tab.dataset.plan === '__new__') createPlan();
+      else setActivePlan(tab.dataset.plan);
+    });
+    $('#planRenameBtn')?.addEventListener('click', renameActivePlan);
+    $('#planDeleteBtn')?.addEventListener('click', deleteActivePlan);
     $('#planSortBtn')?.addEventListener('click', sortPlanByProximity);
     $('#planMapBtn')?.addEventListener('click', showPlanOnMap);
     $('#planClearBtn')?.addEventListener('click', () => {
@@ -2291,7 +2362,7 @@
       if (!id) return;
       if (isInPlan(id)) { removeFromPlan(id); return; }
       addToPlan(id);
-      showToast(PT('Añadido a tu plan. Ábrelo desde «Mi plan» en el menú.', 'Added to your plan. Open it from "My plan" in the menu.'), 2600);
+      showToast(PT(`Añadido a «${getPlan().name}». Ábrelo desde «Mi plan» en el menú.`, `Added to "${getPlan().name}". Open it from "My plan" in the menu.`), 2600);
     });
     $('#planList')?.addEventListener('click', (e) => {
       const btn = e.target.closest('button[data-act]');

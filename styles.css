@@ -4472,3 +4472,35 @@ html[data-mode="kids"] .ai-input-wrap {
 .plan-actions button.-primary { background: #DB2777; border-color: #DB2777; color: #fff; }
 .plan-actions button.-quiet { flex: 0 0 auto; color: var(--color-text-soft); }
 #planBtn.-route-active { color: var(--route-color); }
+/* Botones del plan siempre a la vista al pie del panel, aunque la lista de
+   paradas sea larga (antes había que bajar hasta el final para verlos). */
+.plan-actions {
+  position: sticky;
+  bottom: -12px;
+  margin: 12px -14px -12px;
+  padding: 10px 14px 12px;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+/* Varios planes por ciudad: pestañas con su nombre y nº de paradas. */
+.plan-tabs { display: flex; gap: 6px; overflow-x: auto; margin: 12px -2px 0; padding: 2px; scrollbar-width: none; }
+.plan-tabs::-webkit-scrollbar { display: none; }
+.plan-tab {
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.plan-tab span { opacity: 0.6; font-weight: 600; margin-left: 2px; }
+.plan-tab.-active { background: #DB2777; border-color: #DB2777; color: #fff; }
+.plan-tab.-active span { opacity: 0.85; }
+.plan-tab.-new { color: #BE185D; border-style: dashed; background: transparent; }
+.plan-manage { display: flex; gap: 14px; margin: 8px 2px 0; }
+.plan-manage button { padding: 0; border: none; background: none; color: var(--color-text-soft); font: inherit; font-size: 12px; font-weight: 700; text-decoration: underline; cursor: pointer; }
