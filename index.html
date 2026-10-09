@@ -46,7 +46,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-  <link rel="stylesheet" href="styles.css?v=143" />
+  <link rel="stylesheet" href="styles.css?v=146" />
 </head>
 <body>
   <!-- PANTALLA DE ACCESO: se muestra ANTES que la de bienvenida cuando no
@@ -153,7 +153,7 @@
       </div>
     </div>
 
-    <span class="onboarding-version" id="appVersion">Beta V96</span>
+    <span class="onboarding-version" id="appVersion">Beta V97</span>
     <button type="button" class="onboarding-reset" id="obResetBtn">Reiniciar app</button>
     <a class="onboarding-legal" href="privacidad.html" id="obPrivacyLink">Privacidad y créditos</a>
   </div>
@@ -592,14 +592,18 @@
         </div>
       </section>
 
-      <button type="button" class="ai-expand-btn" id="aiExpandBtn" hidden aria-pressed="false" aria-label="Ampliar la conversación">
-        <svg class="-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
-        </svg>
-        <svg class="-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"></path>
-        </svg>
-      </button>
+      <div class="ai-chat-tools" id="aiChatTools" hidden>
+        <button type="button" class="ai-tool-btn -font" id="aiFontDown" aria-label="Letra más pequeña">A<span>−</span></button>
+        <button type="button" class="ai-tool-btn -font" id="aiFontUp" aria-label="Letra más grande">A<span>+</span></button>
+        <button type="button" class="ai-tool-btn ai-expand-btn" id="aiExpandBtn" aria-pressed="false" aria-label="Ampliar la conversación">
+          <svg class="-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+          </svg>
+          <svg class="-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"></path>
+          </svg>
+        </button>
+      </div>
       <section class="ai-messages" id="aiMessages" aria-label="Conversación con la guía IA"></section>
 
       <div class="ai-suggestions" id="aiSuggestions"></div>
@@ -852,7 +856,7 @@
        una versión vieja en caché: sube este número en cada cambio a esos
        archivos para forzar que se vuelvan a descargar. -->
   <script src="data/core.js?v=39"></script>
-  <script src="app.js?v=271"></script>
+  <script src="app.js?v=273"></script>
   <!-- Service Worker: cachea el shell de la app y las imágenes de POIs ya
        vistas, para que la audioguía siga funcionando con conexión
        intermitente (típico caminando por cascos históricos). Ruta relativa

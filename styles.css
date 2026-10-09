@@ -2782,28 +2782,44 @@ html[data-mode="kids"] .bottom-sheet {
   gap: 10px;
   scrollbar-width: thin;
 }
-/* Botón de ampliar/reducir la conversación (feedback #34): flota sobre la
-   esquina superior derecha de la caja del chat, sin ocupar una fila propia. */
-.ai-expand-btn {
+/* Herramientas del chat (feedback #34): letra más pequeña/grande y
+   ampliar/reducir la conversación. Flotan sobre la esquina superior derecha
+   de la caja del chat, sin ocupar una fila propia. */
+.ai-chat-tools {
   align-self: flex-end;
   position: relative;
   z-index: 2;
+  display: flex;
+  gap: 4px;
+  margin: 0 22px -38px 0;
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+.ai-chat-tools[hidden] { display: none; }
+/* Franja libre arriba para que los botones no tapen el primer mensaje. */
+.ai-chat-tools:not([hidden]) + .ai-messages { padding-top: 40px; }
+.ai-tool-btn {
   width: 30px;
   height: 30px;
-  margin: 0 22px -36px 0;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text-soft);
   box-shadow: var(--shadow-sm);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
   cursor: pointer;
 }
-.ai-expand-btn[hidden] { display: none; }
-/* Franja libre arriba para que el botón no tape el primer mensaje. */
-.ai-expand-btn:not([hidden]) + .ai-messages { padding-top: 40px; }
+.ai-tool-btn.-font span { font-size: 11px; margin-left: 1px; }
+.ai-tool-btn:disabled { opacity: 0.35; cursor: default; }
 .ai-expand-btn svg { width: 15px; height: 15px; }
 .ai-expand-btn .-collapse,
 .bottom-sheet.-chat-expanded .ai-expand-btn .-expand { display: none; }
@@ -2822,7 +2838,7 @@ html[data-mode="kids"] .bottom-sheet {
   max-height: none;
   min-height: 0;
 }
-html[data-mode="kids"] .ai-expand-btn { display: none; }
+html[data-mode="kids"] .ai-chat-tools { display: none; }
 .ai-messages::-webkit-scrollbar { width: 4px; }
 .ai-messages::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
 
@@ -2865,7 +2881,8 @@ html[data-mode="kids"] .ai-expand-btn { display: none; }
   padding: 9px 13px;
   border-radius: 15px;
   line-height: 1.5;
-  font-size: 13.2px;
+  /* --chat-font-scale: botones A−/A+ (ver setChatFontStep en app.js). */
+  font-size: calc(13.2px * var(--chat-font-scale, 1));
   border-top-left-radius: 4px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -3771,10 +3788,35 @@ html[data-mode="kids"] .ai-input-wrap {
 }
 
 .sheet-sponsor-demo {
+  position: relative;
   margin: 8px 18px 0;
   padding-top: 6px;
   border-top: 1px dashed var(--color-border);
 }
+/* Cruz para ocultar el anuncio en esta ficha (sigue apareciendo al abrir
+   otra). Pequeña y discreta, arriba a la derecha de la tarjeta. */
+/* .-oro fija display:flex, que gana al [hidden] del navegador: sin esto
+   la cruz marcaba la tarjeta como oculta pero seguía viéndose. */
+#sheetSponsorDemo[hidden] { display: none; }
+.sponsor-dismiss {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 1;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #8F5C14;
+  cursor: pointer;
+}
+.sponsor-dismiss svg { width: 12px; height: 12px; }
+.sheet-sponsor-demo:not(.-oro) > .label,
+.sheet-sponsor-demo.-oro .sponsor-head { padding-right: 24px; }
 .sheet-sponsor-demo .label {
   display: block;
   font-size: 9px;

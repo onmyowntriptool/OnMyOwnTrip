@@ -1515,6 +1515,9 @@
     ariaAudioPlayer: { es: { adult: 'Reproductor de audio', kids: 'Reproductor de audio' }, en: { adult: 'Audio player', kids: 'Audio player' } },
     ariaAudioProgressGroup: { es: { adult: 'Progreso', kids: 'Progreso' }, en: { adult: 'Progress', kids: 'Progress' } },
     ariaProgressBar: { es: { adult: 'Barra de progreso', kids: 'Barra de progreso' }, en: { adult: 'Progress bar', kids: 'Progress bar' } },
+    ariaChatFontDown: { es: { adult: 'Letra más pequeña', kids: 'Letra más pequeña' }, en: { adult: 'Smaller text', kids: 'Smaller text' } },
+    ariaChatFontUp: { es: { adult: 'Letra más grande', kids: 'Letra más grande' }, en: { adult: 'Larger text', kids: 'Larger text' } },
+    ariaSponsorDismiss: { es: { adult: 'Ocultar anuncio', kids: 'Ocultar anuncio' }, en: { adult: 'Hide ad', kids: 'Hide ad' } },
     ariaChatExpand: { es: { adult: 'Ampliar la conversación', kids: 'Ampliar la conversación' }, en: { adult: 'Expand the conversation', kids: 'Expand the conversation' } },
     ariaChatCollapse: { es: { adult: 'Reducir la conversación', kids: 'Reducir la conversación' }, en: { adult: 'Shrink the conversation', kids: 'Shrink the conversation' } },
     ariaAiMessages: { es: { adult: 'Conversación con la guía IA', kids: 'Conversación con la guía IA' }, en: { adult: 'Conversation with the AI guide', kids: 'Conversation with the AI guide' } },
@@ -3533,6 +3536,11 @@
       el.insertAdjacentHTML('beforeend', '<button type="button" class="sponsor-remove-ads-link" id="sponsorRemoveAdsBtn">Quitar publicidad en esta ciudad</button>');
       $('#sponsorRemoveAdsBtn', el)?.addEventListener('click', openPremiumModal);
     }
+    // Cruz para ocultar el anuncio en ESTA ficha (deja más sitio para leer;
+    // al abrir otra ficha vuelve a salir). La mención por voz al terminar
+    // la narración no se toca.
+    el.insertAdjacentHTML('afterbegin', `<button type="button" class="sponsor-dismiss" aria-label="${t('ariaSponsorDismiss')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>`);
+    $('.sponsor-dismiss', el)?.addEventListener('click', () => { el.hidden = true; });
     el.hidden = false;
   };
 
@@ -5817,6 +5825,8 @@
       ['.audio-progress', 'aria-label', 'ariaAudioProgressGroup'],
       ['.progress-wrap', 'aria-label', 'ariaProgressBar'],
       ['#aiMessages', 'aria-label', 'ariaAiMessages'],
+      ['#aiFontDown', 'aria-label', 'ariaChatFontDown'],
+      ['#aiFontUp', 'aria-label', 'ariaChatFontUp'],
       ['#aiMic', 'aria-label', 'ariaAiMic'],
       ['#aiSend', 'aria-label', 'ariaAiSend'],
       ['#aiCallBtn', 'aria-label', 'ariaAiCallOpen'],
@@ -6604,9 +6614,9 @@
       wrap.appendChild(bubble);
       box.appendChild(wrap);
     });
-    // El botón de ampliar solo tiene sentido con algo que leer.
-    const expandBtn = $('#aiExpandBtn');
-    if (expandBtn) expandBtn.hidden = history.length === 0;
+    // Letra y ampliar solo tienen sentido con algo que leer.
+    const chatTools = $('#aiChatTools');
+    if (chatTools) chatTools.hidden = history.length === 0;
   };
 
   // statusText (opcional): pasados unos segundos sin respuesta (ver el
@@ -7148,6 +7158,29 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       btn.setAttribute('aria-label', t(on ? 'ariaChatCollapse' : 'ariaChatExpand'));
     }
   };
+  // Tamaño de letra del chat (botones A−/A+): 3 pasos, recordado entre
+  // sesiones en este dispositivo. Pensado para lectores que necesitan letra
+  // más grande; va de la mano del modo lectura, para que más letra no
+  // signifique leer en una caja diminuta.
+  const CHAT_FONT_STEPS = [1, 1.2, 1.4];
+  const CHAT_FONT_KEY = 'omot-chat-font-step';
+  let chatFontStep = 0;
+  const setChatFontStep = (step) => {
+    chatFontStep = Math.max(0, Math.min(CHAT_FONT_STEPS.length - 1, step));
+    if (els.sheet) els.sheet.style.setProperty('--chat-font-scale', String(CHAT_FONT_STEPS[chatFontStep]));
+    const down = $('#aiFontDown'), up = $('#aiFontUp');
+    if (down) down.disabled = chatFontStep === 0;
+    if (up) up.disabled = chatFontStep === CHAT_FONT_STEPS.length - 1;
+    try { localStorage.setItem(CHAT_FONT_KEY, String(chatFontStep)); } catch (_) {}
+  };
+  const wireChatFontButtons = () => {
+    let saved = 0;
+    try { saved = parseInt(localStorage.getItem(CHAT_FONT_KEY) || '0', 10) || 0; } catch (_) {}
+    setChatFontStep(saved);
+    $('#aiFontDown')?.addEventListener('click', () => setChatFontStep(chatFontStep - 1));
+    $('#aiFontUp')?.addEventListener('click', () => setChatFontStep(chatFontStep + 1));
+  };
+
   const scrollAiToLastAnswerStart = () => {
     const box = $('#aiMessages');
     if (!box) return;
@@ -7192,6 +7225,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     const input = $('#aiInput');
     const sendBtn = $('#aiSend');
     if (!input || !sendBtn) return;
+    wireChatFontButtons();
     $('#aiExpandBtn')?.addEventListener('click', () => {
       setChatExpanded(!els.sheet.classList.contains('-chat-expanded'));
     });
@@ -8469,7 +8503,13 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
   // Reproduce un audio ya resuelto de CLOUD_TTS. Comparte STATE.audio y
   // updateAudioUi con el camino de Web Speech: la barra de progreso no
   // sabe (ni le importa) qué motor está sonando.
-  const startCloudAudio = (url, silent, myPlayId) => {
+  // onEnd (opcional): avisa de que ESTA narración terminó (ver
+  // notifySegmentEnd en startAudio). BUG REAL (feedback #43): antes no se
+  // pasaba a este camino, que es el único que existe en la app Android
+  // (sin speechSynthesis), así que al acabar un párrafo de "Profundiza
+  // más" nadie liberaba STATE.ai.deepenBusy y el chip se quedaba gris hasta
+  // tocar otro botón.
+  const startCloudAudio = (url, silent, myPlayId, onEnd = null) => {
     STATE.audio.engine = 'cloud';
     cloudAudioEl.onloadedmetadata = () => {
       if (isFinite(cloudAudioEl.duration)) STATE.audio.duration = cloudAudioEl.duration;
@@ -8485,11 +8525,12 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       if (STATE.mode === 'kids') maybeShowFirstKidsQuiz();
       const endedPoi = POIS.find((p) => p.id === STATE.activePoiId);
       maybeSpeakSponsorDemoOutro(endedPoi, myPlayId, () => speakPendingIntroCta(endedPoi, myPlayId));
+      if (typeof onEnd === 'function') onEnd();
     };
     // Si el audio en caché falla al reproducir (blob corrupto, formato no
     // soportado, etc.) se reintenta ya mismo con Web Speech en vez de dejar
-    // la audioguía muda.
-    const fallbackToSpeech = () => { STATE.audio.engine = null; startAudio(false, silent); };
+    // la audioguía muda. El aviso de fin pasa a ese reintento.
+    const fallbackToSpeech = () => { STATE.audio.engine = null; startAudio(false, silent, onEnd); };
     cloudAudioEl.onerror = fallbackToSpeech;
     cloudAudioEl.src = url;
     cloudAudioEl.currentTime = 0;
@@ -8539,7 +8580,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     if (!isResume) {
       const textForCloud = SPEECH.getText();
       const cloudUrl = CLOUD_TTS.getReadyUrl(textForCloud);
-      if (cloudUrl) { startCloudAudio(cloudUrl, silent, myPlayId); return; }
+      if (cloudUrl) { startCloudAudio(cloudUrl, silent, myPlayId, notifySegmentEnd); return; }
       // Sin síntesis de voz del navegador (WebView de Capacitor en Android:
       // no existe window.speechSynthesis ahí) no hay ningún motor local al
       // que caer — sin este intento activo la audioguía se quedaría muda
@@ -8558,7 +8599,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
           // que ahora pertenece a la narración nueva (feedback #42).
           if (STATE.activePoiId !== poiId || STATE.audio.playId !== myPlayId) return;
           if (url) {
-            startCloudAudio(url, silent, myPlayId);
+            startCloudAudio(url, silent, myPlayId, notifySegmentEnd);
           } else {
             STATE.audio.playing = false;
             updateAudioUi();
