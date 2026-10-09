@@ -2182,6 +2182,7 @@
   };
 
   const onPlanChanged = () => {
+    planChangedSinceOpen = true;
     renderPlanPanel();
     updatePlanAddButton();
     updatePlanButton();
@@ -2263,10 +2264,24 @@
     if (!el) return;
     closeAppMenu();
     if (STATE.sheet !== 'closed') closeSheet();
+    planChangedSinceOpen = false;
     renderPlanPanel();
     el.hidden = false;
   };
-  const closePlanPanel = () => { const el = planPanelEl(); if (el) el.hidden = true; };
+  // BUG REAL (David, V104): con el plan dibujado en el mapa, cambiar algo en
+  // el panel (otro plan, orden, paradas) actualizaba los pines pero no movía
+  // el mapa; al cerrar con la ✕ seguía en la zona anterior y las paradas
+  // podían quedar fuera de la pantalla ("el mapa se queda perdido"). Ahora,
+  // si hubo cambios y el plan está en el mapa, al cerrar se encuadra el plan
+  // activo. Sin cambios, el mapa no se toca.
+  let planChangedSinceOpen = false;
+  const closePlanPanel = () => {
+    const el = planPanelEl();
+    if (!el || el.hidden) return;
+    el.hidden = true;
+    if (planChangedSinceOpen && STATE.activeRoute === PLAN_ROUTE_ID && isRouteMode()) fitMapToPois(planPois());
+    planChangedSinceOpen = false;
+  };
   const isPlanPanelOpen = () => { const el = planPanelEl(); return !!(el && !el.hidden); };
 
   const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
