@@ -1521,6 +1521,8 @@
     ariaAudioPlayer: { es: { adult: 'Reproductor de audio', kids: 'Reproductor de audio' }, en: { adult: 'Audio player', kids: 'Audio player' } },
     ariaAudioProgressGroup: { es: { adult: 'Progreso', kids: 'Progreso' }, en: { adult: 'Progress', kids: 'Progress' } },
     ariaProgressBar: { es: { adult: 'Barra de progreso', kids: 'Barra de progreso' }, en: { adult: 'Progress bar', kids: 'Progress bar' } },
+    layerOn: { es: { adult: 'activado', kids: 'activado' }, en: { adult: 'on', kids: 'on' } },
+    layerOff: { es: { adult: 'desactivado', kids: 'desactivado' }, en: { adult: 'off', kids: 'off' } },
     ariaChatFontDown: { es: { adult: 'Letra más pequeña', kids: 'Letra más pequeña' }, en: { adult: 'Smaller text', kids: 'Smaller text' } },
     ariaChatFontUp: { es: { adult: 'Letra más grande', kids: 'Letra más grande' }, en: { adult: 'Larger text', kids: 'Larger text' } },
     ariaSponsorDismiss: { es: { adult: 'Ocultar anuncio', kids: 'Ocultar anuncio' }, en: { adult: 'Hide ad', kids: 'Hide ad' } },
@@ -4856,38 +4858,32 @@
       // dentro de este panel, junto con comer-y-beber/hoteles/satélite,
       // que no existían todavía cuando se escribió la versión anterior de
       // este tutorial.
-      target: '#layersBtn',
-      openMenu: 'layers',
-      title: { es: 'La pestaña Capas', en: 'The Layers tab' },
-      text: { es: 'Aquí activas capas opcionales sobre el mapa. Repasemos cada una:', en: "Here you turn on optional layers over the map. Let's go through each one:" }
+      target: '#layerStrip',
+      title: { es: 'Las capas del mapa', en: 'Map layers' },
+      text: { es: 'En esta columna activas capas opcionales sobre el mapa con un solo toque; el icono se rellena de color cuando está activa. Repasemos cada una:', en: "In this column you turn optional map layers on and off with a single tap; the icon fills with colour when it's on. Let's go through each one:" }
     },
     {
       target: '#fountainsBtn',
-      openMenu: 'layers',
       title: { es: 'Fuentes de agua potable', en: 'Drinking water fountains' },
       text: { es: 'Muestra en el mapa las fuentes más cercanas: útil para rellenar la botella mientras caminas.', en: 'Shows the nearest fountains on the map: handy for refilling your bottle as you walk.' }
     },
     {
       target: '#restroomsBtn',
-      openMenu: 'layers',
       title: { es: 'Aseos públicos', en: 'Public restrooms' },
       text: { es: 'Muestra en el mapa los aseos públicos más cercanos, con precio y accesibilidad.', en: 'Shows the nearest public restrooms on the map, with price and accessibility.' }
     },
     {
       target: '#foodBtn',
-      openMenu: 'layers',
       title: { es: 'Comer y beber cerca', en: 'Food & drink nearby' },
       text: { es: 'Muestra restaurantes y cafeterías cerca de donde estés, para cuando te entre el hambre a media ruta.', en: "Shows restaurants and cafés near you, for when you get hungry halfway through the route." }
     },
     {
       target: '#hotelsBtn',
-      openMenu: 'layers',
       title: { es: 'Hoteles', en: 'Hotels' },
       text: { es: 'Muestra alojamientos cerca de cada zona, por si te apetece quedarte más días por aquí.', en: 'Shows places to stay near each area, in case you feel like staying a few more days.' }
     },
     {
       target: '#satelliteBtn',
-      openMenu: 'layers',
       title: { es: 'Vista de satélite', en: 'Satellite view' },
       text: { es: 'Cambia entre el mapa normal y una foto de satélite real de la zona.', en: 'Switches between the normal map and a real satellite photo of the area.' }
     }
@@ -8803,7 +8799,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     // (y el trozo de closeAllMapMenus más abajo) si se retira el experimento.
     $('#foodBtn')?.addEventListener('click', () => toggleFood());
     $('#hotelsBtn')?.addEventListener('click', () => toggleHotels());
-    // (El botón "Capas" (#layersBtn) se cablea más arriba, junto con "Filtros".)
+    wireLayerStrip();
 
     $('#scanBtn')?.addEventListener('click', () => {
       const menu = $('#scanMenu'), btn = $('#scanBtn');
@@ -9617,6 +9613,36 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     AppPlugin.addListener('backButton', () => {
       if (handleBackButton()) return;
       AppPlugin.minimizeApp();
+    });
+  };
+
+  // Tira lateral de capas (testers Edgar #38 y William #45): cada icono ya
+  // enciende/apaga su capa con su propio handler (ver wireEvents); aquí solo
+  // se añade el nombre que aparece un instante a su lado al tocarlo, para
+  // que no haga falta adivinar qué significa cada icono. Los handlers marcan
+  // la clase -active de forma síncrona, así que ya se puede leer aquí.
+  let layerTipTimer = null;
+  const LAYER_STRIP_NAMES = {
+    fountainsBtn: { es: 'Fuentes de agua', en: 'Water fountains' },
+    restroomsBtn: { es: 'Aseos públicos', en: 'Public toilets' },
+    foodBtn: { es: 'Comer y beber', en: 'Food and drink' },
+    hotelsBtn: { es: 'Hoteles', en: 'Hotels' },
+    satelliteBtn: { es: 'Vista satélite', en: 'Satellite view' }
+  };
+  const wireLayerStrip = () => {
+    const strip = $('#layerStrip');
+    const tip = $('#layerStripTip');
+    if (!strip || !tip) return;
+    strip.querySelectorAll('.layer-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const name = LAYER_STRIP_NAMES[chip.id] ? pickLang(LAYER_STRIP_NAMES[chip.id]) : (chip.querySelector('span')?.textContent || '').trim();
+        const on = chip.classList.contains('-active');
+        tip.textContent = `${name} · ${t(on ? 'layerOn' : 'layerOff')}`;
+        tip.style.top = `${chip.offsetTop + 4}px`;
+        tip.classList.add('-show');
+        clearTimeout(layerTipTimer);
+        layerTipTimer = setTimeout(() => tip.classList.remove('-show'), 1600);
+      });
     });
   };
 

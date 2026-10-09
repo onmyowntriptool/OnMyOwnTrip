@@ -4183,3 +4183,71 @@ html[data-mode="kids"] .ai-input-wrap {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- TIRA LATERAL DE CAPAS (testers Edgar #38 y William #45) ---------- */
+/* Columna estrecha de iconos bajo el menú Inicio/Filtros, con el mismo
+   aspecto oscuro que los botones flotantes de la derecha (.map-tools).
+   Tamaños en px a propósito: la letra grande del sistema agranda el texto
+   pero no esta tira, que debe seguir tapando lo mínimo del mapa. */
+.layer-strip {
+  position: relative;
+  align-self: flex-start;
+  pointer-events: auto;
+}
+.layer-strip .layers-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+}
+.layer-strip .layer-chip {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--color-text);
+}
+/* El nombre sigue ahí para lectores de pantalla, pero no ocupa sitio. */
+.layer-strip .layer-chip span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.layer-strip .layer-chip svg,
+.layer-strip .layer-chip img { width: 21px; height: 21px; }
+/* Activa = círculo relleno del color de la capa, que se distingue a la
+   primera de "apagada" (antes era solo un tinte del 14%). */
+.layer-strip .layer-chip.-active { color: #0F172A; }
+.layer-strip .layer-chip.-fountains.-active { background: #38BDF8; }
+.layer-strip .layer-chip.-restrooms.-active { background: #A78BFA; }
+.layer-strip .layer-chip.-food.-active { background: #F59E0B; }
+.layer-strip .layer-chip.-hotels.-active { background: #2DD4BF; }
+.layer-strip .layer-chip.-satellite.-active { background: #E2E8F0; }
+/* Nombre de la capa al tocarla: aparece a la derecha del icono un instante. */
+.layer-strip-tip {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 0;
+  padding: 6px 11px;
+  border-radius: 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+.layer-strip-tip.-show { opacity: 1; transform: none; }
