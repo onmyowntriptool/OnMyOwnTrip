@@ -4290,3 +4290,25 @@ html[data-mode="kids"] .ai-input-wrap {
    (ver updateEssentialPillLabel en app.js). */
 #routesBtn.-route-active { color: var(--route-color); }
 #routesBtn.-route-active span { max-width: 9.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- SITIOS VISITADOS (tester Mike, feedback #11) ---------- */
+/* Check verde en la esquina superior derecha del pin, fuera del círculo de
+   la foto (es hermano de .custom-pin, no hijo, para que su recorte redondo
+   no lo tape). Mismo tamaño en pines normales y numerados de ruta. */
+.visited-check {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  z-index: 2;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: #16A34A;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.visited-check svg { width: 11px; height: 11px; }

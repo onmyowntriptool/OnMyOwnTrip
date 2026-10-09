@@ -1775,6 +1775,14 @@
   /* =========================================================
    * CUSTOM LEAFLET PIN (círculo de color + icono SVG, estilo app nativa)
    * =======================================================*/
+  // Sitios visitados en el mapa (tester Mike, feedback #11): mismo criterio
+  // que las medallas y el resumen de visita — "visitado" = se abrió su ficha
+  // al menos una vez. Se marca con un check verde en la esquina del pin, como
+  // elemento aparte para que el recorte redondo de la foto no lo tape.
+  const isPoiVisited = (id) => (STATE.ai.perPoiHistory[id] || []).length > 0;
+  const VISITED_CHECK_HTML = '<span class="visited-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
+  const visitedMark = (poi) => (isPoiVisited(poi.id) ? VISITED_CHECK_HTML : '');
+
   const makePinIcon = (poi, dimmed = false) => {
     const color = dimmed ? '#94A3B8' : getCategoryPinColor(poi.category);
     // EXPERIMENTO (rama experimento-diseno-editorial): pin como retrato/foto
@@ -1788,7 +1796,7 @@
     const cls = 'custom-pin' + (hasPhoto ? ' -avatar' : '') + (dimmed ? ' -dimmed' : '');
     return L.divIcon({
       className: 'custom-pin-wrap',
-      html: `<div class="${cls}" data-id="${poi.id}" style="--pin-color:${color};${bgStyle}">${icon}</div>`,
+      html: `<div class="${cls}" data-id="${poi.id}" style="--pin-color:${color};${bgStyle}">${icon}</div>${visitedMark(poi)}`,
       iconSize: [38, 38], iconAnchor: [19, 19], popupAnchor: [0, -19]
     });
   };
@@ -1990,7 +1998,7 @@
   const makeRouteIcon = (poi, order, color) => {
     return L.divIcon({
       className: 'custom-pin-wrap',
-      html: `<div class="custom-pin -route" data-id="${poi.id}" style="--pin-color:${color}">${order}</div>`,
+      html: `<div class="custom-pin -route" data-id="${poi.id}" style="--pin-color:${color}">${order}</div>${visitedMark(poi)}`,
       iconSize: [38, 38], iconAnchor: [19, 19], popupAnchor: [0, -19]
     });
   };
@@ -2096,11 +2104,22 @@
       const marker = L.marker(poi.coords, { icon });
       marker.options.poiId = poi.id;
       marker.options.category = poi.category;
+      marker.options.pinArgs = routeMode ? { route: true, order: i + 1, color: routeColor } : { route: false, dimmed };
       marker.on('click', () => selectPoi(poi.id, true));
       marker.addTo(targetLayer);
       markerLookup[poi.id] = marker;
     });
   };
+  // Pone el check en el pin de un sitio recién visitado sin redibujar todo el
+  // mapa (setIcon también vale para pines metidos en un grupo/cluster).
+  const refreshVisitedMarker = (id) => {
+    const marker = id && markerLookup[id];
+    const poi = marker && POIS.find((p) => p.id === id);
+    if (!poi || !isPoiVisited(id) || !marker.options.pinArgs) return;
+    const a = marker.options.pinArgs;
+    marker.setIcon(a.route ? makeRouteIcon(poi, a.order, a.color) : makePinIcon(poi, a.dimmed));
+  };
+
   const setSelectedMarker = (id) => {
     Object.entries(markerLookup).forEach(([k, m]) => {
       const pin = m.getElement()?.querySelector('.custom-pin');
@@ -7795,7 +7814,11 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     // otro POI sin cerrarla antes, hay que limpiarla igual (closeSheet no
     // llega a ejecutarse en ese camino).
     if (STATE.activePoiId && STATE.activePoiId !== id) cleanupAdHocScanIfNeeded(STATE.activePoiId);
+    const prevPoiId = STATE.activePoiId;
     STATE.activePoiId = id;
+    // Al saltar de un sitio a otro sin cerrar la ficha, el anterior también
+    // queda visitado: su check aparece ya.
+    if (prevPoiId && prevPoiId !== id) refreshVisitedMarker(prevPoiId);
     const poi = POIS.find((p) => p.id === id);
     if (!poi) return;
     closeRouteIntro(); // no dejar la intro de la ruta sonando por encima del POI
@@ -7828,9 +7851,11 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     if (STATE.ai.deepenBusy) abandonDeepenFlow();
     cleanupAdHocScanIfNeeded(STATE.activePoiId);
     flushSponsorDemoMetrics();
+    const closedPoiId = STATE.activePoiId;
     STATE.sheet = 'closed';
     STATE.activePoiId = null;
     setChatExpanded(false);
+    refreshVisitedMarker(closedPoiId);
     els.backdrop.classList.remove('-open');
     els.sheet.classList.remove('-open');
     try { els.sheet.setAttribute('aria-hidden', 'true'); } catch (_) {}
