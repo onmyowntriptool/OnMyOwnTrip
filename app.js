@@ -1993,13 +1993,326 @@
   const getCityRoutes = () => (CURRENT_CITY && CURRENT_CITY.routes) || [
     { id: 'main', name: { es: { adult: 'Rutas<br>recomendadas', kids: '¡Lo Top!' }, en: { adult: 'Highlights', kids: 'The Top Spots!' } }, color: null }
   ];
-  const isPoiInActiveRoute = (poi) => !!(poi.essential && poi.essential.route === STATE.activeRoute);
+  const isPoiInActiveRoute = (poi) => (STATE.activeRoute === '__plan__'
+    ? isInPlan(poi.id)
+    : !!(poi.essential && poi.essential.route === STATE.activeRoute));
 
   const makeRouteIcon = (poi, order, color) => {
     return L.divIcon({
       className: 'custom-pin-wrap',
       html: `<div class="custom-pin -route" data-id="${poi.id}" style="--pin-color:${color}">${order}</div>${visitedMark(poi)}`,
       iconSize: [38, 38], iconAnchor: [19, 19], popupAnchor: [0, -19]
+    });
+  };
+
+  /* =========================================================
+   * PLANIFICADOR "MI PLAN" (testers Mike #2-#5 y Jaime #27)
+   * El usuario elige sitios (botón "Añadir a mi plan" de cada ficha, o
+   * copiando una ruta entera), los ordena a mano o "por cercanía", y ve el
+   * camino a pie entre cada parada con su distancia, más un total estimado:
+   * minutos caminando + minutos de visita. Un plan por ciudad, guardado
+   * solo en este dispositivo (sin cuentas de usuario todavía).
+   * En el mapa se muestra como una ruta más (STATE.activeRoute = PLAN_ROUTE_ID),
+   * reutilizando el modo ruta de renderMarkers.
+   * =======================================================*/
+  const PLAN_ROUTE_ID = '__plan__';
+  const PLAN_COLOR = '#DB2777';
+  const PLAN_KEY = 'omot-plan-v1';
+  const WALK_CACHE_KEY = 'omot-walk-v1';
+  const WALK_M_PER_MIN = 75; // ~4,5 km/h, ritmo turístico
+  const WALK_DETOUR = 1.3; // línea recta → callejeando, mientras no hay ruta real
+  const PT = (es, en) => pickLang({ es, en });
+  const PLAN_ROUTE_META = { id: PLAN_ROUTE_ID, color: PLAN_COLOR, name: { es: { adult: 'Mi plan', kids: 'Mi plan' }, en: { adult: 'My plan', kids: 'My plan' } } };
+
+  const PLANS = (() => { try { return JSON.parse(localStorage.getItem(PLAN_KEY) || '{}') || {}; } catch (_) { return {}; } })();
+  const savePlans = () => { try { localStorage.setItem(PLAN_KEY, JSON.stringify(PLANS)); } catch (_) {} };
+  const getPlan = () => {
+    if (!PLANS[STATE.cityId]) PLANS[STATE.cityId] = { stops: [] };
+    return PLANS[STATE.cityId];
+  };
+  // Paradas del plan que siguen existiendo en los datos de la ciudad.
+  const planPois = () => getPlan().stops.map((s) => POIS.find((p) => p.id === s.id)).filter(Boolean);
+  const isInPlan = (id) => getPlan().stops.some((s) => s.id === id);
+
+  // Tiempo de visita por defecto según el tipo de sitio (editable por parada).
+  const defaultVisitMinutes = (poi) => {
+    if (!poi) return 30;
+    if (poi.category === CATEGORIES.HISTORY) return 40;
+    if (poi.category === CATEGORIES.HIDDEN) return 15;
+    if (poi.category === CATEGORIES.GASTRONOMY) return 45;
+    return 30;
+  };
+  const stopVisit = (stop, poi) => (stop && typeof stop.visit === 'number' ? stop.visit : defaultVisitMinutes(poi));
+
+  // Caché de tramos a pie (servidor → /route/walk). Clave por coordenadas
+  // redondeadas, igual que en el Worker. Un tramo que falla se marca solo
+  // en memoria para no reintentarlo en bucle durante esta sesión.
+  const r5 = (n) => Math.round(n * 1e5) / 1e5;
+  const legKey = (a, b) => `${r5(a[0])},${r5(a[1])}|${r5(b[0])},${r5(b[1])}`;
+  const WALK_CACHE = (() => { try { return JSON.parse(localStorage.getItem(WALK_CACHE_KEY) || '{}') || {}; } catch (_) { return {}; } })();
+  const failedLegs = new Set();
+  const saveWalkCache = () => {
+    const keys = Object.keys(WALK_CACHE);
+    if (keys.length > 400) keys.slice(0, keys.length - 400).forEach((k) => { delete WALK_CACHE[k]; });
+    try { localStorage.setItem(WALK_CACHE_KEY, JSON.stringify(WALK_CACHE)); } catch (_) {}
+  };
+  // Función (no constante): CONTENT_BASE_URL se declara más abajo en este
+  // archivo y leerla aquí al cargar daría error de inicialización.
+  const walkEndpoint = () => (CONTENT_BASE_URL ? `${CONTENT_BASE_URL.replace(/\/$/, '')}/route/walk` : '');
+  let walkFetching = false;
+  const fetchMissingLegs = (pois) => {
+    if (!walkEndpoint() || walkFetching || pois.length < 2) return;
+    const missing = pois.slice(1).some((p, i) => {
+      const k = legKey(pois[i].coords, p.coords);
+      return !(k in WALK_CACHE) && !failedLegs.has(k);
+    });
+    if (!missing) return;
+    walkFetching = true;
+    const cityAtStart = STATE.cityId;
+    const sent = pois.slice(0, 25);
+    fetch(walkEndpoint(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ points: sent.map((p) => p.coords) })
+    }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`walk ${r.status}`))))
+      .then((data) => {
+        (data.legs || []).forEach((leg, i) => {
+          if (!sent[i + 1]) return;
+          WALK_CACHE[legKey(sent[i].coords, sent[i + 1].coords)] = leg; // null = sin ruta real
+        });
+        saveWalkCache();
+      })
+      .catch(() => { sent.slice(1).forEach((p, i) => failedLegs.add(legKey(sent[i].coords, p.coords))); })
+      .finally(() => {
+        walkFetching = false;
+        if (STATE.cityId !== cityAtStart) return;
+        renderPlanPanel();
+        if (STATE.activeRoute === PLAN_ROUTE_ID && isRouteMode()) renderMarkers();
+      });
+  };
+  // Tramos del plan en su orden actual: { d, c, real } por par de paradas.
+  const planLegs = (pois) => pois.slice(1).map((p, i) => {
+    const a = pois[i].coords, b = p.coords;
+    const cached = WALK_CACHE[legKey(a, b)];
+    if (cached) return { d: cached.d, c: cached.c, real: true };
+    return { d: haversineMeters(a, b) * WALK_DETOUR, c: null, real: false };
+  });
+
+  const formatMinutes = (m) => {
+    const total = Math.max(0, Math.round(m));
+    const h = Math.floor(total / 60), r = total % 60;
+    if (!h) return `${r} min`;
+    return r ? `${h} h ${r} min` : `${h} h`;
+  };
+
+  // Orden "por cercanía": empieza en la parada más cercana a ti (si estás en
+  // la ciudad) o en la primera, y va siempre a la más cercana que quede.
+  const sortPlanByProximity = () => {
+    const plan = getPlan();
+    const items = plan.stops.map((s) => ({ s, poi: POIS.find((p) => p.id === s.id) })).filter((x) => x.poi);
+    if (items.length < 3) return;
+    let from = null;
+    const u = STATE.userLocation;
+    if (u && isNearCurrentCity(u.lat, u.lng)) from = [u.lat, u.lng];
+    const out = [];
+    const rest = items.slice();
+    if (!from) { out.push(rest.shift()); from = out[0].poi.coords; }
+    while (rest.length) {
+      rest.sort((x, y) => haversineMeters(from, x.poi.coords) - haversineMeters(from, y.poi.coords));
+      const next = rest.shift();
+      out.push(next);
+      from = next.poi.coords;
+    }
+    plan.stops = out.map((x) => x.s);
+    savePlans();
+    onPlanChanged();
+  };
+
+  const onPlanChanged = () => {
+    renderPlanPanel();
+    updatePlanAddButton();
+    updatePlanButton();
+    if (STATE.activeRoute === PLAN_ROUTE_ID && isRouteMode()) {
+      if (planPois().length) renderMarkers();
+      else exitPlanOnMap();
+    }
+  };
+  const addToPlan = (id) => {
+    if (!id || isInPlan(id)) return;
+    getPlan().stops.push({ id, visit: null });
+    savePlans();
+    onPlanChanged();
+  };
+  const removeFromPlan = (id) => {
+    const plan = getPlan();
+    plan.stops = plan.stops.filter((s) => s.id !== id);
+    savePlans();
+    onPlanChanged();
+  };
+  const copyRouteToPlan = (routeId) => {
+    getPlan().stops = POIS.filter((p) => p.essential && p.essential.route === routeId)
+      .sort((a, b) => a.essential.order - b.essential.order)
+      .map((p) => ({ id: p.id, visit: null }));
+    savePlans();
+    onPlanChanged();
+  };
+
+  const showPlanOnMap = () => {
+    const pois = planPois();
+    if (!pois.length) return;
+    closePlanPanel();
+    closeAppMenu();
+    closeRouteIntro();
+    STATE.activeRoute = PLAN_ROUTE_ID;
+    STATE.category = 'essential';
+    updatePills();
+    updateEssentialPillLabel();
+    renderMarkers();
+    fitMapToPois(pois);
+    if (STATE.activePoiId && !isInPlan(STATE.activePoiId)) closeSheet();
+    saveState();
+    showToast(PT('Tu plan: sigue el orden numerado en el mapa.', 'Your plan: follow the numbered order on the map.'), 3000);
+  };
+  const exitPlanOnMap = () => {
+    STATE.activeRoute = null;
+    STATE.category = CATEGORIES.ALL;
+    updatePills();
+    updateEssentialPillLabel();
+    renderMarkers();
+    saveState();
+  };
+
+  const updatePlanButton = () => {
+    const btn = $('#planBtn');
+    const label = $('#planLabel');
+    if (!btn || !label) return;
+    const n = getPlan().stops.length;
+    label.textContent = n ? `${PT('Mi plan', 'My plan')} (${n})` : PT('Mi plan', 'My plan');
+    btn.classList.toggle('-route-active', STATE.activeRoute === PLAN_ROUTE_ID && isRouteMode());
+    btn.style.setProperty('--route-color', PLAN_COLOR);
+    btn.setAttribute('aria-label', PT('Mi plan', 'My plan'));
+  };
+  const updatePlanAddButton = () => {
+    const btn = $('#planAddBtn');
+    if (!btn) return;
+    const poi = POIS.find((p) => p.id === STATE.activePoiId);
+    if (!poi || poi.isAdHocScan) { btn.hidden = true; return; }
+    const inPlan = isInPlan(poi.id);
+    btn.hidden = false;
+    btn.classList.toggle('-in-plan', inPlan);
+    btn.setAttribute('aria-pressed', String(inPlan));
+    btn.textContent = inPlan ? PT('✓ En tu plan', '✓ In your plan') : PT('+ Añadir a mi plan', '+ Add to my plan');
+  };
+
+  const planPanelEl = () => $('#planPanel');
+  const openPlanPanel = () => {
+    const el = planPanelEl();
+    if (!el) return;
+    closeAppMenu();
+    if (STATE.sheet !== 'closed') closeSheet();
+    renderPlanPanel();
+    el.hidden = false;
+  };
+  const closePlanPanel = () => { const el = planPanelEl(); if (el) el.hidden = true; };
+  const isPlanPanelOpen = () => { const el = planPanelEl(); return !!(el && !el.hidden); };
+
+  const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  const escHtml = (str) => String(str).replace(/[&<>"']/g, (c) => ESC_MAP[c]);
+  const renderPlanPanel = () => {
+    const el = planPanelEl();
+    if (!el || !CURRENT_CITY) return;
+    $('#planTitle').textContent = PT('Mi plan', 'My plan');
+    $('#planCity').textContent = CURRENT_CITY.name;
+    const plan = getPlan();
+    const pois = planPois();
+    const listEl = $('#planList'), emptyEl = $('#planEmpty'), totalEl = $('#planTotal'), actionsEl = $('#planActions');
+    if (!pois.length) {
+      listEl.innerHTML = '';
+      totalEl.hidden = true;
+      actionsEl.hidden = true;
+      emptyEl.hidden = false;
+      const intro = PT('Aún no tienes paradas. Añade sitios desde su ficha con «Añadir a mi plan», o empieza a partir de una ruta y ajústala a tu gusto:', 'No stops yet. Add places from their card with "Add to my plan", or start from a route and adjust it:');
+      emptyEl.innerHTML = `<p>${escHtml(intro)}</p>` + getCityRoutes().map((r) => `<button type="button" class="plan-route-btn" data-route="${escHtml(r.id)}"><span class="dropdown-dot" style="background:${escHtml(r.color || PLAN_COLOR)}"></span>${escHtml(pickDual(r.name).replace(/<br>/g, ' '))}</button>`).join('');
+      emptyEl.querySelectorAll('.plan-route-btn').forEach((b) => b.addEventListener('click', () => copyRouteToPlan(b.dataset.route)));
+      return;
+    }
+    emptyEl.hidden = true;
+    totalEl.hidden = false;
+    actionsEl.hidden = false;
+    fetchMissingLegs(pois);
+    const legs = planLegs(pois);
+    let walkMin = 0, visitMin = 0, anyEstimate = false;
+    let html = '';
+    pois.forEach((poi, i) => {
+      const stop = plan.stops.find((s) => s.id === poi.id);
+      const visit = stopVisit(stop, poi);
+      visitMin += visit;
+      if (i > 0) {
+        const leg = legs[i - 1];
+        const mins = leg.d / WALK_M_PER_MIN;
+        walkMin += mins;
+        if (!leg.real) anyEstimate = true;
+        html += `<li class="plan-leg">${leg.real ? '' : '≈ '}${escHtml(formatDistance(leg.d))} · ${escHtml(formatMinutes(mins))} ${escHtml(PT('a pie', 'on foot'))}</li>`;
+      }
+      const visited = isPoiVisited(poi.id);
+      html += `<li class="plan-stop${visited ? ' -visited' : ''}" data-id="${escHtml(poi.id)}">`
+        + `<span class="plan-num" style="--route-color:${PLAN_COLOR}">${i + 1}</span>`
+        + `<button type="button" class="plan-name" data-act="open">${escHtml(pickDual(poi.name))}${visited ? ' <span class="plan-visited" aria-label="visitado">✓</span>' : ''}</button>`
+        + `<span class="plan-visit"><button type="button" data-act="less" aria-label="${escHtml(PT('Menos tiempo de visita', 'Less visit time'))}">−</button>`
+        + `<span>${escHtml(formatMinutes(visit))}</span>`
+        + `<button type="button" data-act="more" aria-label="${escHtml(PT('Más tiempo de visita', 'More visit time'))}">+</button></span>`
+        + `<span class="plan-move"><button type="button" data-act="up" aria-label="${escHtml(PT('Subir', 'Move up'))}"${i === 0 ? ' disabled' : ''}>▲</button>`
+        + `<button type="button" data-act="down" aria-label="${escHtml(PT('Bajar', 'Move down'))}"${i === pois.length - 1 ? ' disabled' : ''}>▼</button></span>`
+        + `<button type="button" class="plan-remove" data-act="remove" aria-label="${escHtml(PT('Quitar del plan', 'Remove from plan'))}">×</button>`
+        + '</li>';
+    });
+    listEl.innerHTML = html;
+    totalEl.innerHTML = `<strong>≈ ${escHtml(formatMinutes(walkMin + visitMin))}</strong>`
+      + `<span>${escHtml(formatMinutes(walkMin))} ${escHtml(PT('caminando', 'walking'))} + ${escHtml(formatMinutes(visitMin))} ${escHtml(PT('de visita', 'visiting'))} · ${pois.length} ${escHtml(PT('paradas', 'stops'))}</span>`
+      + (anyEstimate ? `<em>${escHtml(PT('≈ distancia estimada hasta tener el camino real', '≈ estimated distance until the real path is ready'))}</em>` : '');
+    $('#planSortBtn').textContent = PT('Ordenar por cercanía', 'Sort by proximity');
+    $('#planMapBtn').textContent = PT('Ver en el mapa', 'Show on map');
+    $('#planClearBtn').textContent = PT('Vaciar', 'Clear');
+  };
+
+  const wirePlan = () => {
+    $('#planBtn')?.addEventListener('click', () => (isPlanPanelOpen() ? closePlanPanel() : openPlanPanel()));
+    $('#planCloseBtn')?.addEventListener('click', closePlanPanel);
+    $('#planSortBtn')?.addEventListener('click', sortPlanByProximity);
+    $('#planMapBtn')?.addEventListener('click', showPlanOnMap);
+    $('#planClearBtn')?.addEventListener('click', () => {
+      if (!window.confirm(PT('¿Vaciar tu plan de esta ciudad?', 'Clear your plan for this city?'))) return;
+      getPlan().stops = [];
+      savePlans();
+      onPlanChanged();
+    });
+    $('#planAddBtn')?.addEventListener('click', () => {
+      const id = STATE.activePoiId;
+      if (!id) return;
+      if (isInPlan(id)) { removeFromPlan(id); return; }
+      addToPlan(id);
+      showToast(PT('Añadido a tu plan. Ábrelo desde «Mi plan» en el menú.', 'Added to your plan. Open it from "My plan" in the menu.'), 2600);
+    });
+    $('#planList')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-act]');
+      const li = e.target.closest('.plan-stop');
+      if (!btn || !li) return;
+      const plan = getPlan();
+      const idx = plan.stops.findIndex((s) => s.id === li.dataset.id);
+      if (idx < 0) return;
+      const stop = plan.stops[idx];
+      const poi = POIS.find((p) => p.id === stop.id);
+      switch (btn.dataset.act) {
+        case 'open': closePlanPanel(); selectPoi(stop.id, true); return;
+        case 'remove': removeFromPlan(stop.id); return;
+        case 'less': stop.visit = Math.max(10, stopVisit(stop, poi) - 10); break;
+        case 'more': stop.visit = Math.min(360, stopVisit(stop, poi) + 10); break;
+        case 'up': if (idx > 0) [plan.stops[idx - 1], plan.stops[idx]] = [plan.stops[idx], plan.stops[idx - 1]]; break;
+        case 'down': if (idx < plan.stops.length - 1) [plan.stops[idx + 1], plan.stops[idx]] = [plan.stops[idx], plan.stops[idx + 1]]; break;
+        default: return;
+      }
+      savePlans();
+      onPlanChanged();
     });
   };
 
@@ -2059,21 +2372,26 @@
       if (!map.hasLayer(clusterLayer)) clusterLayer.addTo(map);
     }
     const targetLayer = routeMode ? markersLayer : clusterLayer;
-    const routeMeta = routeMode && getCityRoutes().find((r) => r.id === STATE.activeRoute);
+    const isPlanMode = routeMode && STATE.activeRoute === PLAN_ROUTE_ID;
+    const routeMeta = routeMode && (isPlanMode ? PLAN_ROUTE_META : getCityRoutes().find((r) => r.id === STATE.activeRoute));
     const routeColor = (routeMeta && routeMeta.color) || getCssVar('--color-primary') || '#F59E0B';
     // Las fichas efímeras de "¿qué estoy viendo?" (ver openAdHocScanResult)
     // viven en POIS para que el resto del flujo (chat, audioguía) funcione
     // igual que con un POI real, pero nunca deben aparecer como pin: no son
     // datos de la ciudad, son un resultado de una foto concreta.
     const scannablePois = POIS.filter((p) => !p.isAdHocScan);
-    const list = routeMode && routeMeta
-      ? scannablePois.filter(isPoiInActiveRoute).sort((a, b) => a.essential.order - b.essential.order)
-      : (routeMode ? [] : scannablePois);
+    const list = isPlanMode ? planPois()
+      : routeMode && routeMeta
+        ? scannablePois.filter(isPoiInActiveRoute).sort((a, b) => a.essential.order - b.essential.order)
+        : (routeMode ? [] : scannablePois);
     if (routeMode && list.length > 1) {
       // Trazado a pie real por calles (ver getRoutePath); mientras se
       // descarga, o si las paradas han cambiado desde que se generó, se
       // pinta la línea recta de siempre.
-      const walked = getRoutePath(STATE.cityId, STATE.activeRoute, list);
+      if (isPlanMode) fetchMissingLegs(list);
+      const walked = isPlanMode
+        ? { legs: planLegs(list).map((l) => (l.real ? { d: l.d, c: l.c } : null)) }
+        : getRoutePath(STATE.cityId, STATE.activeRoute, list);
       // Un tramo null (agua de por medio, ver el script) va en línea recta.
       const line = walked
         ? walked.legs.flatMap((l, i) => (l ? l.c : [list[i].coords, list[i + 1].coords]))
@@ -3945,6 +4263,8 @@
     CURRENT_CITY = city;
     POIS = city.pois;
     updateLayerStripForCity(cityId);
+    closePlanPanel();
+    updatePlanButton();
     STATE.category = CATEGORIES.ALL;
     STATE.activeRoute = null;
     closeRoutePicker();
@@ -4129,6 +4449,7 @@
     label.textContent = active ? pickDual(active.name).replace(/<br>/g, ' ') : t('menuRoutesLabel');
     btn.classList.toggle('-route-active', !!active);
     btn.style.setProperty('--route-color', (active && active.color) || getCssVar('--color-primary'));
+    updatePlanButton();
   };
 
   // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER" (rama experimento-patrocinios-demo).
@@ -8035,6 +8356,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
 
     // Cada ficha nueva arranca en su vista normal (foto + audio + chips).
     setChatExpanded(false);
+    updatePlanAddButton();
     setSheetThumbImage(poi.image, pickDual(poi.name));
     $('.sheet-cat-badge', els.sheet).textContent = pickDual(meta.label)
       + (poi.fictional ? t('fictionalBadge') : '');
@@ -8940,6 +9262,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     $('#foodBtn')?.addEventListener('click', () => toggleFood());
     $('#hotelsBtn')?.addEventListener('click', () => toggleHotels());
     wireLayerStrip();
+    wirePlan();
 
     $('#scanBtn')?.addEventListener('click', () => {
       const menu = $('#scanMenu'), btn = $('#scanBtn');
@@ -9733,6 +10056,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       [() => isShown('#tutorialOverlay'), () => closeTutorial()],
       [() => els.routeIntro && !els.routeIntro.hidden, closeRouteIntro],
       [isAppMenuOpen, closeAppMenu],
+      [isPlanPanelOpen, closePlanPanel],
       [() => STATE.sheet !== 'closed', closeSheet]
     ];
     // Un aviso de actualización obligatoria no se puede saltar con "atrás".

@@ -114,8 +114,11 @@ export default {
     const isSurveyQuestions = url.pathname.endsWith('/survey/questions');
     const isSurveySubmit = url.pathname.endsWith('/survey/submit');
     const isSurveyResults = url.pathname.endsWith('/survey/admin/results');
+    // Planificador "Mi plan" (ver handleWalkRoute): camino a pie real entre
+    // paradas elegidas por el usuario, con caché en KV.
+    const isWalkRoute = url.pathname.endsWith('/route/walk');
 
-    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify && !isPremiumGrant && !isPremiumRevoke && !isPremiumAdminList && !isPremiumAdminConfig && !isSurveyQuestions && !isSurveySubmit && !isSurveyResults)) {
+    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify && !isPremiumGrant && !isPremiumRevoke && !isPremiumAdminList && !isPremiumAdminConfig && !isSurveyQuestions && !isSurveySubmit && !isSurveyResults && !isWalkRoute)) {
       return new Response(JSON.stringify({ error: 'not found' }), {
         status: 404,
         headers: { ...headers, 'Content-Type': 'application/json' }
@@ -156,6 +159,7 @@ export default {
     if (isSurveyQuestions) return jsonResponse({ ok: true, survey: SURVEY }, 200, headers);
     if (isSurveySubmit) return handleSurveySubmit(request, env, headers);
     if (isSurveyResults) return handleSurveyResults(request, env, headers);
+    if (isWalkRoute) return handleWalkRoute(request, env, headers);
 
     // Rate limiting por IP (binding "RATE_LIMITER", configurado en el panel
     // de Cloudflare → pestaña "Bindings" → Add binding → Rate Limiting).
@@ -1916,4 +1920,69 @@ async function handlePremiumAdminConfig(request, env, headers) {
     status: 200,
     headers: { ...headers, 'Content-Type': 'application/json' }
   });
+}
+
+// ---------------------------------------------------------------------------
+// Planificador "Mi plan" (app.js): camino a pie por calles entre cada par de
+// paradas consecutivas que elige el usuario. A diferencia de las rutas
+// recomendadas (precalculadas en data/layers/route-paths-*.js), aquí el orden
+// y las paradas son libres, así que se calcula al vuelo con el OSRM a pie de
+// FOSSGIS (routing.openstreetmap.de, datos de OpenStreetMap) y se guarda en
+// el KV CITY_CONTENT (clave "walk:<a>|<b>", 90 días): la segunda vez que
+// alguien pide ese mismo tramo sale de la caché, sin tocar el servicio
+// externo. Entrada: { points: [[lat,lng], ...] } (2 a 25 puntos). Salida:
+// { legs: [{ d: metros, c: [[lat,lng],...] } | null, ...] }. Un tramo null
+// (sin ruta, error, o rodeo enorme que indica agua de por medio) lo dibuja la
+// app en línea recta con distancia estimada.
+// ---------------------------------------------------------------------------
+const WALK_OSRM = 'https://routing.openstreetmap.de/routed-foot/route/v1/foot';
+const WALK_TTL = 60 * 60 * 24 * 90;
+const r5 = (n) => Math.round(n * 1e5) / 1e5;
+const walkHaversine = (a, b) => {
+  const R = 6371000, t = (d) => (d * Math.PI) / 180;
+  const h = Math.sin(t(b[0] - a[0]) / 2) ** 2 + Math.cos(t(a[0])) * Math.cos(t(b[0])) * Math.sin(t(b[1] - a[1]) / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+};
+const isLatLng = (p) => Array.isArray(p) && p.length === 2 && p.every((n) => typeof n === 'number' && isFinite(n))
+  && Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180;
+
+async function walkLeg(a, b, env) {
+  const key = `walk:${r5(a[0])},${r5(a[1])}|${r5(b[0])},${r5(b[1])}`;
+  if (env.CITY_CONTENT) {
+    const cached = await env.CITY_CONTENT.get(key, 'json');
+    if (cached !== null) return cached.leg || null;
+  }
+  let leg = null;
+  try {
+    const res = await fetchWithTimeout(`${WALK_OSRM}/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson`, {
+      headers: { 'User-Agent': 'OnMyOwnTrip planner (contacto@onmyowntrip.com)' }
+    }, 8000);
+    if (res.ok) {
+      const data = await res.json();
+      const r = data.routes && data.routes[0];
+      if (r) {
+        const d = Math.round(r.distance);
+        const straight = walkHaversine(a, b);
+        if (!(d > 1500 && d > 4 * straight)) {
+          leg = { d, c: [a, ...r.geometry.coordinates.map(([lng, lat]) => [r5(lat), r5(lng)]), b] };
+        }
+      }
+    } else if (res.status >= 500 || res.status === 429) {
+      return null; // fallo transitorio: no se guarda, se reintentará otro día
+    }
+  } catch (_) { return null; }
+  if (env.CITY_CONTENT) await env.CITY_CONTENT.put(key, JSON.stringify({ leg }), { expirationTtl: WALK_TTL });
+  return leg;
+}
+
+async function handleWalkRoute(request, env, headers) {
+  let body;
+  try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid body' }, 400, headers); }
+  const pts = Array.isArray(body && body.points) ? body.points : null;
+  if (!pts || pts.length < 2 || pts.length > 25 || !pts.every(isLatLng)) {
+    return jsonResponse({ error: 'points must be 2-25 [lat,lng] pairs' }, 400, headers);
+  }
+  const legs = [];
+  for (let i = 1; i < pts.length; i++) legs.push(await walkLeg(pts[i - 1], pts[i], env));
+  return jsonResponse({ legs }, 200, headers);
 }
