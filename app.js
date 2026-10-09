@@ -1316,7 +1316,15 @@
   // imagen satelital en vez del mapa de calles de siempre. A diferencia de
   // fuentes/aseos (capas aditivas por encima del mapa), esta es una capa
   // BASE: se intercambia con streetLayer, nunca convive con ella a la vez.
-  let streetLayer = null, satelliteLayer = null, satelliteVisible = false;
+  // Tres estilos de mapa base, en este orden al pulsar el botón de la tira:
+  // "clean" (OpenFreeMap Positron, por defecto), "classic" (OpenStreetMap,
+  // el de siempre) y "satellite" (Esri). Se recuerda en el dispositivo.
+  let streetLayer = null, vectorLayer = null, satelliteLayer = null, currentMinZoom = 0;
+  const BASE_STYLES = ['clean', 'classic', 'satellite'];
+  const BASE_STYLE_KEY = 'omot-base-style';
+  let baseStyle = (() => {
+    try { const v = localStorage.getItem(BASE_STYLE_KEY); return BASE_STYLES.includes(v) ? v : 'clean'; } catch (_) { return 'clean'; }
+  })();
 
   /* =========================================================
    * HELPERS
@@ -1900,7 +1908,10 @@
         maxZoom: 19, minZoom: cityMinZoom
       })
     ]);
-    (satelliteVisible ? satelliteLayer : streetLayer).addTo(map);
+    vectorLayer = null;
+    currentMinZoom = cityMinZoom;
+    applyBaseStyle();
+    if (baseStyle === 'clean') upgradeToVectorBase(map, cityMinZoom);
     markersLayer = L.layerGroup().addTo(map);
     // Agrupa pines en modo "explorar libremente" (fuera de una ruta): con
     // ciudades como Madrid (59 POIs) el mapa alejado es ilegible sin esto.
@@ -3829,19 +3840,72 @@
   // toggleFountains/toggleRestrooms (capas aditivas), aquí se INTERCAMBIA
   // la capa base — streetLayer y satelliteLayer nunca están las dos a la
   // vez, para no pintar calles encima de la foto o viceversa.
-  const toggleSatellite = () => {
-    satelliteVisible = !satelliteVisible;
-    const btn = $('#satelliteBtn');
-    btn?.classList.toggle('-active', satelliteVisible);
-    if (!map || !streetLayer || !satelliteLayer) return;
-    if (satelliteVisible) {
-      if (map.hasLayer(streetLayer)) map.removeLayer(streetLayer);
-      satelliteLayer.addTo(map);
-    } else {
-      if (map.hasLayer(satelliteLayer)) map.removeLayer(satelliteLayer);
-      streetLayer.addTo(map);
+  // Mapa base limpio (OpenFreeMap "Positron", vectorial, gratis y sin
+  // clave): el estándar de OpenStreetMap tenía tanto detalle de fondo
+  // (iconos de tiendas, portales, colores) que los puntos de la app se
+  // perdían. Se carga DESPUÉS de mostrar el mapa con las teselas de OSM, que
+  // quedan como respaldo si no hay WebGL, falla la red o la librería: así
+  // el mapa nunca se queda en blanco. MapLibre (~800 KB) se descarga una sola
+  // vez y queda en caché.
+  const VECTOR_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
+  const VECTOR_ATTRIBUTION = '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+  let vectorLibPromise = null;
+  const loadVectorLib = () => {
+    if (window.maplibregl && L.maplibreGL) return Promise.resolve();
+    if (!vectorLibPromise) {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css';
+      document.head.appendChild(css);
+      vectorLibPromise = loadScriptOnce('https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js')
+        .then(() => loadScriptOnce('https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js'))
+        .catch((e) => { vectorLibPromise = null; throw e; });
     }
+    return vectorLibPromise;
   };
+  const hasWebGL = () => {
+    try {
+      const c = document.createElement('canvas');
+      return !!(c.getContext('webgl2') || c.getContext('webgl'));
+    } catch (_) { return false; }
+  };
+  const upgradeToVectorBase = (forMap, minZoom) => {
+    if (!hasWebGL()) return;
+    loadVectorLib().then(() => {
+      // El usuario pudo cambiar de ciudad (otro mapa) mientras cargaba.
+      if (forMap !== map || !L.maplibreGL) return;
+      if (vectorLayer) return;
+      vectorLayer = L.maplibreGL({ style: VECTOR_STYLE_URL, attribution: VECTOR_ATTRIBUTION, minZoom });
+      applyBaseStyle();
+    }).catch((e) => console.warn('[mapa] Sin mapa vectorial, se queda OpenStreetMap', e));
+  };
+
+  const BASE_STYLE_NAMES = {
+    clean: { es: 'Mapa limpio', en: 'Clean map' },
+    classic: { es: 'Mapa clásico', en: 'Classic map' },
+    satellite: { es: 'Satélite', en: 'Satellite' }
+  };
+  // Pone en el mapa la capa base del estilo elegido y quita las demás. Si el
+  // estilo es "limpio" pero el mapa vectorial aún no ha cargado (o no puede),
+  // se ve el clásico mientras tanto.
+  const applyBaseStyle = () => {
+    if (!map) return;
+    const target = baseStyle === 'satellite' ? satelliteLayer
+      : (baseStyle === 'clean' && vectorLayer) ? vectorLayer : streetLayer;
+    [streetLayer, vectorLayer, satelliteLayer].forEach((l) => {
+      if (l && l !== target && map.hasLayer(l)) map.removeLayer(l);
+    });
+    if (target && !map.hasLayer(target)) target.addTo(map);
+    const btn = $('#satelliteBtn');
+    if (btn) { btn.dataset.style = baseStyle; btn.classList.toggle('-active', baseStyle !== 'clean'); }
+  };
+  const cycleBaseStyle = () => {
+    baseStyle = BASE_STYLES[(BASE_STYLES.indexOf(baseStyle) + 1) % BASE_STYLES.length];
+    try { localStorage.setItem(BASE_STYLE_KEY, baseStyle); } catch (_) {}
+    if (baseStyle === 'clean' && !vectorLayer && map) upgradeToVectorBase(map, currentMinZoom);
+    applyBaseStyle();
+  };
+  const toggleSatellite = cycleBaseStyle;
 
   // Cambia de ciudad: recarga POIs, mapa y cabecera. Si la app ya estaba
   // en marcha (no es el arranque inicial), también limpia la ficha abierta.
@@ -4913,8 +4977,8 @@
     },
     {
       target: '#satelliteBtn',
-      title: { es: 'Vista de satélite', en: 'Satellite view' },
-      text: { es: 'Cambia entre el mapa normal y una foto de satélite real de la zona.', en: 'Switches between the normal map and a real satellite photo of the area.' }
+      title: { es: 'Estilo del mapa', en: 'Map style' },
+      text: { es: 'Cada toque cambia el estilo del mapa: limpio (el de por defecto), clásico con todo el detalle, o una foto de satélite real de la zona.', en: 'Each tap changes the map style: clean (the default), classic with full detail, or a real satellite photo of the area.' }
     }
   ];
   let tutorialSteps = KIDS_TUTORIAL_STEPS;
@@ -9687,9 +9751,13 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     if (!strip || !tip) return;
     strip.querySelectorAll('.layer-chip').forEach((chip) => {
       chip.addEventListener('click', () => {
-        const name = LAYER_STRIP_NAMES[chip.id] ? pickLang(LAYER_STRIP_NAMES[chip.id]) : (chip.querySelector('span')?.textContent || '').trim();
-        const on = chip.classList.contains('-active');
-        tip.textContent = `${name} · ${t(on ? 'layerOn' : 'layerOff')}`;
+        if (chip.id === 'satelliteBtn') {
+          tip.textContent = pickLang(BASE_STYLE_NAMES[baseStyle]);
+        } else {
+          const name = LAYER_STRIP_NAMES[chip.id] ? pickLang(LAYER_STRIP_NAMES[chip.id]) : (chip.querySelector('span')?.textContent || '').trim();
+          const on = chip.classList.contains('-active');
+          tip.textContent = `${name} · ${t(on ? 'layerOn' : 'layerOff')}`;
+        }
         tip.style.top = `${chip.offsetTop + 4}px`;
         tip.classList.add('-show');
         clearTimeout(layerTipTimer);

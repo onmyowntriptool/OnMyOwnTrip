@@ -16,7 +16,7 @@
 // Sube este número cuando cambies la lista SHELL_URLS de aquí abajo
 // (los propios archivos versionados con "?v=N" ya se cachean solos con
 // su nueva clave la primera vez que se piden, sin necesidad de tocar esto).
-const CACHE_VERSION = 'v293';
+const CACHE_VERSION = 'v295';
 const SHELL_CACHE = `omot-shell-${CACHE_VERSION}`;
 const IMAGE_CACHE = `omot-images-${CACHE_VERSION}`;
 // Contenido de ciudad servido por el Worker (POST /content, ver
@@ -39,7 +39,7 @@ const SHELL_URLS = [
   './',
   './index.html',
   './migrate-domain.js?v=2',
-  './app.js?v=277',
+  './app.js?v=279',
   './data/core.js?v=39',
   './styles.css?v=150',
   './manifest.json?v=3',
@@ -167,6 +167,12 @@ self.addEventListener('fetch', (event) => {
   // por si acaso cambia a GET en el futuro no queremos servir respuestas
   // de IA cacheadas y desactualizadas).
   if (url.hostname.endsWith('workers.dev')) return;
+
+  // Mapa base vectorial (OpenFreeMap: estilo, teselas .pbf, fuentes y
+  // sprites): miles de peticiones pequeñas. Sin este corte acabarían todas
+  // en SHELL_CACHE (stale-while-revalidate de abajo) y la caché crecería sin
+  // límite; la caché HTTP normal del navegador ya las gestiona bien.
+  if (url.hostname.endsWith('openfreemap.org')) return;
 
   if (isImageRequest(request)) {
     // Imágenes de POIs (Wikimedia, cross-origin): cache-first, y se
