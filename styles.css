@@ -4251,3 +4251,37 @@ html[data-mode="kids"] .ai-input-wrap {
   pointer-events: none;
 }
 .layer-strip-tip.-show { opacity: 1; transform: none; }
+.layer-strip .layer-chip[hidden] { display: none; }
+
+/* ---------- ICONOS DE LAS CAPAS EN EL MAPA (feedback #35 y #46) ---------- */
+/* Antes eran 12 px blancos con el símbolo de color: se perdían sobre el
+   mapa (Edgar, William). Ahora 22 px, círculo relleno del MISMO color que
+   su icono activo en la tira lateral, con el símbolo en blanco y borde
+   blanco. Siguen por detrás de los pines turísticos (zIndexOffset). */
+.fountain-pin, .restroom-pin, .food-pin, .hotel-pin {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  color: #fff;
+  transition: transform 0.15s ease;
+}
+.fountain-pin { background: #0EA5E9; }
+.restroom-pin { background: #8B5CF6; }
+.food-pin { background: #F59E0B; }
+.hotel-pin { background: #0D9488; }
+.fountain-pin svg, .food-pin svg, .hotel-pin svg { width: 12px; height: 12px; }
+.restroom-pin img { width: 13px; height: 13px; filter: brightness(0) invert(1); }
+.fountain-pin.-off, .restroom-pin.-off { background: #94A3B8; opacity: 0.8; }
+/* Con el mapa alejado hay cientos (Barcelona: más de 500 fuentes): se
+   encogen para no formar una mancha, y recuperan su tamaño al acercarse
+   (clase puesta por app.js según el zoom, ver updateLayerIconScale). */
+#map.-layers-far .fountain-pin,
+#map.-layers-far .restroom-pin,
+#map.-layers-far .food-pin,
+#map.-layers-far .hotel-pin { transform: scale(0.65); }
+#map.-layers-very-far .fountain-pin,
+#map.-layers-very-far .restroom-pin,
+#map.-layers-very-far .food-pin,
+#map.-layers-very-far .hotel-pin { transform: scale(0.36); border-width: 3px; }

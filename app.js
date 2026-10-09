@@ -1790,7 +1790,7 @@
   const makeFountainIcon = (status) => L.divIcon({
     className: 'fountain-pin-wrap',
     html: `<div class="fountain-pin${status === 'fuera-de-servicio' ? ' -off' : ''}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C12 2 5 10.5 5 15a7 7 0 0 0 14 0c0-4.5-7-13-7-13Z"/></svg></div>`,
-    iconSize: [12, 12], iconAnchor: [6, 6], popupAnchor: [0, -6]
+    iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -11]
   });
 
   // Pin de los aseos públicos: mismo lenguaje visual que la capa de
@@ -1802,7 +1802,7 @@
   const makeRestroomIcon = (status) => L.divIcon({
     className: 'fountain-pin-wrap',
     html: `<div class="restroom-pin${status === 'evento' ? ' -off' : ''}"><img src="assets/icons/restroom.png?v=3" alt="" /></div>`,
-    iconSize: [12, 12], iconAnchor: [6, 6], popupAnchor: [0, -6]
+    iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -11]
   });
 
   // EXPERIMENTO TEMPORAL — CAPA "COMER Y BEBER": mismo icono de tenedor y
@@ -1811,7 +1811,7 @@
   const makeFoodIcon = () => L.divIcon({
     className: 'fountain-pin-wrap',
     html: '<div class="food-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v7a2 2 0 0 0 2 2v11"/><path d="M7 2v20"/><path d="M11 2v9"/><path d="M17 2c-1.7 0-3 2-3 5s1.3 5 3 5v10"/></svg></div>',
-    iconSize: [12, 12], iconAnchor: [6, 6], popupAnchor: [0, -6]
+    iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -11]
   });
 
   // EXPERIMENTO TEMPORAL — CAPA "HOTELES": mismo tamaño/lenguaje que
@@ -1819,7 +1819,7 @@
   const makeHotelIcon = () => L.divIcon({
     className: 'fountain-pin-wrap',
     html: '<div class="hotel-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-9a2 2 0 0 1 2-2h5v5"/><path d="M13 12h6a2 2 0 0 1 2 2v4"/><path d="M3 18h18"/><path d="M3 11v7"/></svg></div>',
-    iconSize: [12, 12], iconAnchor: [6, 6], popupAnchor: [0, -6]
+    iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -11]
   });
 
   // Burbuja de agrupación (cluster): mismo lenguaje visual que .custom-pin,
@@ -1861,6 +1861,19 @@
     map = L.map('map', { zoomControl: false, attributionControl: true, scrollWheelZoom: true, maxBoundsViscosity: 0.7 })
       .setView(city.center, city.zoom);
     map.setMaxBounds(L.latLngBounds(city.bounds[0], city.bounds[1]).pad(0.25));
+    // Iconos de capas más pequeños con el mapa alejado (ver #map.-layers-far
+    // en styles.css): por debajo de zoom 15 hay demasiados juntos.
+    const updateLayerIconScale = () => {
+      const el = map.getContainer();
+      if (!el) return;
+      const z = map.getZoom();
+      el.classList.toggle('-layers-far', z < 15);
+      // Muy alejado (ciudad entera): puntitos de color, para no enterrar
+      // los pines y grupos de puntos de interés bajo cientos de iconos.
+      el.classList.toggle('-layers-very-far', z < 14);
+    };
+    map.on('zoomend', updateLayerIconScale);
+    updateLayerIconScale();
     // CARTO cerró el acceso anónimo a sus mosaicos (basemaps.cartocdn.com):
     // desde ahora exige una clave de API incluso para el uso más básico, y
     // sin ella todas las peticiones devuelven un tile con el aviso "API KEY
@@ -3840,6 +3853,7 @@
     STATE.cityId = cityId;
     CURRENT_CITY = city;
     POIS = city.pois;
+    updateLayerStripForCity(cityId);
     STATE.category = CATEGORIES.ALL;
     STATE.activeRoute = null;
     closeRoutePicker();
@@ -3864,6 +3878,7 @@
     updatePills();
     updateEssentialPillLabel();
     renderMarkers();
+    fitMapToPois(POIS.filter(isPoiInActiveRoute));
     if (STATE.activePoiId) {
       const poi = POIS.find((x) => x.id === STATE.activePoiId);
       if (!poi || !isPoiInActiveRoute(poi)) closeSheet();
@@ -4082,6 +4097,19 @@
     else openAppMenu(level);
   };
 
+  // Encaja el mapa para que se vean todos los puntos de la lista (tester
+  // William, feedback #47: al elegir "Museos" o "Puntos de interés" el mapa
+  // se quedaba en el zoom de antes y solo se veían 2-3 de ellos). El margen
+  // superior/izquierdo deja libre lo que tapan la cabecera y la tira de capas.
+  const fitMapToPois = (list) => {
+    if (!map || !list || !list.length) return;
+    const pts = list.filter((p) => p && p.coords && !p.isAdHocScan).map((p) => p.coords);
+    if (!pts.length) return;
+    try {
+      map.flyToBounds(L.latLngBounds(pts), { paddingTopLeft: [80, 190], paddingBottomRight: [80, 70], maxZoom: 16, duration: 0.8 });
+    } catch (_) {}
+  };
+
   const buildHeader = () => {
     $$('.pill', els.filters).forEach((p) => {
       p.addEventListener('click', () => {
@@ -4103,6 +4131,7 @@
         updatePills();
         updateEssentialPillLabel();
         renderMarkers();
+        fitMapToPois(STATE.category === CATEGORIES.ALL ? POIS : POIS.filter((x) => x.category === STATE.category));
         if (STATE.activePoiId) {
           const poi = POIS.find((x) => x.id === STATE.activePoiId);
           const stillVisible = poi && (STATE.category === CATEGORIES.ALL || poi.category === STATE.category);
@@ -9621,6 +9650,29 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
   // se añade el nombre que aparece un instante a su lado al tocarlo, para
   // que no haga falta adivinar qué significa cada icono. Los handlers marcan
   // la clase -active de forma síncrona, así que ya se puede leer aquí.
+  // Qué capas tienen datos en cada ciudad (feedback #36/#46: activar
+  // "Comer y beber" u "Hoteles" fuera de Madrid no mostraba nada y la app no
+  // lo decía). Debe coincidir con los ficheros de data/layers/: al añadir
+  // datos de una capa para una ciudad nueva, añádela aquí. El satélite vale
+  // en todas.
+  const LAYER_CITIES = {
+    fountainsBtn: ['alcala-de-henares', 'alicante', 'barcelona', 'berlin', 'estambul', 'madrid', 'malaga', 'segovia'],
+    restroomsBtn: ['alicante', 'barcelona', 'berlin', 'estambul', 'madrid', 'malaga', 'segovia'],
+    foodBtn: ['madrid'],
+    hotelsBtn: ['madrid']
+  };
+  const LAYER_TOGGLES = { fountainsBtn: () => toggleFountains(), restroomsBtn: () => toggleRestrooms(), foodBtn: () => toggleFood(), hotelsBtn: () => toggleHotels() };
+  // Oculta de la tira las capas sin datos en la ciudad actual; si alguna
+  // estaba encendida (venía de otra ciudad), la apaga antes.
+  const updateLayerStripForCity = (cityId) => {
+    Object.entries(LAYER_CITIES).forEach(([id, cities]) => {
+      const chip = $(`#${id}`);
+      if (!chip) return;
+      const available = cities.includes(cityId);
+      if (!available && chip.classList.contains('-active')) LAYER_TOGGLES[id]();
+      chip.hidden = !available;
+    });
+  };
   let layerTipTimer = null;
   const LAYER_STRIP_NAMES = {
     fountainsBtn: { es: 'Fuentes de agua', en: 'Water fountains' },
