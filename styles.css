@@ -4600,3 +4600,33 @@ html[data-mode="kids"] .ai-input-wrap {
   font-weight: 800;
   cursor: pointer;
 }
+
+/* ---------- PROTOTIPO: ANUNCIO EMERGENTE (ver SPONSOR_POPUP_MODE en app.js) ---------- */
+/* Baja desde arriba, sobre la cabecera y el mapa, para no tapar el texto de
+   la ficha. Sin cruz: se va solo. */
+#sponsorPopup {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  top: calc(var(--safe-area-inset-top, 0px) + 10px);
+  max-width: 520px;
+  margin: 0 auto;
+  z-index: 6050;
+  background: var(--color-surface);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  padding: 10px 12px;
+  border-top: none;
+  transform: translateY(calc(-100% - 30px));
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+#sponsorPopup.-oro { background: #F6E8CE; border: 1px solid #B9791F; padding: 10px; }
+#sponsorPopup.-show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+#sponsorPopup.sheet-sponsor-demo { margin: 0 auto; }
+/* Fuera de la ficha heredaba el color claro de la cabecera: texto oscuro
+   fijo sobre el fondo claro del aviso. */
+#sponsorPopup { background: #fff; color: #1F2937; }
+#sponsorPopup.-oro { background: #F6E8CE; }
+#sponsorPopup p, #sponsorPopup b { color: #1F2937; }

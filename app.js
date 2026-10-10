@@ -4118,14 +4118,74 @@
     return el;
   };
 
+  // PROTOTIPO (petición de David, 2026-10-10): el anuncio deja de estar fijo
+  // en la ficha y pasa a un aviso emergente sin cruz que aparece cuando ya
+  // ha terminado la narración (nunca corta un audio): dura lo que la mención
+  // por voz y luego SPONSOR_POPUP_HOLD_MS más para poder pulsar sus botones,
+  // y se va solo. Si en SPONSOR_POPUP_IDLE_MS no se ha escuchado nada, sale
+  // una vez en silencio. Con SPONSOR_POPUP_MODE = false vuelve la tarjeta fija.
+  const SPONSOR_POPUP_MODE = false;
+  const SPONSOR_POPUP_HOLD_MS = 8000;
+  const SPONSOR_POPUP_IDLE_MS = 10000;
+  let sponsorPopupTimer = null;
+  let sponsorPopupIdleTimer = null;
+  let sponsorPopupPoiId = null;
+  const sponsorPopupEl = () => {
+    let el = document.getElementById('sponsorPopup');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'sponsorPopup';
+      el.setAttribute('role', 'complementary');
+      document.body.appendChild(el);
+    }
+    return el;
+  };
+  const hideSponsorPopup = () => {
+    clearTimeout(sponsorPopupTimer);
+    sponsorPopupTimer = null;
+    const el = document.getElementById('sponsorPopup');
+    if (el) el.classList.remove('-show');
+  };
+  const resetSponsorPopup = () => {
+    hideSponsorPopup();
+    clearTimeout(sponsorPopupIdleTimer);
+    sponsorPopupIdleTimer = null;
+    sponsorPopupPoiId = null;
+  };
+  // holdMs: null = se queda hasta que alguien llame a scheduleSponsorPopupHide
+  // (mientras suena la mención por voz).
+  const showSponsorPopup = (poiId, holdMs = SPONSOR_POPUP_HOLD_MS) => {
+    if (!SPONSOR_POPUP_MODE || STATE.mode === 'kids') return false;
+    if (sponsorPopupPoiId !== poiId || STATE.activePoiId !== poiId) return false;
+    const el = document.getElementById('sponsorPopup');
+    if (!el || !el.childElementCount) return false;
+    clearTimeout(sponsorPopupIdleTimer);
+    if (!el.classList.contains('-show')) {
+      el.classList.add('-show');
+      const m = activeSponsorDemoMatch;
+      if (m && m.poiId === poiId) trackSponsorDemoEvent(m.sponsor, 'impression');
+    }
+    clearTimeout(sponsorPopupTimer);
+    sponsorPopupTimer = holdMs == null ? null : setTimeout(hideSponsorPopup, holdMs);
+    return true;
+  };
+  const scheduleSponsorPopupHide = () => {
+    const el = document.getElementById('sponsorPopup');
+    if (!el || !el.classList.contains('-show')) return;
+    clearTimeout(sponsorPopupTimer);
+    sponsorPopupTimer = setTimeout(hideSponsorPopup, SPONSOR_POPUP_HOLD_MS);
+  };
+
   const renderSponsorDemoInsert = (poi) => {
     const el = ensureSponsorDemoEl();
+    if (SPONSOR_POPUP_MODE) resetSponsorPopup();
+    const idlePlayId = STATE.audio.playId;
     const match = isCityPremium(STATE.cityId) ? null : findNearbySponsorDemo(poi);
     activeSponsorDemoMatch = match ? { poiId: poi.id, ...match } : null;
     if (!match) { el.hidden = true; el.className = ''; el.innerHTML = ''; return; }
     const { sponsor, distance } = match;
     const distLabel = formatDistance(distance);
-    trackSponsorDemoEvent(sponsor, 'impression');
+    if (!SPONSOR_POPUP_MODE) trackSponsorDemoEvent(sponsor, 'impression');
     const iconImg = `<img class="inline-icon" src="${sponsorIconUrl(sponsor)}" alt="" />`;
     if (sponsor.tier === 'bronce') {
       el.className = 'sheet-sponsor-demo';
@@ -4197,6 +4257,25 @@
     // Cruz para ocultar el anuncio en ESTA ficha (deja más sitio para leer;
     // al abrir otra ficha vuelve a salir). La mención por voz al terminar
     // la narración no se toca.
+    if (SPONSOR_POPUP_MODE) {
+      // Se lleva el contenido (con sus botones ya cableados) al aviso
+      // emergente y la ficha queda limpia.
+      const pop = sponsorPopupEl();
+      pop.className = `${el.className} sponsor-popup`;
+      pop.innerHTML = '';
+      while (el.firstChild) pop.appendChild(el.firstChild);
+      el.hidden = true;
+      el.className = '';
+      sponsorPopupPoiId = poi.id;
+      if (STATE.mode !== 'kids') {
+        sponsorPopupIdleTimer = setTimeout(() => {
+          // Solo si no se ha escuchado nada desde que se abrió la ficha.
+          if (STATE.audio.playing || STATE.audio.overrideText || STATE.audio.playId !== idlePlayId) return;
+          showSponsorPopup(poi.id);
+        }, SPONSOR_POPUP_IDLE_MS);
+      }
+      return;
+    }
     el.insertAdjacentHTML('afterbegin', `<button type="button" class="sponsor-dismiss" aria-label="${t('ariaSponsorDismiss')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>`);
     $('.sponsor-dismiss', el)?.addEventListener('click', () => { el.hidden = true; });
     el.hidden = false;
@@ -4374,6 +4453,18 @@
     if (!poi || STATE.mode === 'kids') return done();
     if (STATE.audio.playId !== myPlayId) return done();
     const match = activeSponsorDemoMatch;
+    if (SPONSOR_POPUP_MODE && match && match.poiId === poi.id) {
+      const lastMsg = aiHistoryFor(poi.id).filter((x) => x.role === 'assistant').slice(-1)[0];
+      if (lastMsg && lastMsg.isSummary) {
+        // Con mención por voz se queda mientras suena y luego el margen; sin
+        // ella, solo el margen.
+        showSponsorPopup(poi.id, match.sponsor.audioMention ? null : SPONSOR_POPUP_HOLD_MS);
+        if (match.sponsor.audioMention) {
+          const origDone = done;
+          return maybeSpeakSponsorOutroNow(poi, myPlayId, match, () => { scheduleSponsorPopupHide(); origDone(); });
+        }
+      }
+    }
     if (!match || match.poiId !== poi.id || !match.sponsor.audioMention) return done();
     // FIX (reportado: la mención sonaba al terminar CUALQUIER audio -- un
     // chip de tema, "profundiza más", una pregunta escrita -- no solo la
@@ -4388,6 +4479,9 @@
     // se sentía como un corte y la gente "se perdía"). 900ms -> 300ms -> 80ms:
     // lo justo para que no se pisen los dos audios. En nativo la espera real
     // la marcaba la descarga de la voz en la nube, ver prefetchSponsorOutro.
+    maybeSpeakSponsorOutroNow(poi, myPlayId, match, done);
+  };
+  const maybeSpeakSponsorOutroNow = (poi, myPlayId, match, done) => {
     setTimeout(() => {
       // Si mientras tanto se cerró la ficha, se abrió otro POI o arrancó una
       // narración más nueva sobre el mismo POI, no decimos nada.
@@ -7423,6 +7517,29 @@
   // vez de arrancar sola al abrir la ficha — ver ensureAiPanelInitialGreet,
   // que solo dice la frase corta de bienvenida. Mismo patrón que
   // showVisitInfo: se añade como mensaje de la IA en el chat y se narra.
+  // Prepara la voz de "Introducción" mientras suena la bienvenida, para que
+  // al pulsarla arranque al momento (antes había que esperar a que se
+  // generara). Solo en nativo (sin voz del navegador) y en adultos, que es
+  // donde la intro se narra con la voz en la nube. El texto se calcula con
+  // SPEECH.getText() igual que al narrarla (ver showFullIntro: en adultos se
+  // narra main, sin el cierre), para que la caché acierte. El Worker guarda
+  // la voz para todos (ver handleTts), así que repetirlo cuesta poco.
+  let fullIntroPrefetchTimer = null;
+  const scheduleFullIntroPrefetch = (poi) => {
+    clearTimeout(fullIntroPrefetchTimer);
+    if (!poi || SPEECH.isSupported() || !CLOUD_TTS.isConfigured() || STATE.mode === 'kids') return;
+    fullIntroPrefetchTimer = setTimeout(() => {
+      if (STATE.activePoiId !== poi.id || STATE.mode === 'kids') return;
+      const { main, cta } = buildIntroTextParts(poi, STATE.mode, false);
+      if (!cta) return;
+      const prev = STATE.audio.overrideText;
+      STATE.audio.overrideText = main;
+      const text = SPEECH.getText();
+      STATE.audio.overrideText = prev;
+      if (text && !CLOUD_TTS.getReadyUrl(text)) CLOUD_TTS.fetchAndCache(text);
+    }, 2500);
+  };
+
   const showFullIntro = (poi) => {
     if (!poi) return;
     const hist = aiHistoryFor(poi.id);
@@ -8446,6 +8563,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     if (STATE.ai.deepenBusy) abandonDeepenFlow();
     cleanupAdHocScanIfNeeded(STATE.activePoiId);
     flushSponsorDemoMetrics();
+    resetSponsorPopup();
     const closedPoiId = STATE.activePoiId;
     closePlanPicker();
     STATE.sheet = 'closed';
@@ -8639,6 +8757,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     $('.sheet-sub', els.sheet).textContent = pickDual(poi.subtitle);
     updateSheetDistance(id);
     renderSponsorDemoInsert(poi);
+    scheduleFullIntroPrefetch(poi);
 
     // EXPERIMENTO (rama experimento-diseno-editorial): "Cómo llegar" ya no
     // es un chip de la fila de abajo (ver renderAiSuggestions) sino este
@@ -9311,6 +9430,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     // más tarde si, cuando les toque actuar, siguen hablando de la más
     // reciente o ya quedaron huérfanas porque el usuario disparó otra encima.
     if (!isResume) STATE.audio.playId = (STATE.audio.playId || 0) + 1;
+    if (!isResume) hideSponsorPopup();
     const myPlayId = STATE.audio.playId;
     STATE.audio.playing = true;
     WAKE_LOCK.acquire();

@@ -394,10 +394,11 @@ async function handleTts(request, env, headers) {
     });
   }
 
-  // Tope de caracteres por petición: ninguna narración de la app se acerca
-  // a esto (el límite real de la propia API de Google es 5000), es solo un
-  // cinturón de seguridad extra ante un uso indebido del endpoint.
-  const text = String((payload && payload.text) || '').slice(0, 3000);
+  // Tope de caracteres por petición, como cinturón de seguridad ante un uso
+  // indebido. Antes era 3000 y cortaba el final de las introducciones más
+  // largas (hay de ~3100); ahora el texto se trocea (ver splitTtsText) y el
+  // tope sube al mismo que usa la app (6000, ver buildNarrativeText).
+  const text = String((payload && payload.text) || '').slice(0, 6000);
   if (!text.trim()) {
     return new Response(JSON.stringify({ error: 'missing text' }), {
       status: 400,
@@ -407,23 +408,46 @@ async function handleTts(request, env, headers) {
   const lang = payload && payload.lang === 'en' ? 'en' : 'es';
   const voice = TTS_VOICES[lang];
 
-  let ttsRes;
+  // Caché compartida en KV (CITY_CONTENT): cada texto se genera con Google
+  // UNA vez y todos los usuarios lo reciben al momento después (antes solo
+  // se guardaba en cada móvil, así que cada persona esperaba la primera vez
+  // y se pagaba una vez por usuario). La clave incluye voz y velocidad: si
+  // cambian, se regenera solo.
+  const cacheKey = `tts:${await sha256Hex(`${voice.name}|${TTS_SPEAKING_RATE}|${text}`)}`;
+  if (env.CITY_CONTENT) {
+    try {
+      const hit = await env.CITY_CONTENT.get(cacheKey, 'arrayBuffer');
+      if (hit) {
+        return new Response(hit, {
+          status: 200,
+          headers: { ...headers, 'Content-Type': 'audio/mpeg', 'X-TTS-Cache': 'hit' }
+        });
+      }
+    } catch (_) { /* sin caché: se genera como siempre */ }
+  }
+
+  // Google admite hasta 5000 BYTES por petición (las tildes cuentan doble):
+  // los textos largos se parten por frases y los MP3 se concatenan.
+  const parts = splitTtsText(text, 4500);
+  const synth = (part) => fetch(`${GOOGLE_TTS_URL}?key=${env.GOOGLE_TTS_API_KEY}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      input: { text: part },
+      voice,
+      audioConfig: { audioEncoding: 'MP3', speakingRate: TTS_SPEAKING_RATE }
+    })
+  });
+  let responses;
   try {
-    ttsRes = await fetch(`${GOOGLE_TTS_URL}?key=${env.GOOGLE_TTS_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        input: { text },
-        voice,
-        audioConfig: { audioEncoding: 'MP3', speakingRate: TTS_SPEAKING_RATE }
-      })
-    });
+    responses = await Promise.all(parts.map(synth));
   } catch (e) {
     return new Response(JSON.stringify({ error: 'tts request failed' }), {
       status: 502,
       headers: { ...headers, 'Content-Type': 'application/json' }
     });
   }
+  const ttsRes = responses.find((x) => !x.ok) || responses[0];
 
   if (!ttsRes.ok) {
     // Aquí llega también un 429/403 de Google si se agota la cuota gratis
@@ -437,15 +461,55 @@ async function handleTts(request, env, headers) {
     });
   }
 
-  const data = await ttsRes.json();
-  const binary = atob(data.audioContent);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const chunks = [];
+  for (const res of responses) {
+    const data = await res.json();
+    const binary = atob(data.audioContent);
+    const b = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) b[i] = binary.charCodeAt(i);
+    chunks.push(b);
+  }
+  const bytes = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+  let off = 0;
+  for (const c of chunks) { bytes.set(c, off); off += c.length; }
+
+  if (env.CITY_CONTENT) {
+    try { await env.CITY_CONTENT.put(cacheKey, bytes, { expirationTtl: TTS_CACHE_TTL_S }); } catch (_) {}
+  }
 
   return new Response(bytes, {
     status: 200,
-    headers: { ...headers, 'Content-Type': 'audio/mpeg' }
+    headers: { ...headers, 'Content-Type': 'audio/mpeg', 'X-TTS-Cache': 'miss' }
   });
+}
+
+// 180 días; pasado ese tiempo se vuelve a generar la primera vez que se pida.
+const TTS_CACHE_TTL_S = 180 * 24 * 3600;
+
+// Parte el texto en trozos de como mucho maxBytes (UTF-8), cortando al final
+// de una frase siempre que se pueda y, si una frase sola no cabe, en un
+// espacio.
+function splitTtsText(text, maxBytes) {
+  const enc = new TextEncoder();
+  const size = (t) => enc.encode(t).length;
+  if (size(text) <= maxBytes) return [text];
+  const sentences = text.match(/[^.!?…]+[.!?…]+["»”')\]]*\s*|[^.!?…]+$/g) || [text];
+  const out = [];
+  let cur = '';
+  const pushWords = (sentence) => {
+    for (const w of sentence.split(/(\s+)/)) {
+      if (cur && size(cur + w) > maxBytes) { out.push(cur.trim()); cur = ''; }
+      cur += w;
+    }
+  };
+  for (const sentence of sentences) {
+    if (size(cur + sentence) <= maxBytes) { cur += sentence; continue; }
+    if (cur) { out.push(cur.trim()); cur = ''; }
+    if (size(sentence) <= maxBytes) cur = sentence;
+    else pushWords(sentence);
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out.filter(Boolean);
 }
 
 // Control de acceso (ver LICENSE en app.js y la sección correspondiente de
