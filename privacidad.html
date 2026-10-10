@@ -75,57 +75,64 @@
 <div class="wrap">
   <a class="back" href="index.html">‹ Volver a la app</a>
   <h1>Privacidad y créditos</h1>
-  <div class="updated">Última actualización: agosto de 2026</div>
+  <div class="updated">Última actualización: 11 de octubre de 2026</div>
 
   <h2>Política de privacidad</h2>
-  <p>OnMyOwnTrip es una web/app estática: no tiene servidor propio con base de
-  datos ni cuentas de usuario. Esto es lo que hace la app con cada tipo de dato:</p>
+  <p>Esta política explica qué datos trata OnMyOwnTrip (la app para Android e
+  iPhone y la versión web en onmyowntrip.com), para qué los usa y cuáles son
+  tus derechos. En resumen: no hay cuentas de usuario, no te pedimos nombre,
+  correo ni teléfono, y ni tu ubicación ni tus fotos ni tus preguntas a la
+  guía IA se guardan en nuestros servidores.</p>
+
+  <h3>Responsable</h3>
+  <p>El responsable del tratamiento de los datos es <strong>David Gabriel
+  Henriquez Diaz</strong>, desarrollador de OnMyOwnTrip. Puedes escribir para
+  cualquier cuestión sobre privacidad a
+  <a href="mailto:contacto@onmyowntrip.com">contacto@onmyowntrip.com</a>.</p>
 
   <h3>Ubicación</h3>
   <p>Si activas "Cerca de mí" o el botón de ubicación en el mapa, tu posición
   se usa solo en tu dispositivo para detectar la ciudad más cercana, mostrar
-  tu punto en el mapa y sugerir lugares próximos. No se envía a ningún
-  servidor ni se guarda en ningún sitio fuera de tu dispositivo.</p>
+  tu punto en el mapa, ordenar tus planes por cercanía y sugerir lugares
+  próximos. Tus coordenadas no se envían a ningún servidor ni se guardan
+  fuera de tu dispositivo.</p>
 
-  <h3>Cámara ("¿Qué estoy viendo?")</h3>
-  <p>Al tomar o subir una foto para identificar un lugar, esa imagen se envía
-  —junto con tu ubicación aproximada— a través de nuestro proxy en Cloudflare
-  Workers al servicio de IA de Google (Gemini), que la analiza para reconocer
-  el sitio; si Gemini no responde a tiempo, la misma consulta se envía como
-  respaldo al servicio de IA de Anthropic (Claude). No guardamos esa foto en
-  ningún servidor propio: se usa solo para esa consulta puntual. El
-  procesamiento está sujeto a las políticas de privacidad de Google y de
-  Anthropic.</p>
+  <h3>Fotos para identificar lugares</h3>
+  <p>Al tomar o subir una foto para identificar un lugar, la app envía esa
+  imagen, junto con el nombre de la ciudad y los nombres de los puntos de
+  interés cercanos (calculados en tu propio dispositivo, nunca tus
+  coordenadas), a través de nuestro servidor en Cloudflare al servicio de IA
+  de Google (Gemini), que la analiza para reconocer el sitio. Si Gemini no
+  responde a tiempo, la misma consulta se envía como respaldo al servicio de
+  IA de Anthropic (Claude). No guardamos la foto en ningún servidor propio:
+  se usa solo para esa consulta. Su procesamiento está sujeto a las
+  políticas de privacidad de Google y de Anthropic.</p>
+
+  <h3>Preguntas a la guía IA</h3>
+  <p>El texto que escribes o dictas en el chat de cada lugar, y lo que dices
+  en el modo llamada, se envía por el mismo servidor al servicio de IA
+  (Gemini o, como respaldo, Claude) para generar la respuesta. No lo
+  guardamos en ningún servidor propio. Las respuestas se generan
+  automáticamente y pueden contener errores. Si no hay conexión o el
+  servicio de IA falla, la app responde con contenido local sin enviar nada.
+  Te recomendamos no incluir datos personales en tus preguntas.</p>
+
+  <h3>Permiso antes de usar la IA</h3>
   <p>La primera vez que vas a enviar una foto o una pregunta a la IA, la app
-  te pide permiso. Si no lo das, no se envía nada y puedes seguir usando el
-  resto de la app.</p>
-
-  <h3>Preguntas al "guía IA"</h3>
-  <p>El texto que escribes o dictas en el chat de cada lugar (y lo que dices
-  en el modo llamada) se envía por el mismo proxy al modelo de IA (Gemini o,
-  como respaldo, Claude) para generar la respuesta. Son respuestas
-  generadas automáticamente y pueden contener errores. Si no hay conexión o
-  el servicio de IA falla, la app responde con un simulador local sin enviar
-  nada a ningún sitio.</p>
+  te explica lo anterior y te pide permiso. Si no lo das, no se envía nada y
+  puedes seguir usando el resto de la app. Puedes retirar tu permiso en
+  cualquier momento con "Reiniciar app" en la pantalla de bienvenida: la
+  app volverá a preguntarte antes del siguiente envío.</p>
 
   <h3>Datos guardados en tu dispositivo</h3>
-  <p>La ciudad y el modo elegidos, tus puntos y progreso del quiz, las
-  conversaciones con la guía IA y el contenido descargado para uso sin
-  conexión se guardan únicamente en el almacenamiento local de tu navegador
-  (<code>localStorage</code> y la caché del Service Worker). Nunca salen de
-  tu dispositivo, salvo lo descrito arriba (ubicación aproximada, fotos y
-  preguntas enviadas a la IA). Puedes borrarlo todo en cualquier momento con
-  "Reiniciar app" en la pantalla de bienvenida.</p>
-
-  <h3>Sin rastreo de terceros</h3>
-  <p>La app no usa analítica de terceros, píxeles de publicidad ni cookies de
-  rastreo. No vendemos ni compartimos datos con nadie más allá de lo descrito
-  en esta página.</p>
-
-  <h3>Menores de edad</h3>
-  <p>El "Modo Niños" no pide ni guarda ningún dato que identifique a un
-  menor. Recomendamos que su uso sea siempre acompañado por un adulto,
-  especialmente en el chat con la guía IA.</p>
+  <p>La ciudad, el idioma y el modo elegidos, tus puntos, insignias y
+  progreso, los lugares que ya has visitado, tus planes de "Mi plan", las
+  conversaciones con la guía IA, tu decisión sobre el permiso de la IA, tu
+  código de dispositivo y el contenido descargado para usar la app sin
+  conexión se guardan en el almacenamiento local de tu dispositivo o
+  navegador. No salen de él, salvo lo descrito en esta página. Puedes
+  borrarlo todo con "Reiniciar app" en la pantalla de bienvenida o
+  desinstalando la app.</p>
 
   <h3>Datos que guarda nuestro servidor</h3>
   <p>OnMyOwnTrip no tiene cuentas de usuario ni guarda tu ubicación, tus fotos
@@ -155,6 +162,65 @@
   <p>Estos datos se conservan mientras uses la app, o hasta que nos pidas
   que los borremos (ver el apartado siguiente).</p>
 
+  <h3>Servicios de terceros</h3>
+  <p>Para funcionar, la app se conecta a estos servicios, que pueden recibir
+  tu dirección IP y los datos técnicos habituales de cualquier conexión a
+  internet. Cada uno tiene su propia política de privacidad:</p>
+  <ul>
+    <li><strong>Cloudflare:</strong> aloja la web y nuestro servidor.</li>
+    <li><strong>Google (Gemini) y Anthropic (Claude):</strong> la IA que
+    reconoce las fotos y responde a tus preguntas, como se explica arriba.
+    Les llegan a través de nuestro servidor, no directamente desde tu
+    dispositivo.</li>
+    <li><strong>Google Cloud Text-to-Speech:</strong> genera la voz de la
+    audioguía. Solo recibe, a través de nuestro servidor, el texto del lugar
+    que se va a narrar.</li>
+    <li><strong>OpenStreetMap, OpenFreeMap, CARTO y Esri:</strong> proporcionan las
+    imágenes del mapa y de la vista satélite, por lo que reciben la zona del
+    mapa que estás viendo.</li>
+    <li><strong>Wikimedia Commons:</strong> aloja muchas de las fotos de los
+    lugares.</li>
+    <li><strong>Google Maps:</strong> solo si pulsas "Cómo llegar"; se abre
+    fuera de la app.</li>
+    <li><strong>Google Play y App Store:</strong> descarga de la app y, en su
+    caso, las compras dentro de ella.</li>
+  </ul>
+
+  <h3>Patrocinadores y publicidad</h3>
+  <p>Algunos negocios pagan por aparecer destacados en la app (en el mapa, en
+  una mención de la audioguía o en su tarjeta). No les facilitamos ningún
+  dato personal: solo reciben recuentos anónimos de cuántas veces se ha
+  visto o tocado su anuncio. La app no usa redes publicitarias, píxeles de
+  seguimiento, cookies de rastreo ni analítica de terceros, y no vendemos
+  datos a nadie.</p>
+
+  <h3>Para qué usamos los datos y base legal</h3>
+  <ul>
+    <li><strong>Prestarte el servicio</strong> (darte acceso, descargar el
+    contenido de las ciudades, avisarte de las actualizaciones y, en su caso,
+    activar tus compras): es necesario para ofrecerte la app que has
+    decidido usar (artículo 6.1.b del RGPD).</li>
+    <li><strong>Enviar tus fotos y preguntas a la IA:</strong> tu
+    consentimiento (artículo 6.1.a del RGPD), que puedes retirar cuando
+    quieras.</li>
+    <li><strong>Contadores de uso anónimos y control de abusos:</strong>
+    nuestro interés legítimo en mejorar la app y protegerla frente a usos
+    indebidos (artículo 6.1.f del RGPD).</li>
+  </ul>
+
+  <h3>Transferencias fuera de la Unión Europea</h3>
+  <p>Cloudflare, Google y Anthropic pueden tratar datos en Estados Unidos u
+  otros países fuera del Espacio Económico Europeo. Estos proveedores
+  aplican las garantías previstas en el RGPD para esas transferencias, como
+  el Marco de Privacidad de Datos UE-EE. UU. o las cláusulas contractuales
+  tipo aprobadas por la Comisión Europea.</p>
+
+  <h3>Menores de edad</h3>
+  <p>El "Modo Niños" no pide ni guarda ningún dato que identifique a un
+  menor. Recomendamos que su uso sea siempre acompañado por un adulto, que
+  sea el adulto quien acepte el permiso para usar la IA y que acompañe al
+  menor especialmente en el chat con la guía IA y al hacer fotos.</p>
+
   <h3 id="eliminar-datos">Solicitar la eliminación de tus datos</h3>
   <p>Puedes pedir en cualquier momento que borremos todos los datos de
   OnMyOwnTrip asociados a tu dispositivo o a tu clave de acceso:</p>
@@ -177,6 +243,21 @@
   guardados en tu propio dispositivo (progreso, planes, conversaciones) se
   borran con "Reiniciar app" en la pantalla de bienvenida o desinstalando
   la app.</p>
+
+  <h3>Tus derechos</h3>
+  <p>Puedes ejercer en cualquier momento tus derechos de acceso,
+  rectificación, supresión, oposición, limitación del tratamiento y
+  portabilidad, así como retirar tu consentimiento, escribiendo a
+  <a href="mailto:contacto@onmyowntrip.com">contacto@onmyowntrip.com</a> e
+  indicando tu código de dispositivo o tu nombre de usuario (ver el
+  apartado anterior para encontrarlo). Te responderemos en el plazo máximo
+  de un mes. Si consideras que no hemos atendido bien tu solicitud, puedes
+  presentar una reclamación ante la Agencia Española de Protección de Datos
+  (<a href="https://www.aepd.es" target="_blank" rel="noopener">www.aepd.es</a>).</p>
+
+  <h3>Cambios en esta política</h3>
+  <p>Si cambiamos esta política, publicaremos aquí la nueva versión con su
+  fecha de actualización.</p>
 
   <h3>Contacto</h3>
   <p class="contact">Dudas sobre privacidad: <a href="mailto:contacto@onmyowntrip.com">contacto@onmyowntrip.com</a></p>
