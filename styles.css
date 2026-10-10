@@ -400,6 +400,27 @@ button { -webkit-appearance: none; appearance: none; border: none; background: n
 .directions-confirm-ok:active,
 .directions-confirm-cancel:active { transform: scale(0.97); }
 
+/* Permiso para la IA de terceros: misma tarjeta que la de Maps, por
+   encima de la ficha y del chat (z-index mayor), con texto alineado a la
+   izquierda porque es más largo y el enlace a la política de privacidad. */
+.ai-consent-modal { z-index: 6100; }
+.ai-consent-modal .directions-confirm-text { text-align: left; margin-bottom: 12px; }
+.ai-consent-icon {
+  display: block;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 10px;
+  border-radius: 12px;
+}
+.ai-consent-privacy {
+  display: inline-block;
+  margin: 0 0 18px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-accent, #F5A623);
+  text-decoration: underline;
+}
+
 /* Mismo patrón visual que .directions-confirm-*, pero para la bienvenida
    corta a cada ciudad (una vez por ciudad, la primera vez que se entra).
    Card algo más ancha/alta que la de Maps porque el texto es un párrafo

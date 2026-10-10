@@ -1486,6 +1486,21 @@
     directionsConfirmText: { es: { adult: 'Te llevará paso a paso hasta aquí. Cuando termines, vuelve a esta app para seguir con la visita — la encontrarás tal como la dejaste.', kids: 'Te llevará paso a paso hasta aquí. Cuando termines, vuelve a esta app para seguir con la visita — la encontrarás tal como la dejaste.' }, en: { adult: "It'll guide you step by step to get here. When you're done, come back to this app to continue your visit — you'll find it just as you left it.", kids: "It'll guide you step by step to get here. When you're done, come back to this app to continue your visit — you'll find it just as you left it." } },
     directionsConfirmCancel: { es: { adult: 'Cancelar', kids: 'Cancelar' }, en: { adult: 'Cancel', kids: 'Cancel' } },
     directionsConfirmOk: { es: { adult: 'Abrir Maps', kids: 'Abrir Maps' }, en: { adult: 'Open Maps', kids: 'Open Maps' } },
+    aiConsentTitle: { es: { adult: 'Antes de usar la guía IA', kids: 'Antes de hablar con la guía' }, en: { adult: 'Before using the AI guide', kids: 'Before talking to the guide' } },
+    aiConsentText: {
+      es: {
+        adult: 'Para responderte, la pregunta que escribas o dictes y las fotos que hagas para reconocer un lugar se envían a un servicio de inteligencia artificial de terceros: Gemini, de Google, y si no responde, Claude, de Anthropic. Solo se usan para generar la respuesta en ese momento: no las guardamos ni las asociamos a ningún dato tuyo. Si no aceptas, puedes seguir usando el resto de la app.',
+        kids: 'Para contestarte, lo que preguntes y las fotos que hagas se envían a una inteligencia artificial de otra empresa (Gemini, de Google, o Claude, de Anthropic). Solo sirven para darte la respuesta y no se guardan. Pide a un adulto que lo lea contigo antes de aceptar.'
+      },
+      en: {
+        adult: 'To answer you, the questions you type or dictate and the photos you take to recognise a place are sent to a third-party artificial intelligence service: Gemini, by Google, and if it does not respond, Claude, by Anthropic. They are only used to generate the answer at that moment: we do not store them or link them to any of your data. If you decline, you can keep using the rest of the app.',
+        kids: 'To answer you, your questions and the photos you take are sent to an artificial intelligence from another company (Gemini, by Google, or Claude, by Anthropic). They are only used to give you the answer and are not stored. Ask an adult to read this with you before accepting.'
+      }
+    },
+    aiConsentPrivacy: { es: { adult: 'Política de privacidad', kids: 'Política de privacidad' }, en: { adult: 'Privacy policy', kids: 'Privacy policy' } },
+    aiConsentCancel: { es: { adult: 'Ahora no', kids: 'Ahora no' }, en: { adult: 'Not now', kids: 'Not now' } },
+    aiConsentOk: { es: { adult: 'Aceptar', kids: 'Aceptar' }, en: { adult: 'Accept', kids: 'Accept' } },
+    aiConsentDeclined: { es: { adult: 'Sin tu permiso no enviamos nada a la IA. Puedes aceptarlo cuando quieras.', kids: 'Sin permiso no se envía nada. Puedes aceptarlo cuando quieras.' }, en: { adult: 'Without your permission nothing is sent to the AI. You can accept it any time.', kids: 'Without permission nothing is sent. You can accept it any time.' } },
     scanLogTitle: { es: { adult: 'Fotos no reconocidas', kids: 'Fotos no reconocidas' }, en: { adult: 'Unrecognized photos', kids: 'Unrecognized photos' } },
     scanLogHint: { es: { adult: 'Registro local de fotos escaneadas que no coincidían con ningún lugar de la app. Solo tú puedes verlo.', kids: 'Registro local de fotos escaneadas que no coincidían con ningún lugar de la app. Solo tú puedes verlo.' }, en: { adult: "Local log of scanned photos that didn't match any place in the app. Only you can see it.", kids: "Local log of scanned photos that didn't match any place in the app. Only you can see it." } },
     scanLogExport: { es: { adult: '⬇️ Exportar JSON', kids: '⬇️ Exportar JSON' }, en: { adult: '⬇️ Export JSON', kids: '⬇️ Export JSON' } },
@@ -6716,6 +6731,12 @@
     if (dirCancelEl) dirCancelEl.textContent = t('directionsConfirmCancel');
     const dirOkEl = $('#directionsConfirmOk');
     if (dirOkEl) dirOkEl.textContent = t('directionsConfirmOk');
+    [['#aiConsentTitle', 'aiConsentTitle'], ['#aiConsentText', 'aiConsentText'],
+      ['#aiConsentPrivacyLink', 'aiConsentPrivacy'], ['#aiConsentCancel', 'aiConsentCancel'],
+      ['#aiConsentOk', 'aiConsentOk']].forEach(([sel, key]) => {
+      const el = $(sel);
+      if (el) el.textContent = t(key);
+    });
     const sheetDirLabelEl = $('#sheetDirectionsLabel');
     if (sheetDirLabelEl) sheetDirLabelEl.textContent = t('sheetDirectionsLabel');
     const scanLogTitleEl = $('#scanLogTitle');
@@ -7721,6 +7742,48 @@
     }
   };
 
+  // Permiso para enviar datos personales a la IA de terceros (Gemini y, de
+  // respaldo, Claude -- ver la cadena de modelos en worker/proxy.js). Lo
+  // exige Apple (norma 5.1.2(i)): avisar y pedir permiso DENTRO de la app,
+  // no basta con la política de privacidad. Solo cuenta lo que pone el
+  // usuario -- fotos, preguntas escritas o dictadas, el modo llamada --; los
+  // botones de tema (Historia secreta, Profundiza más...) solo mandan datos
+  // del Punto de interés y no lo necesitan. Se pide una vez y se recuerda.
+  const AI_CONSENT_KEY = 'omot_ai_consent_v1';
+  const hasAiConsent = () => {
+    try { return localStorage.getItem(AI_CONSENT_KEY) === 'yes'; } catch (_) { return false; }
+  };
+  const aiConsentModal = $('#aiConsentModal');
+  let aiConsentResolve = null;
+  const settleAiConsent = (ok) => {
+    if (!aiConsentModal) return;
+    aiConsentModal.classList.remove('-open');
+    aiConsentModal.setAttribute('aria-hidden', 'true');
+    if (ok) {
+      try { localStorage.setItem(AI_CONSENT_KEY, 'yes'); } catch (_) {}
+    } else {
+      showToast(t('aiConsentDeclined'), 3400);
+    }
+    const resolve = aiConsentResolve;
+    aiConsentResolve = null;
+    if (resolve) resolve(ok);
+  };
+  // Devuelve una promesa que se resuelve a true si el usuario acepta.
+  // Quien la usa debe seguir con la acción DENTRO del toque en "Aceptar"
+  // (el .then corre en el mismo evento): en iOS abrir el selector de fotos
+  // o la cámara fuera de un toque directo del usuario no funciona.
+  const requestAiConsent = () => {
+    if (hasAiConsent()) return Promise.resolve(true);
+    if (!aiConsentModal) return Promise.resolve(true);
+    if (aiConsentResolve) return new Promise(() => {}); // ya abierto
+    pauseAudio();
+    aiConsentModal.classList.add('-open');
+    aiConsentModal.setAttribute('aria-hidden', 'false');
+    return new Promise((resolve) => { aiConsentResolve = resolve; });
+  };
+  $('#aiConsentOk')?.addEventListener('click', () => settleAiConsent(true));
+  $('#aiConsentCancel')?.addEventListener('click', () => settleAiConsent(false));
+
   // Registro en memoria (a propósito NO va dentro de STATE: no tiene
   // sentido intentar persistir una petición fetch en curso, y así no hay
   // que preocuparse de serializarla) de la consulta real de "profundiza
@@ -8161,6 +8224,12 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     if (!input) return;
     const text = (input.value || '').trim();
     if (!text || STATE.ai.pending || !STATE.activePoiId) return;
+    // Sin permiso para la IA de terceros todavía: se pide antes de gastar
+    // la pregunta, y al aceptar se reenvía el mismo texto (sigue escrito).
+    if (!hasAiConsent()) {
+      requestAiConsent().then((ok) => { if (ok) sendUserAiMessage(); });
+      return;
+    }
     const poi = POIS.find((p) => p.id === STATE.activePoiId);
     // Sin preguntas en este Punto de interés (o tope diario): no se envía, se
     // deja el texto escrito tal cual y el aviso bajo el campo explica por qué.
@@ -8562,6 +8631,11 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
 
   const openAiCallMode = () => {
     if (!STATE.activePoiId) return;
+    // Lo que se dice en la llamada también va a la IA de terceros.
+    if (!hasAiConsent()) {
+      requestAiConsent().then((ok) => { if (ok) openAiCallMode(); });
+      return;
+    }
     const poi = POIS.find((p) => p.id === STATE.activePoiId);
     if (!poi) return;
     const modal = $('#aiCallModal');
@@ -9781,9 +9855,15 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       if (menu) menu.hidden = !willOpen;
       btn?.setAttribute('aria-expanded', String(!!willOpen));
     });
+    // Las fotos van a la IA de terceros: sin permiso, se pide primero y la
+    // acción sigue dentro del toque en "Aceptar" (ver requestAiConsent).
     $('#scanTakePhoto')?.addEventListener('click', async () => {
       $('#scanMenu').hidden = true;
       $('#scanBtn')?.setAttribute('aria-expanded', 'false');
+      if (!hasAiConsent()) {
+        requestAiConsent().then((ok) => { if (ok) $('#scanTakePhoto')?.click(); });
+        return;
+      }
       prefetchLocation(); // ver comentario en scanUploadPhoto
       const opened = await openCameraCapture();
       if (!opened) {
@@ -9793,6 +9873,10 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     $('#scanUploadPhoto')?.addEventListener('click', () => {
       $('#scanMenu').hidden = true;
       $('#scanBtn')?.setAttribute('aria-expanded', 'false');
+      if (!hasAiConsent()) {
+        requestAiConsent().then((ok) => { if (ok) $('#scanUploadPhoto')?.click(); });
+        return;
+      }
       // Pide la ubicación YA, en este toque directo, en vez de esperar a
       // después de elegir la foto: en iOS, tras cerrarse el selector nativo
       // de fotos, el toque original ya no cuenta como "reciente" y el
@@ -10552,6 +10636,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       [() => isOpenModal('#imageLightbox'), closeLightbox],
       [() => isOpenModal('#badgeZoomModal'), closeBadgeZoom],
       [() => isOpenModal('#cameraModal'), closeCameraCapture],
+      [() => isOpenModal('#aiConsentModal'), () => settleAiConsent(false)],
       [() => isOpenModal('#directionsConfirmModal'), () => closeGenericModal('#directionsConfirmModal')],
       [() => isOpenModal('#resetConfirmModal'), () => closeGenericModal('#resetConfirmModal')],
       [() => isOpenModal('#deviceCodeModal'), () => closeGenericModal('#deviceCodeModal')],

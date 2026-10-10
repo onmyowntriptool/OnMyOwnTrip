@@ -91,13 +91,19 @@
   <p>Al tomar o subir una foto para identificar un lugar, esa imagen se envía
   —junto con tu ubicación aproximada— a través de nuestro proxy en Cloudflare
   Workers al servicio de IA de Google (Gemini), que la analiza para reconocer
-  el sitio. No guardamos esa foto en ningún servidor propio: se usa solo para
-  esa consulta puntual. El procesamiento por parte de Google está sujeto a la
-  política de privacidad de Google.</p>
+  el sitio; si Gemini no responde a tiempo, la misma consulta se envía como
+  respaldo al servicio de IA de Anthropic (Claude). No guardamos esa foto en
+  ningún servidor propio: se usa solo para esa consulta puntual. El
+  procesamiento está sujeto a las políticas de privacidad de Google y de
+  Anthropic.</p>
+  <p>La primera vez que vas a enviar una foto o una pregunta a la IA, la app
+  te pide permiso. Si no lo das, no se envía nada y puedes seguir usando el
+  resto de la app.</p>
 
   <h3>Preguntas al "guía IA"</h3>
-  <p>El texto que escribes en el chat de cada lugar se envía por el mismo
-  proxy al modelo de IA (Gemini) para generar la respuesta. Son respuestas
+  <p>El texto que escribes o dictas en el chat de cada lugar (y lo que dices
+  en el modo llamada) se envía por el mismo proxy al modelo de IA (Gemini o,
+  como respaldo, Claude) para generar la respuesta. Son respuestas
   generadas automáticamente y pueden contener errores. Si no hay conexión o
   el servicio de IA falla, la app responde con un simulador local sin enviar
   nada a ningún sitio.</p>

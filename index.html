@@ -46,7 +46,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-  <link rel="stylesheet" href="styles.css?v=162" />
+  <link rel="stylesheet" href="styles.css?v=163" />
 </head>
 <body>
   <!-- PANTALLA DE ACCESO: se muestra ANTES que la de bienvenida cuando no
@@ -153,7 +153,7 @@
       </div>
     </div>
 
-    <span class="onboarding-version" id="appVersion">Beta V108</span>
+    <span class="onboarding-version" id="appVersion">Beta V109</span>
     <button type="button" class="onboarding-reset" id="obResetBtn">Reiniciar app</button>
     <a class="onboarding-legal" href="privacidad.html" id="obPrivacyLink">Privacidad y créditos</a>
   </div>
@@ -186,6 +186,22 @@
       <div class="directions-confirm-actions">
         <button type="button" class="directions-confirm-cancel" id="directionsConfirmCancel">Cancelar</button>
         <button type="button" class="directions-confirm-ok" id="directionsConfirmOk">Abrir Maps</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Permiso para enviar datos a la IA de terceros (norma 5.1.2(i) de
+       Apple): sale una sola vez, antes de la primera foto, pregunta escrita
+       o llamada a la guía IA. Ver requestAiConsent en app.js. -->
+  <div class="directions-confirm-modal ai-consent-modal" id="aiConsentModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="aiConsentTitle">
+    <div class="directions-confirm-card">
+      <img class="ai-consent-icon" src="assets/icons/ai.png" width="44" height="44" alt="" aria-hidden="true" />
+      <h2 class="directions-confirm-title" id="aiConsentTitle">Antes de usar la guía IA</h2>
+      <p class="directions-confirm-text" id="aiConsentText"></p>
+      <a class="ai-consent-privacy" id="aiConsentPrivacyLink" href="https://onmyowntrip.com/privacidad" target="_blank" rel="noopener">Política de privacidad</a>
+      <div class="directions-confirm-actions">
+        <button type="button" class="directions-confirm-cancel" id="aiConsentCancel">Ahora no</button>
+        <button type="button" class="directions-confirm-ok" id="aiConsentOk">Aceptar</button>
       </div>
     </div>
   </div>
@@ -892,7 +908,7 @@
        una versión vieja en caché: sube este número en cada cambio a esos
        archivos para forzar que se vuelvan a descargar. -->
   <script src="data/core.js?v=40"></script>
-  <script src="app.js?v=307"></script>
+  <script src="app.js?v=308"></script>
   <!-- Service Worker: cachea el shell de la app y las imágenes de POIs ya
        vistas, para que la audioguía siga funcionando con conexión
        intermitente (típico caminando por cascos históricos). Ruta relativa
