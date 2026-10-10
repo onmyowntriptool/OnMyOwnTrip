@@ -2079,9 +2079,11 @@
   // verlo en el mapa. Apagado (por defecto, mientras no se cobre): libre.
   const PLAN_FREE_STOPS = 3;
   const planLimited = () => !!STATE.planPremium && !isCityPremium(STATE.cityId);
+  // Solo el aviso: la ventana de compra actual es «Quitar publicidad» por
+  // ciudad y no habla de Mi plan, así que abrirla aquí confundía. Cuando
+  // haya pases Premium a la venta, se abrirá la ventana que los venda.
   const planGateHit = (msgEs, msgEn) => {
     showToast(PT(msgEs, msgEn), 3400);
-    if (isNativeBillingAvailable()) openPremiumModal();
   };
   const planStopsFull = (plan) => planLimited() && plan.stops.length >= PLAN_FREE_STOPS;
   const gateFullPlan = () => planGateHit(
