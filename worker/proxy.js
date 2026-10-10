@@ -561,6 +561,7 @@ async function handleLicenseCheck(request, env, headers) {
   if (result.ok) {
     result.premiumCities = await getPremiumCities(env, username);
     result.chatUpsell = await getChatUpsellEnabled(env);
+    result.planPremium = await getPlanPremiumEnabled(env);
     // Versión y plataforma que manda la app (ver LICENSE.check en app.js):
     // se apunta para el panel y se le devuelve su aviso de actualización.
     const platform = String((payload && payload.platform) || '');
@@ -1394,6 +1395,15 @@ async function getPremiumCities(env, username) {
 // versión nueva de la app: llega a app.js junto a premiumCities en cada
 // /license/check (y en el vigilante periódico). Apagado si no existe la clave.
 const CHAT_UPSELL_KEY = 'config:chatUpsell';
+// "Mi plan" solo para Premium (interruptor del panel, pestaña "Acceso
+// premium"): encendido, sin Premium de la ciudad solo se permite 1 plan de
+// hasta 3 paradas, sin ordenar por cercanía ni verlo en el mapa (ver
+// PLAN_FREE_STOPS en app.js). Apagado por defecto.
+const PLAN_PREMIUM_KEY = 'config:planPremium';
+async function getPlanPremiumEnabled(env) {
+  if (!env.PREMIUM) return false;
+  try { return (await env.PREMIUM.get(PLAN_PREMIUM_KEY)) === 'on'; } catch (_) { return false; }
+}
 async function getChatUpsellEnabled(env) {
   if (!env.PREMIUM) return false;
   try { return (await env.PREMIUM.get(CHAT_UPSELL_KEY)) === 'on'; } catch (_) { return false; }
@@ -1900,6 +1910,9 @@ async function handlePremiumAdminConfig(request, env, headers) {
   if (payload && typeof payload.chatUpsell === 'boolean') {
     await env.PREMIUM.put(CHAT_UPSELL_KEY, payload.chatUpsell ? 'on' : 'off');
   }
+  if (payload && typeof payload.planPremium === 'boolean') {
+    await env.PREMIUM.put(PLAN_PREMIUM_KEY, payload.planPremium ? 'on' : 'off');
+  }
   if (payload && payload.updatePolicy && typeof payload.updatePolicy === 'object') {
     const clean = {};
     ['android', 'ios'].forEach((p) => {
@@ -1914,6 +1927,7 @@ async function handlePremiumAdminConfig(request, env, headers) {
   return new Response(JSON.stringify({
     ok: true,
     chatUpsell: await getChatUpsellEnabled(env),
+    planPremium: await getPlanPremiumEnabled(env),
     updatePolicy: { android: updatePolicyFor(policy, 'android'), ios: updatePolicyFor(policy, 'ios') },
     versions: await getAppVersionStats(env)
   }), {

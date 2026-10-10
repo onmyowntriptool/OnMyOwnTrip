@@ -413,6 +413,16 @@
         </div>
       </section>
 
+      <!-- "Mi plan" solo para Premium (ver getPlanPremiumEnabled en
+           worker/proxy.js y PLAN_FREE_STOPS en app.js). -->
+      <section>
+        <h2>«Mi plan» solo para Premium</h2>
+        <p class="hint" style="margin-top:-6px">Enciéndelo cuando Google Play ya cobre. Encendido, quien no tenga Premium de esa ciudad puede crear 1 plan de hasta 3 paradas y ver tiempos y distancias; más planes, más paradas, «Ordenar por cercanía» y «Ver en el mapa» piden Premium. Apagado, todos lo usan sin límites. Llega a los móviles en su siguiente comprobación de licencia (al abrir la app o en menos de un minuto).</p>
+        <div class="form-actions">
+          <button type="button" class="refresh-btn" id="planPremiumToggle" disabled>Cargando…</button>
+        </div>
+      </section>
+
       <!-- Versiones en uso y aviso de actualización (ver getAppVersionStats
            y updatePolicyFor en worker/proxy.js, applyUpdatePolicy en app.js). -->
       <section>
@@ -1371,6 +1381,13 @@
   // Oferta Premium en el chat: sin chatUpsell en el body solo lo lee; con
   // true/false lo cambia (ver handlePremiumAdminConfig en worker/proxy.js).
   let chatUpsellOn = null;
+  let planPremiumOn = null;
+  const renderPlanPremiumToggle = () => {
+    const btn = $('#planPremiumToggle');
+    btn.disabled = planPremiumOn == null;
+    btn.textContent = planPremiumOn == null ? 'No disponible'
+      : planPremiumOn ? 'Encendido — pulsar para apagar' : 'Apagado — pulsar para encender';
+  };
   const renderChatUpsellToggle = () => {
     const btn = $('#chatUpsellToggle');
     btn.disabled = chatUpsellOn == null;
@@ -1398,13 +1415,14 @@
       $(`#upd${cap}Url`).value = pol.url || '';
     });
   };
-  const chatUpsellRequest = async (value, updatePolicy) => {
+  const chatUpsellRequest = async (value, updatePolicy, planValue) => {
     const err = $('#chatUpsellError');
     err.hidden = true;
     try {
       const body = { adminKey };
       if (typeof value === 'boolean') body.chatUpsell = value;
       if (updatePolicy) body.updatePolicy = updatePolicy;
+      if (typeof planValue === 'boolean') body.planPremium = planValue;
       const res = await fetch(`${WORKER_BASE}/premium/admin/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1413,6 +1431,7 @@
       if (!res.ok) throw new Error('código ' + res.status);
       const data = await res.json();
       chatUpsellOn = !!data.chatUpsell;
+      planPremiumOn = !!data.planPremium;
       renderAppVersions(data.versions);
       renderUpdatePolicy(data.updatePolicy);
     } catch (e) {
@@ -1420,7 +1439,14 @@
       err.textContent = 'No se pudo leer o cambiar: ' + e.message;
     }
     renderChatUpsellToggle();
+    renderPlanPremiumToggle();
   };
+  $('#planPremiumToggle').addEventListener('click', () => {
+    if (planPremiumOn == null) return;
+    const next = !planPremiumOn;
+    if (!confirm(next ? '¿Limitar «Mi plan» a Premium? Quien no tenga Premium de la ciudad quedará con 1 plan de 3 paradas.' : '¿Dejar «Mi plan» libre para todos?')) return;
+    chatUpsellRequest(undefined, undefined, next);
+  });
   $('#updSaveBtn').addEventListener('click', async () => {
     const err = $('#updError');
     err.hidden = true;

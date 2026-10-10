@@ -1263,8 +1263,8 @@
       const recheck = async () => {
         const result = await check(username, 'watch');
         if (result.ok) {
-          writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell });
-          STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; applyUpdatePolicy(result.updatePolicy);
+          writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell, planPremium: !!result.planPremium });
+          STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; STATE.planPremium = !!result.planPremium; applyUpdatePolicy(result.updatePolicy);
         } else if (result.reason !== 'offline') {
           stopWatching();
           clearStored();
@@ -2073,6 +2073,20 @@
   const WALK_M_PER_MIN = 75; // ~4,5 km/h, ritmo turístico
   const WALK_DETOUR = 1.3; // línea recta → callejeando, mientras no hay ruta real
   const PT = (es, en) => pickLang({ es, en });
+  // "Mi plan" para Premium (interruptor del panel → STATE.planPremium, ver
+  // getPlanPremiumEnabled en worker/proxy.js). Encendido y sin Premium de
+  // la ciudad: 1 plan de hasta PLAN_FREE_STOPS paradas, sin ordenar ni
+  // verlo en el mapa. Apagado (por defecto, mientras no se cobre): libre.
+  const PLAN_FREE_STOPS = 3;
+  const planLimited = () => !!STATE.planPremium && !isCityPremium(STATE.cityId);
+  const planGateHit = (msgEs, msgEn) => {
+    showToast(PT(msgEs, msgEn), 3400);
+    if (isNativeBillingAvailable()) openPremiumModal();
+  };
+  const planStopsFull = (plan) => planLimited() && plan.stops.length >= PLAN_FREE_STOPS;
+  const gateFullPlan = () => planGateHit(
+    `Versión gratuita: hasta ${PLAN_FREE_STOPS} paradas por plan. Con Premium, sin límite.`,
+    `Free version: up to ${PLAN_FREE_STOPS} stops per plan. With Premium, no limit.`);
   const PLAN_ROUTE_META = { id: PLAN_ROUTE_ID, color: PLAN_COLOR, name: { es: { adult: 'Mi plan', kids: 'Mi plan' }, en: { adult: 'My plan', kids: 'My plan' } } };
 
   const PLANS = (() => { try { return JSON.parse(localStorage.getItem(PLAN_KEY) || '{}') || {}; } catch (_) { return {}; } })();
@@ -2107,6 +2121,10 @@
   };
   const createPlan = () => {
     const c = getCityPlans();
+    if (planLimited() && c.list.length >= 1) {
+      planGateHit('Tener varios planes es Premium.', 'Having several plans is Premium.');
+      return;
+    }
     const suggested = defaultPlanName(c.list.length + 1);
     const name = window.prompt(PT('Nombre del nuevo plan:', 'Name of the new plan:'), suggested);
     if (name === null) return;
@@ -2212,6 +2230,7 @@
   // Orden "por cercanía": empieza en la parada más cercana a ti (si estás en
   // la ciudad) o en la primera, y va siempre a la más cercana que quede.
   const sortPlanByProximity = () => {
+    if (planLimited()) { planGateHit('Ordenar por cercanía es Premium.', 'Sorting by proximity is Premium.'); return; }
     const plan = getPlan();
     const items = plan.stops.map((s) => ({ s, poi: POIS.find((p) => p.id === s.id) })).filter((x) => x.poi);
     if (items.length < 3) return;
@@ -2243,10 +2262,12 @@
     }
   };
   const addToPlan = (id) => {
-    if (!id || isInPlan(id)) return;
+    if (!id || isInPlan(id)) return false;
+    if (planStopsFull(getPlan())) { gateFullPlan(); return false; }
     getPlan().stops.push({ id, visit: null });
     savePlans();
     onPlanChanged();
+    return true;
   };
   const removeFromPlan = (id) => {
     const plan = getPlan();
@@ -2255,9 +2276,14 @@
     onPlanChanged();
   };
   const copyRouteToPlan = (routeId) => {
-    getPlan().stops = POIS.filter((p) => p.essential && p.essential.route === routeId)
+    let stops = POIS.filter((p) => p.essential && p.essential.route === routeId)
       .sort((a, b) => a.essential.order - b.essential.order)
       .map((p) => ({ id: p.id, visit: null }));
+    if (planLimited() && stops.length > PLAN_FREE_STOPS) {
+      stops = stops.slice(0, PLAN_FREE_STOPS);
+      planGateHit(`Versión gratuita: se copian las ${PLAN_FREE_STOPS} primeras paradas. La ruta completa es Premium.`, `Free version: the first ${PLAN_FREE_STOPS} stops were copied. The full route is Premium.`);
+    }
+    getPlan().stops = stops;
     savePlans();
     onPlanChanged();
   };
@@ -2265,6 +2291,7 @@
   const showPlanOnMap = () => {
     const pois = planPois();
     if (!pois.length) return;
+    if (planLimited()) { planGateHit('Ver tu plan en el mapa es Premium.', 'Showing your plan on the map is Premium.'); return; }
     closePlanPanel();
     closeAppMenu();
     closeRouteIntro();
@@ -2330,6 +2357,7 @@
     const p = getCityPlans().list.find((x) => x.id === planId);
     if (!p) return false;
     const i = p.stops.findIndex((st) => st.id === poiId);
+    if (i < 0 && planStopsFull(p)) { gateFullPlan(); return false; }
     if (i >= 0) p.stops.splice(i, 1); else p.stops.push({ id: poiId, visit: null });
     savePlans();
     onPlanChanged();
@@ -2447,8 +2475,13 @@
     totalEl.innerHTML = `<strong>≈ ${escHtml(formatMinutes(walkMin + visitMin))}</strong>`
       + `<span>${escHtml(formatMinutes(walkMin))} ${escHtml(PT('caminando', 'walking'))} + ${escHtml(formatMinutes(visitMin))} ${escHtml(PT('de visita', 'visiting'))} · ${pois.length} ${escHtml(PT('paradas', 'stops'))}</span>`
       + (anyEstimate ? `<em>${escHtml(PT('≈ distancia estimada hasta tener el camino real', '≈ estimated distance until the real path is ready'))}</em>` : '');
-    $('#planSortBtn').textContent = PT('Ordenar por cercanía', 'Sort by proximity');
-    $('#planMapBtn').textContent = PT('Ver en el mapa', 'Show on map');
+    const lim = planLimited();
+    const tag = lim ? ' · Premium' : '';
+    $('#planSortBtn').textContent = PT('Ordenar por cercanía', 'Sort by proximity') + tag;
+    $('#planMapBtn').textContent = PT('Ver en el mapa', 'Show on map') + tag;
+    if (lim) {
+      totalEl.insertAdjacentHTML('beforeend', `<em class="plan-free-note">${escHtml(PT(`Versión gratuita: 1 plan de hasta ${PLAN_FREE_STOPS} paradas. Con Premium: planes y paradas sin límite, ordenar por cercanía y verlo en el mapa.`, `Free version: 1 plan with up to ${PLAN_FREE_STOPS} stops. With Premium: unlimited plans and stops, sort by proximity and show on the map.`))}</em>`);
+    }
     $('#planClearBtn').textContent = PT('Vaciar', 'Clear');
   };
 
@@ -2476,8 +2509,7 @@
       if (!id) return;
       if (getCityPlans().list.length > 1) { openPlanPicker(); return; }
       if (isInPlan(id)) { removeFromPlan(id); return; }
-      addToPlan(id);
-      showToast(PT(`Añadido a «${getPlan().name}». Ábrelo desde «Mi plan» en el menú.`, `Added to "${getPlan().name}". Open it from "My plan" in the menu.`), 2600);
+      if (addToPlan(id)) showToast(PT(`Añadido a «${getPlan().name}». Ábrelo desde «Mi plan» en el menú.`, `Added to "${getPlan().name}". Open it from "My plan" in the menu.`), 2600);
     });
     $('#planPicker')?.addEventListener('click', (e) => {
       const el = planPickerEl();
@@ -2493,9 +2525,10 @@
         renderPlanPicker();
         return;
       }
+      const before = JSON.stringify(getCityPlans().list.find((x) => x.id === row.dataset.plan)?.stops || []);
       const added = togglePoiInPlan(row.dataset.plan, poiId);
       const p = getCityPlans().list.find((x) => x.id === row.dataset.plan);
-      if (p) showToast(added ? PT(`Añadido a «${p.name}»`, `Added to "${p.name}"`) : PT(`Quitado de «${p.name}»`, `Removed from "${p.name}"`), 1800);
+      if (p && JSON.stringify(p.stops) !== before) showToast(added ? PT(`Añadido a «${p.name}»`, `Added to "${p.name}"`) : PT(`Quitado de «${p.name}»`, `Removed from "${p.name}"`), 1800);
       renderPlanPicker();
     });
     $('#planList')?.addEventListener('click', (e) => {
@@ -10134,8 +10167,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       submit.disabled = false;
       submit.textContent = 'Entrar';
       if (result.ok) {
-        LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell });
-        STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; applyUpdatePolicy(result.updatePolicy);
+        LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell, planPremium: !!result.planPremium });
+        STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; STATE.planPremium = !!result.planPremium; applyUpdatePolicy(result.updatePolicy);
         hideLicenseGate();
         revealApp(); // no-op si la app ya se había revelado antes de un bloqueo
         LICENSE.startWatching(username, lockApp);
@@ -10164,8 +10197,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     const username = getDeviceCode();
     const result = await LICENSE.check(username);
     if (!result.ok) return false;
-    LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell });
-    STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; applyUpdatePolicy(result.updatePolicy);
+    LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell, planPremium: !!result.planPremium });
+    STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; STATE.planPremium = !!result.planPremium; applyUpdatePolicy(result.updatePolicy);
     revealApp();
     LICENSE.startWatching(username, lockApp);
     LICENSE.recordVisit(username);
@@ -10373,7 +10406,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       // ficha con patrocinio que se abriera (antes de que responda el
       // Worker) podría mostrar publicidad a alguien que ya la había
       // comprado, un instante hasta que llegue la revalidación de abajo.
-      STATE.premiumCities = cached.premiumCities || []; STATE.chatUpsell = !!cached.chatUpsell;
+      STATE.premiumCities = cached.premiumCities || []; STATE.chatUpsell = !!cached.chatUpsell; STATE.planPremium = !!cached.planPremium;
       revealApp();
       // Revalidación contra el Worker real: si ya no es válido, bloquea de
       // inmediato en vez de esperar a la siguiente apertura de la app. Si
@@ -10382,8 +10415,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       // app sigue abierta.
       LICENSE.check(cached.username).then((result) => {
         if (result.ok) {
-          LICENSE.writeStored({ username: cached.username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell });
-          STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; applyUpdatePolicy(result.updatePolicy);
+          LICENSE.writeStored({ username: cached.username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell, planPremium: !!result.planPremium });
+          STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; STATE.planPremium = !!result.planPremium; applyUpdatePolicy(result.updatePolicy);
           LICENSE.startWatching(cached.username, lockApp);
           LICENSE.recordVisit(cached.username);
         } else if (result.reason !== 'offline') {
