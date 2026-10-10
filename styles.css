@@ -4312,6 +4312,25 @@ html[data-mode="kids"] .ai-input-wrap {
   pointer-events: none;
 }
 .visited-check svg { width: 11px; height: 11px; }
+/* Marca rosa de "está en tu plan" (planMark en app.js): esquina superior
+   izquierda, simétrica al check de visitado. */
+.plan-mark {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  z-index: 2;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: #DB2777;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.plan-mark svg { width: 10px; height: 10px; }
 
 /* ---------- PLANIFICADOR "MI PLAN" ---------- */
 /* Botón de la ficha para añadir/quitar el sitio del plan. */

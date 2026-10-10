@@ -1811,7 +1811,21 @@
     if (isPlanPanelOpen()) renderPlanPanel();
   };
   const VISITED_CHECK_HTML = '<span class="visited-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
-  const visitedMark = (poi) => (isPoiVisited(poi.id) ? VISITED_CHECK_HTML : '');
+  const visitedMark = (poi) => (isPoiVisited(poi.id) ? VISITED_CHECK_HTML : '') + planMark(poi);
+  // Marca rosa (color de Mi plan) en la esquina contraria al check de
+  // visitado: el sitio ya está en alguno de tus planes de esta ciudad (en la
+  // versión gratuita limitada, solo cuenta el plan activo). No se pinta con
+  // el plan dibujado en el mapa, donde ya van todos numerados.
+  const PLAN_MARK_HTML = '<span class="plan-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4.2L6 21V4.5a1 1 0 0 1 1-1z"/></svg></span>';
+  const planMark = (poi) => {
+    try {
+      if (STATE.activeRoute === PLAN_ROUTE_ID) return '';
+      const c = PLANS[STATE.cityId];
+      if (!c || !Array.isArray(c.list)) return '';
+      const plans = planLimited() ? c.list.filter((p) => p.id === c.active) : c.list;
+      return plans.some((p) => p.stops.some((st) => st.id === poi.id)) ? PLAN_MARK_HTML : '';
+    } catch (_) { return ''; }
+  };
 
   const makePinIcon = (poi, dimmed = false) => {
     const color = dimmed ? '#94A3B8' : getCategoryPinColor(poi.category);
@@ -2255,6 +2269,7 @@
 
   const onPlanChanged = () => {
     planChangedSinceOpen = true;
+    refreshAllPinIcons();
     renderPlanPanel();
     updatePlanAddButton();
     updatePlanButton();
@@ -2672,6 +2687,17 @@
   };
   // Pone el check en el pin de un sitio recién visitado sin redibujar todo el
   // mapa (setIcon también vale para pines metidos en un grupo/cluster).
+  // Vuelve a pintar todos los pines (p. ej. al cambiar tus planes, para la
+  // marca rosa de planMark) sin rehacer las capas ni los grupos.
+  const refreshAllPinIcons = () => {
+    Object.entries(markerLookup).forEach(([id, marker]) => {
+      const poi = marker.options.pinArgs && POIS.find((p) => p.id === id);
+      if (!poi) return;
+      const a = marker.options.pinArgs;
+      marker.setIcon(a.route ? makeRouteIcon(poi, a.order, a.color) : makePinIcon(poi, a.dimmed));
+    });
+    if (STATE.sheet !== 'closed' && STATE.activePoiId) setSelectedMarker(STATE.activePoiId);
+  };
   const refreshVisitedMarker = (id) => {
     const marker = id && markerLookup[id];
     const poi = marker && POIS.find((p) => p.id === id);
