@@ -2124,7 +2124,7 @@
   const createPlan = () => {
     const c = getCityPlans();
     if (planLimited() && c.list.length >= 1) {
-      planGateHit('Tener varios planes es Premium.', 'Having several plans is Premium.');
+      planGateHit('Actualiza a Premium para crear más rutas.', 'Upgrade to Premium to create more routes.');
       return;
     }
     const suggested = defaultPlanName(c.list.length + 1);
@@ -2494,7 +2494,7 @@
       const tab = e.target.closest('.plan-tab');
       if (!tab) return;
       if (tab.dataset.plan === '__new__') createPlan();
-      else if (planLimited() && tab.dataset.plan !== getCityPlans().active) planGateHit('Tener varios planes es Premium. Tus otros planes siguen guardados.', 'Having several plans is Premium. Your other plans are still saved.');
+      else if (planLimited() && tab.dataset.plan !== getCityPlans().active) planGateHit('Actualiza a Premium para usar más rutas. Las otras siguen guardadas.', 'Upgrade to Premium to use more routes. The others are still saved.');
       else setActivePlan(tab.dataset.plan);
     });
     $('#planRenameBtn')?.addEventListener('click', renameActivePlan);
