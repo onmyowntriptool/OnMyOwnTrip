@@ -2502,7 +2502,13 @@
   };
 
   const wirePlan = () => {
-    $('#planBtn')?.addEventListener('click', () => (isPlanPanelOpen() ? closePlanPanel() : openPlanPanel()));
+    // Con el plan dibujado en el mapa, volver a pulsar «Mi plan» lo quita del
+    // mapa (petición de David) en vez de abrir el panel.
+    $('#planBtn')?.addEventListener('click', () => {
+      if (isPlanPanelOpen()) { closePlanPanel(); return; }
+      if (STATE.activeRoute === PLAN_ROUTE_ID && isRouteMode()) { exitPlanOnMap(); return; }
+      openPlanPanel();
+    });
     $('#planCloseBtn')?.addEventListener('click', closePlanPanel);
     $('#planTabs')?.addEventListener('click', (e) => {
       const tab = e.target.closest('.plan-tab');
