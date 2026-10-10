@@ -1779,7 +1779,37 @@
   // que las medallas y el resumen de visita — "visitado" = se abrió su ficha
   // al menos una vez. Se marca con un check verde en la esquina del pin, como
   // elemento aparte para que el recorte redondo de la foto no lo tape.
-  const isPoiVisited = (id) => (STATE.ai.perPoiHistory[id] || []).length > 0;
+  // Criterio del check de visitado (petición de David): haber escuchado
+  // ENTERA la introducción completa del sitio (chip "Introducción" en modo
+  // adultos; la narración que arranca sola en modo niños), no solo abrir su
+  // ficha. Se guarda aparte del historial del chat. Las medallas y el resumen
+  // de visita siguen con su criterio de siempre (ficha abierta).
+  const INTRO_HEARD_KEY = 'omot-intro-heard-v1';
+  const INTRO_HEARD = (() => { try { return JSON.parse(localStorage.getItem(INTRO_HEARD_KEY) || '{}') || {}; } catch (_) { return {}; } })();
+  const isPoiVisited = (id) => !!INTRO_HEARD[id];
+  // Se llama al terminar de sonar cualquier narración: solo cuenta si lo que
+  // acaba de sonar es la introducción completa (último mensaje con
+  // isFullIntro) del sitio abierto.
+  // Narración lanzada por el chip "Introducción" (ver showFullIntro): en
+  // modo adultos se narra como texto puntual (overrideText = texto principal,
+  // dejando la frase final para después del posible anuncio), así que se
+  // reconoce por su turno de reproducción y no por el historial.
+  let fullIntroPlay = null;
+  const markIntroHeardIfDone = () => {
+    const id = STATE.activePoiId;
+    if (!id || INTRO_HEARD[id]) return;
+    const byIntroChip = !!(fullIntroPlay && fullIntroPlay.poiId === id && fullIntroPlay.playId === STATE.audio.playId);
+    if (!byIntroChip) {
+      if (STATE.audio.overrideText) return;
+      const hist = (STATE.ai.perPoiHistory[id] || []).filter((m) => m.role === 'assistant');
+      const last = hist[hist.length - 1];
+      if (!last || !last.isFullIntro) return;
+    }
+    INTRO_HEARD[id] = Date.now();
+    try { localStorage.setItem(INTRO_HEARD_KEY, JSON.stringify(INTRO_HEARD)); } catch (_) {}
+    refreshVisitedMarker(id);
+    if (isPlanPanelOpen()) renderPlanPanel();
+  };
   const VISITED_CHECK_HTML = '<span class="visited-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
   const visitedMark = (poi) => (isPoiVisited(poi.id) ? VISITED_CHECK_HTML : '');
 
@@ -2272,11 +2302,59 @@
     if (!btn) return;
     const poi = POIS.find((p) => p.id === STATE.activePoiId);
     if (!poi || poi.isAdHocScan) { btn.hidden = true; return; }
-    const inPlan = isInPlan(poi.id);
+    // Con varios planes, el botón dice en cuáles está y abre el selector.
+    const c = getCityPlans();
+    const inPlans = c.list.filter((p) => p.stops.some((st) => st.id === poi.id));
     btn.hidden = false;
-    btn.classList.toggle('-in-plan', inPlan);
-    btn.setAttribute('aria-pressed', String(inPlan));
-    btn.textContent = inPlan ? PT('✓ En tu plan', '✓ In your plan') : PT('+ Añadir a mi plan', '+ Add to my plan');
+    btn.classList.toggle('-in-plan', inPlans.length > 0);
+    btn.setAttribute('aria-pressed', String(inPlans.length > 0));
+    if (c.list.length <= 1) {
+      btn.textContent = inPlans.length ? PT('✓ En tu plan', '✓ In your plan') : PT('+ Añadir a mi plan', '+ Add to my plan');
+    } else if (!inPlans.length) {
+      btn.textContent = PT('+ Añadir a un plan', '+ Add to a plan');
+    } else if (inPlans.length === 1) {
+      btn.textContent = PT(`✓ En «${inPlans[0].name}»`, `✓ In "${inPlans[0].name}"`);
+    } else {
+      btn.textContent = PT(`✓ En ${inPlans.length} planes`, `✓ In ${inPlans.length} plans`);
+    }
+  };
+
+  // Selector "¿A qué plan?" (petición de David): con más de un plan en la
+  // ciudad, el botón de la ficha abre esta lista en vez de añadir a ciegas
+  // al plan activo. Cada fila añade o quita el sitio de ese plan (un sitio
+  // puede estar en varios), y "+ Nuevo plan" crea uno y lo añade ahí.
+  const planPickerEl = () => $('#planPicker');
+  const closePlanPicker = () => { const el = planPickerEl(); if (el) el.hidden = true; };
+  const isPlanPickerOpen = () => { const el = planPickerEl(); return !!(el && !el.hidden); };
+  const togglePoiInPlan = (planId, poiId) => {
+    const p = getCityPlans().list.find((x) => x.id === planId);
+    if (!p) return false;
+    const i = p.stops.findIndex((st) => st.id === poiId);
+    if (i >= 0) p.stops.splice(i, 1); else p.stops.push({ id: poiId, visit: null });
+    savePlans();
+    onPlanChanged();
+    return i < 0;
+  };
+  const renderPlanPicker = () => {
+    const el = planPickerEl();
+    const poiId = STATE.activePoiId;
+    if (!el || !poiId) return;
+    const c = getCityPlans();
+    el.innerHTML = `<div class="plan-picker-card" role="dialog" aria-modal="true">
+      <p class="plan-picker-title">${escHtml(PT('¿A qué plan lo añades?', 'Add it to which plan?'))}</p>`
+      + c.list.map((p) => {
+        const has = p.stops.some((st) => st.id === poiId);
+        return `<button type="button" class="plan-picker-row${has ? ' -on' : ''}" data-plan="${escHtml(p.id)}"><span class="plan-picker-box">${has ? '✓' : ''}</span><span class="plan-picker-name">${escHtml(p.name)}</span><span class="plan-picker-count">${p.stops.length}</span></button>`;
+      }).join('')
+      + `<button type="button" class="plan-picker-row -new" data-plan="__new__">+ ${escHtml(PT('Nuevo plan', 'New plan'))}</button>
+      <button type="button" class="plan-picker-done">${escHtml(PT('Listo', 'Done'))}</button>
+    </div>`;
+  };
+  const openPlanPicker = () => {
+    const el = planPickerEl();
+    if (!el) return;
+    renderPlanPicker();
+    el.hidden = false;
   };
 
   const planPanelEl = () => $('#planPanel');
@@ -2396,9 +2474,29 @@
     $('#planAddBtn')?.addEventListener('click', () => {
       const id = STATE.activePoiId;
       if (!id) return;
+      if (getCityPlans().list.length > 1) { openPlanPicker(); return; }
       if (isInPlan(id)) { removeFromPlan(id); return; }
       addToPlan(id);
       showToast(PT(`Añadido a «${getPlan().name}». Ábrelo desde «Mi plan» en el menú.`, `Added to "${getPlan().name}". Open it from "My plan" in the menu.`), 2600);
+    });
+    $('#planPicker')?.addEventListener('click', (e) => {
+      const el = planPickerEl();
+      if (e.target === el || e.target.closest('.plan-picker-done')) { closePlanPicker(); return; }
+      const row = e.target.closest('.plan-picker-row');
+      const poiId = STATE.activePoiId;
+      if (!row || !poiId) return;
+      if (row.dataset.plan === '__new__') {
+        const before = getCityPlans().list.length;
+        createPlan();
+        const c = getCityPlans();
+        if (c.list.length > before) togglePoiInPlan(c.active, poiId);
+        renderPlanPicker();
+        return;
+      }
+      const added = togglePoiInPlan(row.dataset.plan, poiId);
+      const p = getCityPlans().list.find((x) => x.id === row.dataset.plan);
+      if (p) showToast(added ? PT(`Añadido a «${p.name}»`, `Added to "${p.name}"`) : PT(`Quitado de «${p.name}»`, `Removed from "${p.name}"`), 1800);
+      renderPlanPicker();
     });
     $('#planList')?.addEventListener('click', (e) => {
       const btn = e.target.closest('button[data-act]');
@@ -6786,7 +6884,7 @@
       // que el audio principal en modo niño siempre lo identifique bien sin
       // depender de su posición en el historial (ver buildNarrativeText).
       const openingText = STATE.mode === 'kids' ? buildIntroText(poi, STATE.mode) : buildOpeningGreeting(poi, STATE.mode);
-      history.push({ role: 'assistant', text: openingText, isSummary: true });
+      history.push({ role: 'assistant', text: openingText, isSummary: true, isFullIntro: STATE.mode === 'kids' });
       STATE.ai.historyLang[poi.id] = STATE.lang;
       saveState();
       STATE.ai.localIntroSpoken[poi.id] = true;
@@ -7262,7 +7360,7 @@
     const hist = aiHistoryFor(poi.id);
     const isKids = STATE.mode === 'kids';
     const { main, cta } = buildIntroTextParts(poi, STATE.mode, isKids);
-    hist.push({ role: 'assistant', text: main + cta, isSummary: true });
+    hist.push({ role: 'assistant', text: main + cta, isSummary: true, isFullIntro: true });
     renderAiMessages();
     scrollAiToBottom();
     saveState();
@@ -7288,6 +7386,7 @@
         STATE.audio.overrideText = main;
       }
       startAudio(false, true);
+      fullIntroPlay = { poiId: poi.id, playId: STATE.audio.playId };
     }
   };
 
@@ -7658,7 +7757,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       // isSummary marca de forma explícita cuál es el resumen inicial, para
       // que el audio principal en modo niño siempre lo identifique bien sin
       // depender de su posición en el historial (ver buildNarrativeText).
-      hist.push({ role: 'assistant', text, isSummary: kind === 'summary' });
+      hist.push({ role: 'assistant', text, isSummary: kind === 'summary', isFullIntro: kind === 'summary' && STATE.mode === 'kids' });
       if (kind === 'text') noteChatQuotaAfterAnswer(poi.id);
       // Solo el resumen inicial intenta CLOUD_TTS: es la única narración
       // que vale la pena cachear (el chat y las revelaciones del quiz son
@@ -8280,6 +8379,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     cleanupAdHocScanIfNeeded(STATE.activePoiId);
     flushSponsorDemoMetrics();
     const closedPoiId = STATE.activePoiId;
+    closePlanPicker();
     STATE.sheet = 'closed';
     STATE.activePoiId = null;
     setChatExpanded(false);
@@ -8887,8 +8987,13 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
           readyUrls.set(key, url);
           return url;
         }
+        // BUG REAL (2026-10-10): con 8 s fijos, la voz de una introducción
+        // larga (p. ej. 3.091 caracteres, 1,6 MB de MP3) tarda 6-14 s en
+        // generarse y la petición se abortaba: en Android, que no tiene voz
+        // del sistema a la que caer, la introducción se quedaba muda. Ahora
+        // el plazo crece con el texto: ~8 s los cortos, hasta 40 s los largos.
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
+        const timeout = setTimeout(() => controller.abort(), Math.min(40000, 8000 + text.length * 8));
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -9099,6 +9204,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       updateAudioUi();
     };
     cloudAudioEl.onended = () => {
+      markIntroHeardIfDone();
       stopAudio();
       if (!silent) showToast(t('audioguideCompleted'));
       if (STATE.mode === 'kids') maybeShowFirstKidsQuiz();
@@ -9213,6 +9319,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     if (!isResume) {
       const spokeOk = SPEECH.isSupported() && SPEECH.speak(({ finished, error, startFailed }) => {
         if (finished) {
+          markIntroHeardIfDone();
           STATE.audio.currentTime = duration;
           stopAudio();
           STATE.audio.currentTime = 0;
@@ -10163,6 +10270,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       [() => isShown('#tutorialOverlay'), () => closeTutorial()],
       [() => els.routeIntro && !els.routeIntro.hidden, closeRouteIntro],
       [isAppMenuOpen, closeAppMenu],
+      [isPlanPickerOpen, closePlanPicker],
       [isPlanPanelOpen, closePlanPanel],
       [() => STATE.sheet !== 'closed', closeSheet]
     ];
