@@ -2089,8 +2089,8 @@
   const PT = (es, en) => pickLang({ es, en });
   // "Mi plan" para Premium (interruptor del panel → STATE.planPremium, ver
   // getPlanPremiumEnabled en worker/proxy.js). Encendido y sin Premium de
-  // la ciudad: 1 plan de hasta PLAN_FREE_STOPS paradas, sin ordenar ni
-  // verlo en el mapa. Apagado (por defecto, mientras no se cobre): libre.
+  // la ciudad: 1 plan de hasta PLAN_FREE_STOPS paradas, sin ordenar por
+  // cercanía (verlo en el mapa es gratis). Apagado (por defecto, mientras no se cobre): libre.
   const PLAN_FREE_STOPS = 3;
   const planLimited = () => !!STATE.planPremium && !isCityPremium(STATE.cityId);
   // Solo el aviso: la ventana de compra actual es «Quitar publicidad» por
@@ -2308,7 +2308,6 @@
   const showPlanOnMap = () => {
     const pois = planPois();
     if (!pois.length) return;
-    if (planLimited()) { planGateHit('Ver tu plan en el mapa es Premium.', 'Showing your plan on the map is Premium.'); return; }
     closePlanPanel();
     closeAppMenu();
     closeRouteIntro();
@@ -2495,9 +2494,9 @@
     const lim = planLimited();
     const tag = lim ? ' · Premium' : '';
     $('#planSortBtn').textContent = PT('Ordenar por cercanía', 'Sort by proximity') + tag;
-    $('#planMapBtn').textContent = PT('Ver en el mapa', 'Show on map') + tag;
+    $('#planMapBtn').textContent = PT('Ver en el mapa', 'Show on map');
     if (lim) {
-      totalEl.insertAdjacentHTML('beforeend', `<em class="plan-free-note">${escHtml(PT(`Versión gratuita: 1 plan de hasta ${PLAN_FREE_STOPS} paradas. Con Premium: planes y paradas sin límite, ordenar por cercanía y verlo en el mapa.`, `Free version: 1 plan with up to ${PLAN_FREE_STOPS} stops. With Premium: unlimited plans and stops, sort by proximity and show on the map.`))}</em>`);
+      totalEl.insertAdjacentHTML('beforeend', `<em class="plan-free-note">${escHtml(PT(`Versión gratuita: 1 plan de hasta ${PLAN_FREE_STOPS} paradas. Con Premium: planes y paradas sin límite y ordenar por cercanía.`, `Free version: 1 plan with up to ${PLAN_FREE_STOPS} stops. With Premium: unlimited plans and stops and sort by proximity.`))}</em>`);
     }
     $('#planClearBtn').textContent = PT('Vaciar', 'Clear');
   };
