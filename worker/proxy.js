@@ -69,9 +69,16 @@ export default {
     const isChat = url.pathname.endsWith('/chat/completions');
     const isTts = url.pathname.endsWith('/tts');
     const isLicense = url.pathname.endsWith('/license/check');
+    // /license/visit ya no guarda nada (se quitó el panel de accesos, que
+    // registraba usuario e IP de cada entrada): se sigue respondiendo "ok"
+    // solo porque las versiones de la app ya instaladas la siguen llamando.
     const isVisit = url.pathname.endsWith('/license/visit');
-    const isDashboard = url.pathname.endsWith('/license/dashboard');
-    const isDashboardClear = url.pathname.endsWith('/license/dashboard/clear');
+    // Entrada al panel de administración: solo comprueba ADMIN_KEY.
+    const isAdminCheck = url.pathname.endsWith('/admin/check');
+    // Métricas de uso anónimas (ver handleMetricsTrack): contadores por
+    // ciudad/Punto de interés/acción, sin ningún dato de la persona.
+    const isMetricsTrack = url.pathname.endsWith('/metrics/track');
+    const isMetricsQuery = url.pathname.endsWith('/metrics/admin/query');
     const isContent = url.pathname.endsWith('/content');
     // Ranking de patrocinios (ver admin/dashboard.html, pestaña "Patrocinios"):
     // cuenta impresiones/clics por patrocinador vía el KV SPONSOR_METRICS.
@@ -82,7 +89,7 @@ export default {
     // ("SPONSORS") guarda la ficha completa de cada patrocinador — lo que
     // antes vivía a mano en data/sponsors-demo.js. /sponsors/list es la única
     // ruta pública (la app la llama en vez de cargar ese script estático);
-    // las otras tres exigen ADMIN_KEY igual que /license/dashboard.
+    // las otras tres exigen ADMIN_KEY igual que el resto del panel.
     const isSponsorsList = url.pathname.endsWith('/sponsors/list');
     const isSponsorsAdminList = url.pathname.endsWith('/sponsors/admin/list');
     const isSponsorsUpsert = url.pathname.endsWith('/sponsors/upsert');
@@ -118,7 +125,7 @@ export default {
     // paradas elegidas por el usuario, con caché en KV.
     const isWalkRoute = url.pathname.endsWith('/route/walk');
 
-    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isDashboard && !isDashboardClear && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify && !isPremiumGrant && !isPremiumRevoke && !isPremiumAdminList && !isPremiumAdminConfig && !isSurveyQuestions && !isSurveySubmit && !isSurveyResults && !isWalkRoute)) {
+    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isAdminCheck && !isMetricsTrack && !isMetricsQuery && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify && !isPremiumGrant && !isPremiumRevoke && !isPremiumAdminList && !isPremiumAdminConfig && !isSurveyQuestions && !isSurveySubmit && !isSurveyResults && !isWalkRoute)) {
       return new Response(JSON.stringify({ error: 'not found' }), {
         status: 404,
         headers: { ...headers, 'Content-Type': 'application/json' }
@@ -138,9 +145,10 @@ export default {
     // quede sin poder ni entrar a la app solo porque otros usuarios estén
     // saturando el chat en ese momento.
     if (isLicense) return handleLicenseCheck(request, env, headers);
-    if (isVisit) return handleVisit(request, env, headers);
-    if (isDashboard) return handleDashboard(request, env, headers);
-    if (isDashboardClear) return handleDashboardClear(request, env, headers);
+    if (isVisit) return jsonResponse({ ok: true }, 200, headers);
+    if (isAdminCheck) return handleAdminCheck(request, env, headers);
+    if (isMetricsTrack) return handleMetricsTrack(request, env, headers);
+    if (isMetricsQuery) return handleMetricsQuery(request, env, headers);
     if (isContent) return handleContent(request, env, headers);
     if (isSponsorTrack) return handleSponsorTrack(request, env, headers);
     if (isSponsorRank) return handleSponsorRank(request, env, headers);
@@ -525,20 +533,7 @@ function splitTtsText(text, maxBytes) {
 //   - "YYYY-MM-DD"      -> válido hasta ese día incluido (criterio estándar:
 //                          una semana desde el alta, salvo que se acuerde
 //                          otra cosa).
-//
-// "kind" en el body ('gate' por defecto, o 'watch'): distingue un intento
-// real (pantalla de acceso, o la revalidación única al abrir la app) de un
-// simple ping del vigilante en segundo plano (ver LICENSE.startWatching en
-// app.js, cada 60s mientras la app sigue abierta). Solo se registra en el
-// historial del panel (ver handleDashboard) lo primero — si se registrara
-// cada ping, el historial se llenaría de un evento por minuto y usuario
-// activo, tapando los eventos que de verdad interesan.
 async function handleLicenseCheck(request, env, headers) {
-  // (nota sobre "respond" más abajo: solo registra los intentos FALLIDOS.
-  // Un acceso correcto vía 'gate' siempre dispara justo después una llamada
-  // a /license/visit desde app.js — ver wireLicenseGate/init — así que
-  // registrarlo también aquí duplicaría la misma entrada dos veces en el
-  // historial por cada acceso bueno.)
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
 
   // Rate limiting por IP, con clave propia ("license:...") para no compartir
@@ -577,17 +572,8 @@ async function handleLicenseCheck(request, env, headers) {
   }
 
   const username = String((payload && payload.username) || '').trim();
-  const isWatch = (payload && payload.kind) === 'watch';
 
   const respond = async (body) => {
-    if (!isWatch && !body.ok) {
-      await logAccessEvent(env, {
-        type: 'check',
-        username: username || '(vacío)',
-        result: body.reason || 'error',
-        ip
-      });
-    }
     return new Response(JSON.stringify(body), {
       status: 200,
       headers: { ...headers, 'Content-Type': 'application/json' }
@@ -652,70 +638,11 @@ async function checkLicenseValidity(env, username) {
   return { ok: false, reason: 'expired', expires: value };
 }
 
-// Cuenta de visitas por usuario (ver LICENSE.recordVisit en app.js): se
-// llama una única vez por apertura de la app ya autenticada (nunca desde el
-// vigilante en segundo plano), así que sí representa "veces que ha abierto
-// la app", no comprobaciones técnicas. KV no tiene incremento atómico: para
-// el volumen de esta app (control de acceso personal, no un servicio con
-// miles de peticiones simultáneas del mismo usuario) una lectura + escritura
-// normal es más que suficiente, sin necesitar nada más sofisticado.
-async function handleVisit(request, env, headers) {
-  let payload;
-  try {
-    payload = await request.json();
-  } catch (e) {
-    return new Response(JSON.stringify({ ok: false }), {
-      status: 400,
-      headers: { ...headers, 'Content-Type': 'application/json' }
-    });
-  }
-
-  const username = String((payload && payload.username) || '').trim();
-  if (!username || !env.ACCESS_LOG) {
-    return new Response(JSON.stringify({ ok: false }), {
-      status: 200,
-      headers: { ...headers, 'Content-Type': 'application/json' }
-    });
-  }
-
-  const key = `visits:${username}`;
-  let count = 0;
-  try {
-    const current = await env.ACCESS_LOG.get(key);
-    count = (parseInt(current, 10) || 0) + 1;
-    await env.ACCESS_LOG.put(key, String(count));
-  } catch (_) { /* un fallo aquí no debe romper la apertura de la app */ }
-
-  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  await logAccessEvent(env, { type: 'visit', username, result: 'ok', ip });
-
-  return new Response(JSON.stringify({ ok: true, visits: count }), {
-    status: 200,
-    headers: { ...headers, 'Content-Type': 'application/json' }
-  });
-}
-
-// Guarda un evento en el historial del panel de accesos (ver ACCESS_LOG,
-// handleDashboard). Clave con timestamp + sufijo aleatorio: list() de KV
-// devuelve las claves en orden alfabético, y con un timestamp de 13 dígitos
-// (siempre el mismo nº de cifras hasta el año 2286) ese orden coincide con
-// el cronológico; el sufijo evita colisiones entre dos eventos en el mismo
-// milisegundo. El dato real va en la METADATA de la entrada (no en el
-// valor) para poder leer el historial entero con un solo list() en
-// handleDashboard, sin tener que pedir cada clave por separado después.
-async function logAccessEvent(env, data) {
-  if (!env.ACCESS_LOG) return;
-  const key = `log:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
-  try {
-    await env.ACCESS_LOG.put(key, '1', { metadata: { ts: Date.now(), ...data } });
-  } catch (_) { /* nunca debe romper el flujo de login por un fallo aquí */ }
-}
-
 // Comprueba la clave de administrador (secret "ADMIN_KEY", distinta de las
-// claves de usuario de LICENSES) compartida por handleDashboard y
-// handleDashboardClear. Devuelve una Response de error si algo no cuadra
-// (payload inválido, clave incorrecta, KV sin configurar), o null si todo
-// está en orden y se puede continuar.
+// claves de usuario de LICENSES) compartida por todas las rutas del panel.
+// Devuelve una Response de error si algo no cuadra (payload inválido, clave
+// incorrecta, binding sin configurar), o null si todo está en orden y se
+// puede continuar. requiredBinding = null: no exige ningún binding.
 async function checkAdminAccess(request, env, headers, requiredBinding = 'ACCESS_LOG') {
   let payload;
   try {
@@ -732,7 +659,7 @@ async function checkAdminAccess(request, env, headers, requiredBinding = 'ACCESS
       headers: { ...headers, 'Content-Type': 'application/json' }
     }) };
   }
-  if (!env[requiredBinding]) {
+  if (requiredBinding && !env[requiredBinding]) {
     return { error: new Response(JSON.stringify({ error: 'not-configured' }), {
       status: 501,
       headers: { ...headers, 'Content-Type': 'application/json' }
@@ -741,66 +668,108 @@ async function checkAdminAccess(request, env, headers, requiredBinding = 'ACCESS
   return { payload };
 }
 
-// Panel de accesos (ver admin/dashboard.html): protegido con una clave de
-// administrador propia (secret "ADMIN_KEY" en el Worker, NO la misma cosa
-// que las claves de usuario de LICENSES) — sin esto, cualquiera que
-// encontrara la URL de la página vería quién usa la app y con qué
-// frecuencia, ya que el repo (y por tanto esa página) es público.
-async function handleDashboard(request, env, headers) {
-  const { error } = await checkAdminAccess(request, env, headers);
+// Entrada al panel (admin/dashboard.html): solo dice si la clave es buena.
+async function handleAdminCheck(request, env, headers) {
+  const { error } = await checkAdminAccess(request, env, headers, null);
   if (error) return error;
-
-  const visitsList = await env.ACCESS_LOG.list({ prefix: 'visits:' });
-  const visits = await Promise.all(visitsList.keys.map(async (k) => ({
-    username: k.name.slice('visits:'.length),
-    visits: parseInt(await env.ACCESS_LOG.get(k.name), 10) || 0
-  })));
-  visits.sort((a, b) => b.visits - a.visits);
-
-  // Tope de 500 claves leídas y 200 mostradas: de sobra para el volumen de
-  // un control de acceso personal: si algún día hiciera falta más historial
-  // que eso, tocaría paginar con el "cursor" que devuelve list(), pero no
-  // merece la pena complicar esto hasta que de verdad haga falta.
-  const logList = await env.ACCESS_LOG.list({ prefix: 'log:', limit: 500 });
-  const history = logList.keys
-    .map((k) => k.metadata)
-    .filter(Boolean)
-    .sort((a, b) => b.ts - a.ts)
-    .slice(0, 200);
-
-  return new Response(JSON.stringify({ visits, history }), {
-    status: 200,
-    headers: { ...headers, 'Content-Type': 'application/json' }
-  });
+  return jsonResponse({ ok: true }, 200, headers);
 }
 
-// Borra TODO el historial y los contadores de visitas (botón "Borrar
-// historial" de admin/dashboard.html) — no toca LICENSES, así que ningún
-// acceso de usuario se ve afectado, solo estos datos informativos. KV no
-// tiene un "borrar todo" con un prefijo: hay que listar las claves y
-// borrarlas una a una (limit alto de sobra para el volumen de un panel
-// personal; si algún día hubiera más de 1000 de cada, tocaría paginar con
-// el cursor de list(), pero no compensa complicarlo antes de que haga falta).
-async function handleDashboardClear(request, env, headers) {
-  const { error } = await checkAdminAccess(request, env, headers);
-  if (error) return error;
+// ============================================================
+// MÉTRICAS DE USO (anónimas)
+//
+// Contadores por ciudad + Punto de interés + acción (abrir la ficha,
+// escuchar la introducción, "Profundiza más"...), más plataforma, idioma y
+// modo. NUNCA lleva nada de la persona: ni usuario, ni identificador de
+// dispositivo, ni IP (la IP solo pasa por el rate limiter, como en el resto
+// del Worker, y no se guarda). Por eso no se puede saber quién hizo qué, ni
+// cuántas personas distintas hay: solo cuántas veces pasa cada cosa.
+//
+// Va a Workers Analytics Engine (binding "METRICS", ver worker/README.md) y
+// no a KV: el KV gratis solo admite 1.000 escrituras/día para toda la
+// cuenta, y un contador por toque se lo comería. La app manda los eventos
+// agrupados en lotes (ver METRICS en app.js).
+// ============================================================
+const METRICS_DATASET = 'omot_metrics';
+const METRIC_ACTIONS = [
+  'city', 'open', 'intro', 'intro_done', 'visit', 'deepen', 'ticket', 'directions',
+  'question', 'quota_out', 'plan_add', 'photo', 'search'
+];
+const METRIC_ID_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
-  const [logList, visitsList] = await Promise.all([
-    env.ACCESS_LOG.list({ prefix: 'log:', limit: 1000 }),
-    env.ACCESS_LOG.list({ prefix: 'visits:', limit: 1000 })
-  ]);
-  const keys = [...logList.keys, ...visitsList.keys].map((k) => k.name);
-  await Promise.all(keys.map((k) => env.ACCESS_LOG.delete(k)));
+async function handleMetricsTrack(request, env, headers) {
+  if (!env.METRICS) return jsonResponse({ ok: false, reason: 'not-configured' }, 200, headers);
 
-  return new Response(JSON.stringify({ ok: true, deleted: keys.length }), {
-    status: 200,
-    headers: { ...headers, 'Content-Type': 'application/json' }
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (env.RATE_LIMITER) {
+    const { success } = await env.RATE_LIMITER.limit({ key: `metrics:${ip}` });
+    if (!success) return jsonResponse({ ok: false, reason: 'rate-limited' }, 429, headers);
+  }
+
+  let payload;
+  try { payload = await request.json(); } catch (_) { return jsonResponse({ ok: false }, 400, headers); }
+  const platform = ['web', 'android', 'ios'].includes(payload && payload.platform) ? payload.platform : 'web';
+  const items = Array.isArray(payload && payload.items) ? payload.items.slice(0, 100) : [];
+
+  let written = 0;
+  items.forEach((it) => {
+    if (!Array.isArray(it)) return;
+    const [city, poi, action, mode, lang, count] = it.map((v) => String(v == null ? '' : v));
+    if (!METRIC_ID_RE.test(city) || (poi !== '-' && !METRIC_ID_RE.test(poi)) || !METRIC_ACTIONS.includes(action)) return;
+    // Tope de 50 por línea y lote: de sobra para una sesión real, y evita
+    // que un payload manipulado infle los números de golpe.
+    const n = Math.min(50, Math.max(1, parseInt(count, 10) || 1));
+    env.METRICS.writeDataPoint({
+      blobs: [city, poi, action, platform, lang === 'en' ? 'en' : 'es', mode === 'kids' ? 'kids' : 'adult'],
+      doubles: [n],
+      indexes: [city]
+    });
+    written++;
   });
+  return jsonResponse({ ok: true, written }, 200, headers);
 }
+
+// Consulta para la pestaña "Métricas" del panel. Analytics Engine se lee con
+// su API SQL, que necesita el id de la cuenta (variable CF_ACCOUNT_ID) y un
+// token con permiso "Account Analytics: Read" (secret CF_API_TOKEN).
+// _sample_interval: Analytics Engine puede muestrear con mucho volumen, y
+// multiplicar por él da el total real estimado.
+async function runMetricsSql(env, sql) {
+  const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/analytics_engine/sql`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.CF_API_TOKEN}` },
+    body: sql
+  });
+  if (!res.ok) throw new Error(`sql ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const data = await res.json();
+  return (data.data || []).map((r) => ({ ...r, n: Math.round(Number(r.n) || 0) }));
+}
+
+async function handleMetricsQuery(request, env, headers) {
+  const { error, payload } = await checkAdminAccess(request, env, headers, null);
+  if (error) return error;
+  if (!env.CF_ACCOUNT_ID || !env.CF_API_TOKEN) {
+    return jsonResponse({ ok: false, reason: 'not-configured' }, 501, headers);
+  }
+  const days = Math.min(90, Math.max(1, parseInt(payload && payload.days, 10) || 30));
+  const since = `timestamp > NOW() - INTERVAL '${days}' DAY`;
+  const total = 'SUM(_sample_interval * double1) AS n';
+  try {
+    const [rows, daily, segments] = await Promise.all([
+      runMetricsSql(env, `SELECT blob1 AS city, blob2 AS poi, blob3 AS action, ${total} FROM ${METRICS_DATASET} WHERE ${since} GROUP BY city, poi, action ORDER BY n DESC LIMIT 10000`),
+      runMetricsSql(env, `SELECT toStartOfInterval(timestamp, INTERVAL '1' DAY) AS day, blob3 AS action, ${total} FROM ${METRICS_DATASET} WHERE ${since} GROUP BY day, action ORDER BY day`),
+      runMetricsSql(env, `SELECT blob4 AS platform, blob5 AS lang, blob6 AS mode, ${total} FROM ${METRICS_DATASET} WHERE ${since} AND blob3 = 'city' GROUP BY platform, lang, mode`)
+    ]);
+    return jsonResponse({ ok: true, days, rows, daily, segments }, 200, headers);
+  } catch (e) {
+    return jsonResponse({ ok: false, reason: 'query-failed', detail: String(e.message || e) }, 502, headers);
+  }
+}
+
 
 // Contenido de ciudad (ver app.js/loadCityData): sirve data/cities/<id>.json
 // desde un KV namespace propio ("CITY_CONTENT", igual de configurado que
-// LICENSES/ACCESS_LOG) en vez de como fichero estático público del repo, y
+// LICENSES) en vez de como fichero estático público del repo, y
 // solo si el username tiene una licencia válida en ese momento — así el
 // contenido de pago no se puede leer solo con abrir la URL del repo en
 // GitHub, hace falta pasar primero por el control de acceso real.
@@ -849,10 +818,6 @@ async function handleContent(request, env, headers) {
 
   const licenseResult = await checkLicenseValidity(env, username);
   if (!licenseResult.ok) {
-    // Mismo registro que un intento de login fallido: si alguien machaca
-    // este endpoint con usernames al azar, queda igual de rastreable que
-    // machacar /license/check.
-    await logAccessEvent(env, { type: 'content', username, result: licenseResult.reason, ip, cityId });
     return new Response(JSON.stringify({ ok: false, reason: licenseResult.reason }), {
       status: 403,
       headers: { ...headers, 'Content-Type': 'application/json' }
@@ -956,7 +921,7 @@ async function handleSponsorTrack(request, env, headers) {
 }
 
 // Ranking para el panel (ver admin/dashboard.html): protegido con la misma
-// clave de administrador que /license/dashboard, pero exige el binding
+// clave de administrador que el resto del panel, pero exige el binding
 // SPONSOR_METRICS en vez de ACCESS_LOG.
 async function handleSponsorRank(request, env, headers) {
   const { error } = await checkAdminAccess(request, env, headers, 'SPONSOR_METRICS');

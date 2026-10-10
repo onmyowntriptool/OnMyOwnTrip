@@ -10,7 +10,7 @@
      público, así que esta página NUNCA debe depender de estar "escondida"
      para ser segura. -->
 <meta name="robots" content="noindex, nofollow">
-<title>OnMyOwnTrip · Panel de accesos</title>
+<title>OnMyOwnTrip · Panel</title>
 <style>
   :root {
     --bg: #0F172A;
@@ -95,6 +95,30 @@
   .survey-comment small { display: block; color: var(--text-soft); margin-top: 4px; }
   @media (max-width: 520px) { .survey-row { grid-template-columns: 1fr 4.5rem; } .survey-bar { grid-column: 1 / -1; grid-row: 2; } }
 
+  /* Pestaña "Métricas" (ver handleMetricsQuery en worker/proxy.js) */
+  .mx-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+  .mx-controls select {
+    height: 38px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); padding: 0 10px; font-size: 13px; font-family: inherit;
+  }
+  .mx-kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 28px; }
+  .mx-kpi { background: var(--surface); border-radius: 12px; padding: 14px 16px; }
+  .mx-kpi b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+  .mx-kpi span { color: var(--text-soft); font-size: 12px; }
+  .mx-kpi small { display: block; color: var(--text-soft); font-size: 11px; margin-top: 4px; }
+  .mx-funnel .survey-row { grid-template-columns: minmax(0, 13rem) 1fr 8rem; }
+  .mx-funnel .survey-num { white-space: nowrap; }
+  @media (max-width: 520px) { .mx-funnel .survey-row { grid-template-columns: 1fr 8rem; } }
+  .mx-days { display: flex; align-items: flex-end; gap: 3px; height: 120px; background: var(--surface); border-radius: 12px; padding: 12px 12px 0; }
+  .mx-days div { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; min-width: 0; max-width: 28px; }
+  .mx-days i { display: block; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 1px; }
+  .mx-days-axis { display: flex; justify-content: space-between; color: var(--text-soft); font-size: 11px; margin-top: 6px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.-clickable { cursor: pointer; }
+  tr.-clickable:hover td { background: var(--surface-2); }
+  .mx-setup { background: var(--surface); border-radius: 12px; padding: 18px 20px; font-size: 13px; line-height: 1.6; }
+  .mx-setup code { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; }
+
   /* Pestañas: separan la revisión de accesos/licencias del ranking de
      patrocinios en vez de apilarlas una debajo de otra -- antes había que
      bajar hasta el final para ver el ranking. */
@@ -163,8 +187,8 @@
 <body>
 
   <div class="gate" id="gate">
-    <h1>🔒 Panel de accesos</h1>
-    <p class="hint">Introduce la clave de administrador del Worker para ver el historial.</p>
+    <h1>🔒 Panel de administración</h1>
+    <p class="hint">Introduce la clave de administrador del Worker.</p>
     <input type="password" id="adminKeyInput" placeholder="Clave de administrador" autocomplete="off" autocapitalize="off" spellcheck="false" />
     <button type="button" id="submitBtn">Entrar</button>
     <p class="error" id="gateError" hidden></p>
@@ -173,17 +197,16 @@
   <div class="dashboard" id="dashboard">
     <div class="top-row">
       <div>
-        <h1>OnMyOwnTrip · Panel de accesos</h1>
-        <p class="hint">Datos guardados en Cloudflare KV desde que se activó el control de licencias.</p>
+        <h1>OnMyOwnTrip · Panel</h1>
+        <p class="hint">Métricas de uso anónimas, patrocinios, Premium, IA y encuesta.</p>
       </div>
       <div class="actions">
         <button type="button" class="refresh-btn" id="refreshBtn">Actualizar</button>
-        <button type="button" class="refresh-btn -danger" id="clearBtn">🗑️ Borrar historial</button>
       </div>
     </div>
 
     <div class="tabs" role="tablist">
-      <button type="button" class="tab-btn -active" id="tabBtnAccess" role="tab" aria-selected="true">Accesos</button>
+      <button type="button" class="tab-btn -active" id="tabBtnAccess" role="tab" aria-selected="true">Métricas</button>
       <button type="button" class="tab-btn" id="tabBtnSponsors" role="tab" aria-selected="false">Patrocinios</button>
       <button type="button" class="tab-btn" id="tabBtnManage" role="tab" aria-selected="false">Gestión</button>
       <button type="button" class="tab-btn" id="tabBtnPremium" role="tab" aria-selected="false">Acceso premium</button>
@@ -191,26 +214,22 @@
       <button type="button" class="tab-btn" id="tabBtnSurvey" role="tab" aria-selected="false">Encuesta</button>
     </div>
 
+    <!-- Métricas de uso anónimas (ver METRICS en app.js y handleMetricsTrack
+         en worker/proxy.js): solo contadores por ciudad/Punto de interés/
+         acción, sin usuario ni dispositivo. Por eso no hay "usuarios únicos":
+         una "sesión" aquí es cada vez que se abre una ciudad. -->
     <div class="tab-panel" id="tabAccess" role="tabpanel">
-      <section>
-        <h2>Visitas por usuario</h2>
-        <div class="table-wrap">
-          <table id="visitsTable">
-            <thead><tr><th>Usuario</th><th>Visitas</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section>
-        <h2>Historial reciente (últimos 200 eventos)</h2>
-        <div class="table-wrap">
-          <table id="historyTable">
-            <thead><tr><th>Fecha y hora</th><th>Usuario</th><th>Tipo</th><th>Resultado</th><th>IP</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </section>
+      <div class="mx-controls">
+        <select id="mxDays" aria-label="Periodo">
+          <option value="1">Últimas 24 horas</option>
+          <option value="7">Últimos 7 días</option>
+          <option value="30" selected>Últimos 30 días</option>
+          <option value="90">Últimos 90 días</option>
+        </select>
+        <select id="mxCity" aria-label="Ciudad"><option value="">Todas las ciudades</option></select>
+        <span class="error" id="mxError" hidden></span>
+      </div>
+      <div id="mxBody"><p class="empty">Cargando…</p></div>
     </div>
 
     <div class="tab-panel" id="tabSponsors" role="tabpanel" hidden>
@@ -543,40 +562,189 @@
     day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
   });
 
-  const renderVisits = (visits) => {
-    const tbody = $('#visitsTable tbody');
-    tbody.innerHTML = '';
-    if (!visits.length) {
-      tbody.innerHTML = '<tr><td colspan="2" class="empty">Sin visitas registradas todavía.</td></tr>';
+  // ============================================================
+  // Métricas (ver handleMetricsQuery en worker/proxy.js). El Worker
+  // devuelve filas {city, poi, action, n}; todo el cálculo de tasas se hace
+  // aquí. poi = '-' son acciones de ciudad (abrir la ciudad, buscar, foto).
+  // ============================================================
+  const CITY_NAMES = {
+    'alcala-de-henares': 'Alcalá de Henares', alicante: 'Alicante', barcelona: 'Barcelona', berlin: 'Berlín',
+    'buitrago-del-lozoya': 'Buitrago del Lozoya', cdmx: 'Ciudad de México', estambul: 'Estambul', madrid: 'Madrid',
+    malaga: 'Málaga', peniscola: 'Peñíscola', roma: 'Roma', segovia: 'Segovia', toledo: 'Toledo', vaticano: 'Vaticano'
+  };
+  const cityName = (id) => CITY_NAMES[id] || id;
+  // Los Puntos de interés solo llegan con su id ("catedral-primada").
+  const poiName = (id) => {
+    const s = String(id).replace(/[-_]+/g, ' ');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  };
+  const fmtN = (n) => Number(n || 0).toLocaleString('es-ES');
+  const pct = (a, b) => (b ? `${Math.round(((a || 0) / b) * 100)}%` : '—');
+  const ratio = (a, b) => (b ? ((a || 0) / b).toLocaleString('es-ES', { maximumFractionDigits: 1 }) : '—');
+
+  let metricsData = null;
+
+  // Suma por acción de un conjunto de filas: { open: 12, intro_done: 7, ... }
+  const sumByAction = (rows) => rows.reduce((acc, r) => {
+    acc[r.action] = (acc[r.action] || 0) + r.n;
+    return acc;
+  }, {});
+
+  const kpi = (value, label, note) => `<div class="mx-kpi"><b>${value}</b><span>${label}</span>${note ? `<small>${note}</small>` : ''}</div>`;
+
+  const barRow = (label, n, max, note) => `
+    <div class="survey-row">
+      <span class="survey-label">${label}</span>
+      <span class="survey-bar"><i style="width:${max ? Math.round((n / max) * 100) : 0}%"></i></span>
+      <span class="survey-num">${fmtN(n)}${note ? ` · ${note}` : ''}</span>
+    </div>`;
+
+  const renderMetrics = () => {
+    const box = $('#mxBody');
+    if (!metricsData) return;
+    const city = $('#mxCity').value;
+    const rows = metricsData.rows.filter((r) => !city || r.city === city);
+    if (!rows.length) {
+      box.innerHTML = '<p class="empty">Sin datos en este periodo todavía. Los eventos tardan un par de minutos en llegar desde la app.</p>';
       return;
     }
-    visits.forEach((v) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${escapeHtml(v.username)}</td><td>${v.visits}</td>`;
-      tbody.appendChild(tr);
+    const t = sumByAction(rows);
+    const sessions = t.city || 0;
+
+    let html = '<div class="mx-kpis">'
+      + kpi(fmtN(sessions), 'Ciudades abiertas', 'cada vez que alguien abre una ciudad')
+      + kpi(fmtN(t.open), 'Fichas abiertas', `${ratio(t.open, sessions)} por ciudad abierta`)
+      + kpi(fmtN(t.intro_done), 'Introducciones completas', `${pct(t.intro_done, t.open)} de las fichas abiertas`)
+      + kpi(fmtN(t.visit), 'Lugares visitados', `${ratio(t.visit, sessions)} por ciudad abierta (primera vez en cada móvil)`)
+      + kpi(fmtN(t.deepen), 'Profundiza más', `${pct(t.deepen, t.open)} de las fichas abiertas`)
+      + kpi(fmtN(t.question), 'Preguntas a la IA', t.quota_out ? `Sin preguntas disponibles: ${fmtN(t.quota_out)}` : '')
+      + '</div>';
+
+    // Embudo: de abrir la ciudad a profundizar.
+    const steps = [
+      ['Ciudad abierta', sessions],
+      ['Ficha abierta', t.open || 0],
+      ['Introducción tocada', t.intro || 0],
+      ['Introducción completa', t.intro_done || 0],
+      ['Profundiza más', t.deepen || 0],
+      ['Pregunta a la IA', t.question || 0]
+    ];
+    const maxStep = Math.max(...steps.map((s) => s[1]));
+    html += '<section class="mx-funnel"><h2>Embudo</h2><div class="survey-q">'
+      + steps.map(([label, n]) => barRow(label, n, maxStep, sessions ? `${ratio(n, sessions)}/ciudad` : '')).join('')
+      + '</div></section>';
+
+    // Actividad por día (ciudades abiertas).
+    const daily = metricsData.daily.filter((d) => d.action === 'city');
+    if (!city && daily.length) {
+      const maxDay = Math.max(...daily.map((d) => d.n));
+      const fmtDay = (d) => new Date(String(d.day).replace(' ', 'T') + 'Z').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+      html += '<section><h2>Ciudades abiertas por día</h2><div class="mx-days">'
+        + daily.map((d) => `<div title="${fmtDay(d)}: ${fmtN(d.n)}"><i style="height:${Math.max(1, Math.round((d.n / maxDay) * 100))}%"></i></div>`).join('')
+        + `</div><div class="mx-days-axis"><span>${fmtDay(daily[0])}</span>${daily.length > 1 ? `<span>${fmtDay(daily[daily.length - 1])}</span>` : ''}</div></section>`;
+    }
+
+    // Por ciudad (solo en "Todas").
+    if (!city) {
+      const byCity = {};
+      metricsData.rows.forEach((r) => { (byCity[r.city] = byCity[r.city] || []).push(r); });
+      const cityRows = Object.keys(byCity).map((c) => ({ c, t: sumByAction(byCity[c]) }))
+        .sort((a, b) => (b.t.city || 0) - (a.t.city || 0));
+      html += '<section><h2>Por ciudad <span style="text-transform:none;letter-spacing:0;font-weight:400">· toca una para ver sus Puntos de interés</span></h2><div class="table-wrap"><table><thead><tr>'
+        + '<th>Ciudad</th><th class="num">Abierta</th><th class="num">Fichas</th><th class="num">Intro completa</th><th class="num">% intro</th>'
+        + '<th class="num">Lugares visitados</th><th class="num">Visitados / ciudad</th><th class="num">Profundiza</th><th class="num">Preguntas</th><th class="num">Mi plan</th><th class="num">Búsquedas</th><th class="num">Fotos</th>'
+        + '</tr></thead><tbody>'
+        + cityRows.map(({ c, t: x }) => `<tr class="-clickable" data-city="${escapeHtml(c)}"><td>${escapeHtml(cityName(c))}</td>`
+          + `<td class="num">${fmtN(x.city)}</td><td class="num">${fmtN(x.open)}</td><td class="num">${fmtN(x.intro_done)}</td><td class="num">${pct(x.intro_done, x.open)}</td>`
+          + `<td class="num">${fmtN(x.visit)}</td><td class="num">${ratio(x.visit, x.city)}</td><td class="num">${fmtN(x.deepen)}</td><td class="num">${fmtN(x.question)}</td>`
+          + `<td class="num">${fmtN(x.plan_add)}</td><td class="num">${fmtN(x.search)}</td><td class="num">${fmtN(x.photo)}</td></tr>`).join('')
+        + '</tbody></table></div></section>';
+    }
+
+    // Por Punto de interés.
+    const byPoi = {};
+    rows.filter((r) => r.poi !== '-').forEach((r) => {
+      const k = `${r.city}|${r.poi}`;
+      (byPoi[k] = byPoi[k] || []).push(r);
     });
+    const poiRows = Object.keys(byPoi).map((k) => ({ k, t: sumByAction(byPoi[k]) }))
+      .sort((a, b) => (b.t.open || 0) - (a.t.open || 0));
+    html += `<section><h2>Por Punto de interés${city ? ` · ${escapeHtml(cityName(city))}` : ''}</h2>`
+      + '<p class="hint" style="margin-top:-6px">"% intro" = introducciones completas ÷ fichas abiertas. Un % bajo con muchas aperturas puede indicar que la introducción es larga o no engancha.</p>'
+      + '<div class="table-wrap"><table><thead><tr>'
+      + `<th>Punto de interés</th>${city ? '' : '<th>Ciudad</th>'}<th class="num">Aperturas</th><th class="num">Intro tocada</th><th class="num">Intro completa</th><th class="num">% intro</th>`
+      + '<th class="num">Visitado</th><th class="num">Profundiza</th><th class="num">Preguntas</th><th class="num">Sin preguntas</th><th class="num">Entradas</th><th class="num">Cómo llegar</th><th class="num">Mi plan</th>'
+      + '</tr></thead><tbody>'
+      + (poiRows.length ? poiRows.map(({ k, t: x }) => {
+        const [c, p] = k.split('|');
+        return `<tr><td>${escapeHtml(poiName(p))}</td>${city ? '' : `<td>${escapeHtml(cityName(c))}</td>`}`
+          + `<td class="num">${fmtN(x.open)}</td><td class="num">${fmtN(x.intro)}</td><td class="num">${fmtN(x.intro_done)}</td><td class="num">${pct(x.intro_done, x.open)}</td>`
+          + `<td class="num">${fmtN(x.visit)}</td><td class="num">${fmtN(x.deepen)}</td><td class="num">${fmtN(x.question)}</td><td class="num">${fmtN(x.quota_out)}</td>`
+          + `<td class="num">${fmtN(x.ticket)}</td><td class="num">${fmtN(x.directions)}</td><td class="num">${fmtN(x.plan_add)}</td></tr>`;
+      }).join('') : `<tr><td colspan="${city ? 12 : 13}" class="empty">Sin datos todavía.</td></tr>`)
+      + '</tbody></table></div></section>';
+
+    // Plataforma / idioma / modo (de las ciudades abiertas, todo el periodo).
+    if (!city && metricsData.segments.length) {
+      const seg = (field) => {
+        const acc = {};
+        metricsData.segments.forEach((s) => { acc[s[field]] = (acc[s[field]] || 0) + s.n; });
+        return acc;
+      };
+      const labels = { web: 'Web', android: 'Android', ios: 'iPhone', es: 'Español', en: 'Inglés', adult: 'Adultos', kids: 'Niños' };
+      const block = (title, acc) => {
+        const max = Math.max(...Object.values(acc));
+        const tot = Object.values(acc).reduce((a, b) => a + b, 0);
+        return `<div class="survey-q"><h4>${title}</h4>${Object.keys(acc).sort((a, b) => acc[b] - acc[a])
+          .map((k) => barRow(labels[k] || escapeHtml(k), acc[k], max, pct(acc[k], tot))).join('')}</div>`;
+      };
+      html += '<section><h2>Quién la usa (ciudades abiertas)</h2>'
+        + block('Plataforma', seg('platform')) + block('Idioma', seg('lang')) + block('Modo', seg('mode')) + '</section>';
+    }
+
+    box.innerHTML = html;
+    box.querySelectorAll('tr[data-city]').forEach((tr) => tr.addEventListener('click', () => {
+      $('#mxCity').value = tr.dataset.city;
+      renderMetrics();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }));
   };
 
-  const renderHistory = (history) => {
-    const tbody = $('#historyTable tbody');
-    tbody.innerHTML = '';
-    if (!history.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty">Sin eventos registrados todavía.</td></tr>';
-      return;
+  const loadMetrics = async () => {
+    const box = $('#mxBody');
+    const err = $('#mxError');
+    err.hidden = true;
+    try {
+      const res = await fetch(`${WORKER_BASE}/metrics/admin/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey, days: Number($('#mxDays').value) })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 501 || res.status === 404) {
+        box.innerHTML = '<div class="mx-setup">Las métricas aún no están activadas en Cloudflare. Hace falta el binding <code>METRICS</code> (Analytics Engine, dataset <code>omot_metrics</code>), la variable <code>CF_ACCOUNT_ID</code> y el secret <code>CF_API_TOKEN</code>. Los pasos están en <code>worker/README.md</code>, sección "Métricas de uso".</div>';
+        return;
+      }
+      if (!res.ok || !data.ok) {
+        err.hidden = false;
+        err.textContent = `No se pudieron cargar las métricas (${res.status}${data.detail ? `: ${data.detail}` : ''}).`;
+        return;
+      }
+      metricsData = data;
+      const sel = $('#mxCity');
+      const current = sel.value;
+      const cities = [...new Set(data.rows.map((r) => r.city))].sort((a, b) => cityName(a).localeCompare(cityName(b), 'es'));
+      sel.innerHTML = '<option value="">Todas las ciudades</option>'
+        + cities.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(cityName(c))}</option>`).join('');
+      if (cities.includes(current)) sel.value = current;
+      renderMetrics();
+    } catch (e) {
+      err.hidden = false;
+      err.textContent = 'Error de red: ' + e.message;
     }
-    history.forEach((h) => {
-      const isOk = h.result === 'ok';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${fmtDate(h.ts)}</td>
-        <td>${escapeHtml(h.username || '(vacío)')}</td>
-        <td>${h.type === 'visit' ? 'Visita' : 'Comprobación'}</td>
-        <td><span class="badge ${isOk ? '-ok' : '-fail'}">${escapeHtml(h.result || '')}</span></td>
-        <td>${escapeHtml(h.ip || '—')}</td>
-      `;
-      tbody.appendChild(tr);
-    });
   };
+  $('#mxDays').addEventListener('change', loadMetrics);
+  $('#mxCity').addEventListener('change', renderMetrics);
 
   // Un fallo aquí (namespace SPONSOR_METRICS sin configurar todavía) no debe
   // romper el resto del panel — por eso no toca la variable "err" del gate
@@ -620,11 +788,15 @@
     const err = $('#gateError');
     err.hidden = true;
     try {
-      const res = await fetch(`${WORKER_BASE}/license/dashboard`, {
+      const check = (route) => fetch(`${WORKER_BASE}${route}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ adminKey })
       });
+      let res = await check('/admin/check');
+      // Worker todavía sin redesplegar (no conoce /admin/check): se entra
+      // con la ruta antigua del panel de accesos mientras tanto.
+      if (res.status === 404) res = await check('/license/dashboard');
       if (res.status === 403) {
         err.hidden = false;
         err.textContent = 'Clave incorrecta.';
@@ -635,10 +807,7 @@
         err.textContent = 'No se pudo cargar el panel (código ' + res.status + ').';
         return false;
       }
-      const data = await res.json();
-      renderVisits(data.visits || []);
-      renderHistory(data.history || []);
-      await loadSponsorRanking();
+      await Promise.all([loadMetrics(), loadSponsorRanking()]);
       return true;
     } catch (e) {
       err.hidden = false;
@@ -666,35 +835,10 @@
   $('#adminKeyInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') attempt(); });
   $('#refreshBtn').addEventListener('click', loadDashboard);
 
-  const clearBtn = $('#clearBtn');
-  clearBtn.addEventListener('click', async () => {
-    if (!confirm('¿Borrar TODO el historial y las visitas de todos los usuarios? No se puede deshacer.')) return;
-    clearBtn.disabled = true;
-    clearBtn.textContent = 'Borrando…';
-    try {
-      const res = await fetch(`${WORKER_BASE}/license/dashboard/clear`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminKey })
-      });
-      if (!res.ok) {
-        alert('No se pudo borrar el historial (código ' + res.status + ').');
-      } else {
-        await loadDashboard();
-      }
-    } catch (e) {
-      alert('Error de red: ' + e.message);
-    } finally {
-      clearBtn.disabled = false;
-      clearBtn.textContent = '🗑️ Borrar historial';
-    }
-  });
-
-  // Pestañas Accesos/Patrocinios/Gestión: "Borrar historial" solo tiene
-  // sentido en la de Accesos (borra licencias/visitas, no patrocinadores),
-  // así que se oculta en las otras dos. "Actualizar" se deja siempre
-  // visible: loadDashboard ya trae accesos+ranking de una sola vez; la
-  // pestaña Gestión carga su propia lista al entrar (ver showTab).
+  // Pestañas. "Actualizar" recarga métricas + ranking de patrocinios de una
+  // vez (loadDashboard); el resto de pestañas cargan su propia lista al
+  // entrar (ver showTab). La pestaña de métricas conserva el id "Access"
+  // de cuando era la de accesos.
   const tabBtnAccess = $('#tabBtnAccess');
   const tabBtnSponsors = $('#tabBtnSponsors');
   const tabBtnManage = $('#tabBtnManage');
@@ -727,7 +871,6 @@
     tabBtnManage.setAttribute('aria-selected', String(name === 'manage'));
     tabBtnPremium.classList.toggle('-active', name === 'premium');
     tabBtnPremium.setAttribute('aria-selected', String(name === 'premium'));
-    clearBtn.hidden = name !== 'access';
     if (name === 'manage') {
       loadSponsorsAdmin();
       loadSponsorsPending();

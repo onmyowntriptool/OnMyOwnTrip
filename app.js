@@ -1150,11 +1150,62 @@
     } catch (_) { return 'web'; }
   };
 
+  // MÉTRICAS DE USO ANÓNIMAS (ver handleMetricsTrack en worker/proxy.js):
+  // cuenta cuántas veces se abre cada ficha, se escucha la introducción, se
+  // pulsa "Profundiza más"... por ciudad y Punto de interés. No lleva nada
+  // de la persona (ni usuario, ni identificador de dispositivo): solo
+  // ciudad, Punto de interés, acción, modo e idioma. Se acumula en una cola
+  // (también en localStorage, por si se cierra la app antes de mandarla) y
+  // se manda en lotes: cada 2 minutos, al pasar la app a segundo plano y al
+  // llenarse. Si no hay red, la cola espera a la próxima vez.
+  const METRICS = (() => {
+    const baseUrl = (typeof window !== 'undefined' && window.LLM_CONFIG && window.LLM_CONFIG.baseUrl) || '';
+    const ENDPOINT = baseUrl ? `${baseUrl.replace(/\/$/, '')}/metrics/track` : '';
+    const STORAGE = 'omot-metrics-queue-v1';
+    let queue = {};
+    try { queue = JSON.parse(localStorage.getItem(STORAGE) || '{}') || {}; } catch (_) { queue = {}; }
+    const save = () => { try { localStorage.setItem(STORAGE, JSON.stringify(queue)); } catch (_) {} };
+    const merge = (part) => {
+      Object.keys(part).forEach((k) => { queue[k] = (queue[k] || 0) + part[k]; });
+      save();
+    };
+
+    const flush = () => {
+      const keys = Object.keys(queue).slice(0, 100);
+      if (!ENDPOINT || !keys.length) return;
+      const sent = {};
+      keys.forEach((k) => { sent[k] = queue[k]; delete queue[k]; });
+      save();
+      const items = keys.map((k) => [...k.split('|'), sent[k]]);
+      // text/plain: petición "simple" sin preflight CORS, para que keepalive
+      // la deje salir aunque la app se esté cerrando.
+      fetch(ENDPOINT, {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ platform: appPlatform(), items })
+      }).then((res) => {
+        if (res.status === 429 || res.status >= 500) merge(sent);
+      }).catch(() => merge(sent));
+    };
+
+    const track = (action, poiId) => {
+      if (!ENDPOINT || !STATE.cityId) return;
+      const key = [STATE.cityId, poiId || '-', action, STATE.mode === 'kids' ? 'kids' : 'adult', STATE.lang === 'en' ? 'en' : 'es'].join('|');
+      queue[key] = (queue[key] || 0) + 1;
+      save();
+      if (Object.keys(queue).length >= 60) flush();
+    };
+
+    setInterval(flush, 120000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+    return { track, flush };
+  })();
+
   const LICENSE = (() => {
     const STORAGE = 'omot_license_v1';
     const baseUrl = (typeof window !== 'undefined' && window.LLM_CONFIG && window.LLM_CONFIG.baseUrl) || '';
     const ENDPOINT = baseUrl ? `${baseUrl.replace(/\/$/, '')}/license/check` : '';
-    const VISIT_ENDPOINT = baseUrl ? `${baseUrl.replace(/\/$/, '')}/license/visit` : '';
 
     const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -1180,9 +1231,7 @@
 
     // kind: 'gate' (por defecto, un intento real: pantalla de acceso o la
     // revalidación única al abrir la app) o 'watch' (ping periódico del
-    // vigilante en segundo plano, ver startWatching). El Worker usa esto
-    // para no llenar el historial del panel de accesos con un evento por
-    // minuto y usuario activo (ver worker/proxy.js).
+    // vigilante en segundo plano, ver startWatching).
     // { ok: true, expires } | { ok: false, reason: 'not-found' | 'expired' | 'offline', expires? }
     const check = async (username, kind = 'gate') => {
       if (!ENDPOINT) return { ok: false, reason: 'offline' };
@@ -1208,20 +1257,6 @@
       } catch (_) {
         return { ok: false, reason: 'offline' }; // sin red, timeout, Worker caído, etc.
       }
-    };
-
-    // Registro de "visita" (ver worker/proxy.js handleVisit): una vez por
-    // apertura de la app ya autenticada, nunca desde el vigilante — puro
-    // dato informativo para el panel de accesos, nunca debe bloquear ni
-    // afectar el flujo de entrada si falla (por eso no se espera su promesa
-    // en las llamadas, ver wireLicenseGate/init más abajo).
-    const recordVisit = (username) => {
-      if (!VISIT_ENDPOINT) return;
-      fetch(VISIT_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username })
-      }).catch(() => {});
     };
 
     // Validación offline con lo último guardado localmente, para no dejar
@@ -1278,7 +1313,7 @@
       document.addEventListener('visibilitychange', watchVisibilityHandler);
     };
 
-    return { check, recordVisit, readStored, writeStored, clearStored, checkStoredValidOffline, startWatching, stopWatching };
+    return { check, readStored, writeStored, clearStored, checkStoredValidOffline, startWatching, stopWatching };
   })();
 
   const ICONS = {
@@ -1810,9 +1845,12 @@
   // dejando la frase final para después del posible anuncio), así que se
   // reconoce por su turno de reproducción y no por el historial.
   let fullIntroPlay = null;
+  // Métricas: "intro_done" cuenta cada introducción escuchada entera (una
+  // vez por reproducción), "visit" solo la primera vez en este dispositivo.
+  let lastIntroDoneTracked = '';
   const markIntroHeardIfDone = () => {
     const id = STATE.activePoiId;
-    if (!id || INTRO_HEARD[id]) return;
+    if (!id) return;
     const byIntroChip = !!(fullIntroPlay && fullIntroPlay.poiId === id && fullIntroPlay.playId === STATE.audio.playId);
     if (!byIntroChip) {
       if (STATE.audio.overrideText) return;
@@ -1820,6 +1858,13 @@
       const last = hist[hist.length - 1];
       if (!last || !last.isFullIntro) return;
     }
+    const playKey = `${id}:${STATE.audio.playId}`;
+    if (playKey !== lastIntroDoneTracked) {
+      lastIntroDoneTracked = playKey;
+      METRICS.track('intro_done', id);
+    }
+    if (INTRO_HEARD[id]) return;
+    METRICS.track('visit', id);
     INTRO_HEARD[id] = Date.now();
     try { localStorage.setItem(INTRO_HEARD_KEY, JSON.stringify(INTRO_HEARD)); } catch (_) {}
     refreshVisitedMarker(id);
@@ -2298,6 +2343,7 @@
     if (planStopsFull(getPlan())) { gateFullPlan(); return false; }
     getPlan().stops.push({ id, visit: null });
     savePlans();
+    METRICS.track('plan_add', id);
     onPlanChanged();
     return true;
   };
@@ -3386,6 +3432,7 @@
       // Gemini en horas punta): no es un fallo persistente, así que antes
       // de rendirse se reintenta una vez tras una breve espera en vez de
       // hacer fracasar todo el escaneo por una saturación pasajera.
+      METRICS.track('photo');
       let result;
       try {
         result = await LLM.identifyPoi({ imageDataUrl, candidates, cityName: CURRENT_CITY.name });
@@ -4752,6 +4799,7 @@
     STATE.cityId = cityId;
     CURRENT_CITY = city;
     POIS = city.pois;
+    METRICS.track('city');
     updateLayerStripForCity(cityId);
     closePlanPanel();
     updatePlanButton();
@@ -6517,6 +6565,7 @@
     const modal = $('#poiSearchModal');
     const input = $('#poiSearchInput');
     if (!modal) return;
+    METRICS.track('search');
     modal.classList.add('-open');
     modal.setAttribute('aria-hidden', 'false');
     if (input) {
@@ -6939,6 +6988,7 @@
     q.total = (q.total || 0) + 1;
     q.noticeSeen = true;
     writeChatQuota(q);
+    METRICS.track('question', poiId);
   };
   // Si la IA falla del todo, la pregunta no se cobra.
   const refundChatQuota = (poiId) => {
@@ -7282,6 +7332,7 @@
         if (!STATE.activePoiId || STATE.ai.pending) return;
         if (chip.kind === 'deepen' && STATE.ai.deepenBusy) return;
         const poi = POIS.find((p) => p.id === STATE.activePoiId);
+        if (['intro', 'deepen', 'ticket', 'directions'].includes(chip.kind) && !poi.isAdHocScan) METRICS.track(chip.kind, poi.id);
 
         if (chip.kind === 'reset') {
           STATE.ai.explored[poi.id] = new Set();
@@ -8234,6 +8285,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     // Sin preguntas en este Punto de interés (o tope diario): no se envía, se
     // deja el texto escrito tal cual y el aviso bajo el campo explica por qué.
     if (isChatQuotaBlocked(poi.id)) {
+      METRICS.track('quota_out', poi.id);
       renderChatQuotaHint();
       maybeAutoOpenChatUpsell();
       return;
@@ -8543,7 +8595,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
   const queueCallTurn = async (userText) => {
     if (!callState.active || !callState.poi) return;
     const poi = callState.poi;
-    if (isChatQuotaBlocked(poi.id)) { endCallForQuota(); return; }
+    if (isChatQuotaBlocked(poi.id)) { METRICS.track('quota_out', poi.id); endCallForQuota(); return; }
     consumeChatQuota(poi.id);
     setCallStatus(t('callThinking'));
     setCallAvatarState(null);
@@ -8716,6 +8768,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     if (prevPoiId && prevPoiId !== id) refreshVisitedMarker(prevPoiId);
     const poi = POIS.find((p) => p.id === id);
     if (!poi) return;
+    if (prevPoiId !== id && !poi.isAdHocScan) METRICS.track('open', id);
     closeRouteIntro(); // no dejar la intro de la ruta sonando por encima del POI
     setSelectedMarker(id);
     populateSheetContent(id);
@@ -10520,7 +10573,6 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
         hideLicenseGate();
         revealApp(); // no-op si la app ya se había revelado antes de un bloqueo
         LICENSE.startWatching(username, lockApp);
-        LICENSE.recordVisit(username);
         return;
       }
       if (result.reason === 'expired') {
@@ -10549,7 +10601,6 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; STATE.planPremium = !!result.planPremium; applyUpdatePolicy(result.updatePolicy);
     revealApp();
     LICENSE.startWatching(username, lockApp);
-    LICENSE.recordVisit(username);
     return true;
   };
 
@@ -10767,7 +10818,6 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
           LICENSE.writeStored({ username: cached.username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell, planPremium: !!result.planPremium });
           STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; STATE.planPremium = !!result.planPremium; applyUpdatePolicy(result.updatePolicy);
           LICENSE.startWatching(cached.username, lockApp);
-          LICENSE.recordVisit(cached.username);
         } else if (result.reason !== 'offline') {
           LICENSE.clearStored();
           lockApp();

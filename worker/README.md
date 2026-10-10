@@ -173,45 +173,72 @@ nativa, pídele que toque 5 veces el icono de la cabecera (en menos de 2
 segundos) para que le salga su código, y úsalo en "Dar acceso premium" (ver
 más abajo) igual que harías con un username de la web.
 
-## Panel de accesos (quién ha entrado, cuántas veces)
+## Panel de administración
 
-`admin/dashboard.html` (en la raíz del repo, junto a `index.html`) es una
-páginita independiente — no enlazada desde ningún sitio de la app — que
-muestra un historial de intentos de acceso y cuántas veces ha abierto la
-app cada usuario. Su protección real no es que nadie encuentre la URL
-(el repo es público, cualquiera podría dar con ella), sino la clave de
+`admin/dashboard.html` (en la web: `onmyowntrip.com/app/admin/dashboard`)
+es una página independiente, no enlazada desde la app. Su protección real
+no es que nadie encuentre la URL (el repo es público), sino la clave de
 administrador que exige el Worker antes de devolver ningún dato.
 
-### Configurarlo (una sola vez)
-
-1. **Storage & databases → Workers KV → Create Instance**. Nómbralo, por
-   ejemplo, `omot-access-log`.
-2. En tu Worker → pestaña **Bindings** → **Add binding** → tipo **KV
-   Namespace**. Variable: `ACCESS_LOG` (tiene que llamarse exactamente
-   así). Selecciona el namespace del paso 1.
-3. En el mismo Worker → **Settings → Variables and Secrets → Add**:
+1. En tu Worker → **Settings → Variables and Secrets → Add**:
    - Nombre: `ADMIN_KEY`
    - Tipo: **Secret**
    - Valor: una clave que tú elijas (es la contraseña del panel, distinta
      de las claves de usuario de `LICENSES`).
-4. Guarda/Deploy.
+2. Guarda/Deploy.
 
-### Usarlo
+El binding KV `ACCESS_LOG` sigue haciendo falta: ahí viven la versión de
+la app por dispositivo (avisos de actualización) y la encuesta. Lo que ya
+no guarda es el antiguo historial de accesos (usuario + IP de cada
+entrada), que se quitó en V110. Las claves viejas `log:*` y `visits:*` que
+queden en ese KV ya no se usan y se pueden borrar desde Cloudflare.
 
-Abre `admin/dashboard.html` (tu web + `/admin/dashboard.html`) e
-introduce la clave de administrador del paso 3. Verás dos tablas:
+## Métricas de uso (pestaña "Métricas" del panel)
 
-- **Visitas por usuario**: cuántas veces ha abierto la app cada uno,
-  contando solo aperturas reales (no los pings del vigilante cada
-  minuto mientras la app ya está abierta).
-- **Historial reciente**: los últimos 200 eventos (comprobaciones de
-  acceso y visitas), con fecha, usuario y si fue aceptado o rechazado
-  (útil también para ver intentos con usuarios no reconocidos).
+Contadores **anónimos**: cuántas veces se abre cada ciudad y cada ficha,
+se toca y se escucha entera la introducción, se pulsa "Profundiza más",
+se pregunta a la IA, se añade a Mi plan, etc., por ciudad y Punto de
+interés, más plataforma, idioma y modo. No se guarda nada de la persona
+(ni usuario, ni identificador de dispositivo, ni IP), así que no hay
+"usuarios únicos": una "ciudad abierta" equivale a una sesión.
 
-Sin el binding `ACCESS_LOG` configurado, tanto el conteo de visitas como
-el historial simplemente no se guardan (el resto de la app sigue
-funcionando igual) — es una capa informativa opcional, no un requisito
-para que el control de acceso funcione.
+Van a **Workers Analytics Engine** y no a KV (el KV gratis solo admite
+1.000 escrituras/día para toda la cuenta). Los datos se guardan unos
+3 meses. La app los manda en lotes (ver `METRICS` en `app.js`).
+
+### Configurarlo (una sola vez)
+
+1. En tu Worker → pestaña **Bindings** → **Add binding** → tipo
+   **Analytics Engine**. Variable: `METRICS`. Dataset: `omot_metrics`
+   (tienen que llamarse exactamente así).
+2. **Variables and Secrets → Add**: nombre `CF_ACCOUNT_ID`, tipo **Text**,
+   valor el Account ID de tu cuenta (`8c9e2e33782fb55a7339e03a0087f62c`).
+3. Crea un token para leer los datos: **My Profile → API Tokens → Create
+   Token → Create Custom Token**. Permiso: **Account → Account Analytics →
+   Read**, para tu cuenta. Copia el token.
+4. **Variables and Secrets → Add**: nombre `CF_API_TOKEN`, tipo
+   **Secret**, valor el token del paso 3.
+5. Pega el `proxy.js` actualizado y **Deploy**.
+
+Sin el binding `METRICS` la app sigue funcionando igual: simplemente no
+se guarda nada. Sin `CF_ACCOUNT_ID`/`CF_API_TOKEN`, la pestaña Métricas
+explica qué falta.
+
+### Qué mide cada acción
+
+| Acción | Cuándo se cuenta |
+|---|---|
+| `city` | Se abre una ciudad (equivale a una sesión) |
+| `open` | Se abre la ficha de un Punto de interés |
+| `intro` | Se toca el botón "Introducción" |
+| `intro_done` | La introducción suena entera (cada vez) |
+| `visit` | Primera introducción completa de ese sitio en ese móvil (el check verde del mapa) |
+| `deepen` | "Profundiza más" |
+| `ticket` / `directions` | "Entrada: horario y precio" / "Cómo llegar" |
+| `question` | Pregunta a la IA (escrita, dictada o en llamada) |
+| `quota_out` | Intentó preguntar sin preguntas disponibles |
+| `plan_add` | Añadido a Mi plan |
+| `search` / `photo` | Abrió la búsqueda / usó "¿Qué estoy viendo?" |
 
 ## Ranking de patrocinios
 
@@ -227,7 +254,7 @@ funciona mejor, no de seguimiento de personas.
    Namespace**. Variable: `SPONSOR_METRICS` (tiene que llamarse exactamente
    así). Selecciona el namespace del paso 1.
 3. Guarda/Deploy. Reutiliza el mismo secret `ADMIN_KEY` que ya tengas
-   configurado para el panel de accesos — no hace falta crear otro.
+   configurado para el panel — no hace falta crear otro.
 
 ### Cómo verlo
 
@@ -275,7 +302,7 @@ guarda la ficha completa: nombre, ubicación, textos, fechas...).
    Namespace**. Variable: `SPONSORS` (tiene que llamarse exactamente así,
    es el nombre que usa `proxy.js`). Selecciona el namespace del paso 1.
 3. Guarda/Deploy. Reutiliza el mismo secret `ADMIN_KEY` que ya tengas
-   configurado para el panel de accesos — no hace falta crear otro.
+   configurado para el panel — no hace falta crear otro.
 
 ### Usarlo
 
