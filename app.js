@@ -2445,6 +2445,8 @@
     const renameBtn = $('#planRenameBtn'), deleteBtn = $('#planDeleteBtn');
     if (renameBtn) renameBtn.textContent = PT('Renombrar', 'Rename');
     if (deleteBtn) deleteBtn.textContent = PT('Borrar plan', 'Delete plan');
+    const shareBtn = $('#planShareBtn');
+    if (shareBtn) shareBtn.textContent = PT('Compartir', 'Share');
     const pois = planPois();
     const listEl = $('#planList'), emptyEl = $('#planEmpty'), totalEl = $('#planTotal'), actionsEl = $('#planActions');
     if (!pois.length) {
@@ -2501,6 +2503,111 @@
     $('#planClearBtn').textContent = PT('Vaciar', 'Clear');
   };
 
+  // Compartir un plan (petición de David; Mike #8): un mensaje con la lista
+  // de paradas en texto (se lee aunque no tengan la app) y un enlace que, al
+  // abrirlo, ofrece añadir ese plan. Sin cuentas: el plan viaja dentro del
+  // enlace (?plan=, JSON en base64url).
+  const SHARE_BASE_URL = 'https://onmyowntrip.com/app/';
+  const SHARED_PLAN_KEY = 'omot-shared-plan-v1';
+  const toB64Url = (str) => btoa(String.fromCharCode(...new TextEncoder().encode(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const fromB64Url = (b64) => {
+    const bin = atob(b64.replace(/-/g, '+').replace(/_/g, '/'));
+    return new TextDecoder().decode(Uint8Array.from(bin, (ch) => ch.charCodeAt(0)));
+  };
+  // Al cargar: si la URL trae un plan compartido, se guarda como pendiente
+  // (sobrevive a la pantalla de inicio de quien abre la app por primera vez)
+  // y se quita de la barra de direcciones.
+  (() => {
+    try {
+      const params = new URLSearchParams(location.search);
+      const raw = params.get('plan');
+      if (!raw) return;
+      const data = JSON.parse(fromB64Url(raw));
+      if (data && typeof data.c === 'string' && Array.isArray(data.s)) {
+        localStorage.setItem(SHARED_PLAN_KEY, JSON.stringify({ ...data, at: Date.now() }));
+      }
+      params.delete('plan');
+      const qs = params.toString();
+      history.replaceState(null, '', location.pathname + (qs ? `?${qs}` : '') + location.hash);
+    } catch (_) { /* enlace roto: se ignora */ }
+  })();
+
+  const buildPlanShare = () => {
+    const plan = getPlan();
+    const pois = planPois();
+    const visitOf = (poi) => stopVisit(plan.stops.find((s) => s.id === poi.id), poi);
+    const walkMin = planLegs(pois).reduce((n, l) => n + l.d / WALK_M_PER_MIN, 0);
+    const visitMin = pois.reduce((n, poi) => n + visitOf(poi), 0);
+    const lines = pois.map((poi, i) => `${i + 1}. ${pickLang(poi.name).adult} (${formatMinutes(visitOf(poi))})`);
+    // Con el nombre por defecto ("Mi plan") no se repite: "Mi plan en Barcelona".
+    const named = plan.name !== defaultPlanName(1);
+    const head = PT(
+      `Mi plan${named ? ` «${plan.name}»` : ''} en ${CURRENT_CITY.name}: ${pois.length} paradas, unas ${formatMinutes(walkMin + visitMin)} (${formatMinutes(walkMin)} a pie).`,
+      `My plan${named ? ` "${plan.name}"` : ''} in ${CURRENT_CITY.name}: ${pois.length} stops, about ${formatMinutes(walkMin + visitMin)} (${formatMinutes(walkMin)} walking).`);
+    const payload = {
+      c: STATE.cityId,
+      n: plan.name,
+      s: plan.stops.filter((s) => POIS.some((p) => p.id === s.id)).map((s) => (typeof s.visit === 'number' ? [s.id, s.visit] : [s.id]))
+    };
+    const url = `${SHARE_BASE_URL}?plan=${toB64Url(JSON.stringify(payload))}`;
+    const text = `${head}\n${lines.join('\n')}\n\n${PT('Ábrelo en OnMyOwnTrip:', 'Open it in OnMyOwnTrip:')}`;
+    return { title: plan.name, text, url };
+  };
+
+  const sharePlan = async () => {
+    if (!planPois().length) { showToast(PT('Añade alguna parada antes de compartir.', 'Add some stops before sharing.'), 2600); return; }
+    const { title, text, url } = buildPlanShare();
+    const SharePlugin = isNativeApp() && Capacitor.Plugins && Capacitor.Plugins.Share;
+    try {
+      if (SharePlugin) { await SharePlugin.share({ title, text, url, dialogTitle: PT('Compartir plan', 'Share plan') }); return; }
+      if (navigator.share) { await navigator.share({ title, text, url }); return; }
+    } catch (e) {
+      // Cerrar el menú de compartir sin elegir nada no es un error.
+      if (e && /cancel|abort/i.test(`${e.name} ${e.message}`)) return;
+    }
+    try {
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      showToast(PT('Plan copiado: pégalo donde quieras compartirlo.', 'Plan copied: paste it wherever you want to share it.'), 3000);
+    } catch (_) {
+      window.prompt(PT('Copia este enlace:', 'Copy this link:'), url);
+    }
+  };
+
+  // Se llama al abrir una ciudad (ver selectCity): si hay un plan compartido
+  // pendiente para ESA ciudad, pregunta si añadirlo.
+  const maybeImportSharedPlan = () => {
+    let sp = null;
+    try { sp = JSON.parse(localStorage.getItem(SHARED_PLAN_KEY) || 'null'); } catch (_) {}
+    if (!sp || sp.c !== STATE.cityId) return;
+    try { localStorage.removeItem(SHARED_PLAN_KEY); } catch (_) {}
+    let stops = sp.s
+      .filter((x) => Array.isArray(x) && POIS.some((p) => p.id === x[0]))
+      .map((x) => ({ id: x[0], visit: typeof x[1] === 'number' ? x[1] : null }));
+    if (!stops.length) return;
+    const name = String(sp.n || PT('Plan compartido', 'Shared plan')).slice(0, 40);
+    if (!window.confirm(PT(`Te han compartido el plan «${name}» con ${stops.length} paradas. ¿Lo añades a tus planes?`, `Someone shared the plan "${name}" with ${stops.length} stops. Add it to your plans?`))) return;
+    const c = getCityPlans();
+    let note = '';
+    if (planLimited()) {
+      const cur = getPlan();
+      if (cur.stops.length && !window.confirm(PT(`Con la versión gratuita tienes un solo plan. ¿Cambiar «${cur.name}» por el compartido?`, `The free version has a single plan. Replace "${cur.name}" with the shared one?`))) return;
+      if (stops.length > PLAN_FREE_STOPS) {
+        stops = stops.slice(0, PLAN_FREE_STOPS);
+        note = PT(` Versión gratuita: solo las ${PLAN_FREE_STOPS} primeras paradas.`, ` Free version: only the first ${PLAN_FREE_STOPS} stops.`);
+      }
+      cur.name = name;
+      cur.stops = stops;
+    } else {
+      const id = `p${Date.now().toString(36)}`;
+      c.list.push({ id, name, stops });
+      c.active = id;
+    }
+    savePlans();
+    onPlanChanged();
+    openPlanPanel();
+    showToast(PT(`Plan «${name}» añadido.`, `Plan "${name}" added.`) + note, 3600);
+  };
+
   const wirePlan = () => {
     // Con el plan dibujado en el mapa, volver a pulsar «Mi plan» lo quita del
     // mapa (petición de David) en vez de abrir el panel.
@@ -2518,6 +2625,7 @@
       else setActivePlan(tab.dataset.plan);
     });
     $('#planRenameBtn')?.addEventListener('click', renameActivePlan);
+    $('#planShareBtn')?.addEventListener('click', sharePlan);
     $('#planDeleteBtn')?.addEventListener('click', deleteActivePlan);
     $('#planSortBtn')?.addEventListener('click', sortPlanByProximity);
     $('#planMapBtn')?.addEventListener('click', showPlanOnMap);
@@ -4642,6 +4750,7 @@
       updatePills();
     }
     setStateMode(STATE.mode);
+    setTimeout(maybeImportSharedPlan, 900);
   };
 
   /* =========================================================

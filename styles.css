@@ -4630,3 +4630,6 @@ html[data-mode="kids"] .ai-input-wrap {
 #sponsorPopup { background: #fff; color: #1F2937; }
 #sponsorPopup.-oro { background: #F6E8CE; }
 #sponsorPopup p, #sponsorPopup b { color: #1F2937; }
+
+/* Compartir plan: a la derecha de Renombrar/Borrar, en el rosa del plan. */
+.plan-manage button.-share { margin-left: auto; color: #DB2777; }
