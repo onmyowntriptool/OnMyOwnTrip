@@ -4226,13 +4226,13 @@
     return el;
   };
 
-  // PROTOTIPO (petición de David, 2026-10-10): el anuncio deja de estar fijo
+  // Anuncio emergente (petición de David, 2026-10-10, V108): el anuncio deja de estar fijo
   // en la ficha y pasa a un aviso emergente sin cruz que aparece cuando ya
   // ha terminado la narración (nunca corta un audio): dura lo que la mención
   // por voz y luego SPONSOR_POPUP_HOLD_MS más para poder pulsar sus botones,
   // y se va solo. Si en SPONSOR_POPUP_IDLE_MS no se ha escuchado nada, sale
   // una vez en silencio. Con SPONSOR_POPUP_MODE = false vuelve la tarjeta fija.
-  const SPONSOR_POPUP_MODE = false;
+  const SPONSOR_POPUP_MODE = true;
   const SPONSOR_POPUP_HOLD_MS = 8000;
   const SPONSOR_POPUP_IDLE_MS = 10000;
   let sponsorPopupTimer = null;

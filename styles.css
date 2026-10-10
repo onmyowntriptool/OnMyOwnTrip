@@ -4601,7 +4601,7 @@ html[data-mode="kids"] .ai-input-wrap {
   cursor: pointer;
 }
 
-/* ---------- PROTOTIPO: ANUNCIO EMERGENTE (ver SPONSOR_POPUP_MODE en app.js) ---------- */
+/* ---------- ANUNCIO EMERGENTE (ver SPONSOR_POPUP_MODE en app.js) ---------- */
 /* Baja desde arriba, sobre la cabecera y el mapa, para no tapar el texto de
    la ficha. Sin cruz: se va solo. */
 #sponsorPopup {
