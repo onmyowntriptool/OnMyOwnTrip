@@ -51,7 +51,7 @@
   h2:first-of-type { border-top: none; padding-top: 0; }
   h3 { font-size: 15px; color: var(--accent); margin: 22px 0 6px; }
   p { color: var(--text); margin: 0 0 12px; font-size: 15px; }
-  ul { margin: 0 0 12px; padding-left: 20px; }
+  ul, ol { margin: 0 0 12px; padding-left: 20px; }
   li { margin-bottom: 6px; font-size: 15px; }
   a { color: var(--accent); }
   .card {
@@ -127,16 +127,56 @@
   menor. Recomendamos que su uso sea siempre acompañado por un adulto,
   especialmente en el chat con la guía IA.</p>
 
-  <h3 id="eliminar-datos">Solicitar la eliminación de tus datos</h3>
+  <h3>Datos que guarda nuestro servidor</h3>
   <p>OnMyOwnTrip no tiene cuentas de usuario ni guarda tu ubicación, tus fotos
   o tus preguntas a la guía IA en ningún servidor propio (se procesan al
-  momento y no se almacenan, como se explica arriba). Lo único que se
-  guarda de forma persistente es el nombre de usuario de tu clave de
-  acceso, en una lista que administra el desarrollador.</p>
-  <p>Para pedir que se elimine esa clave (y con ella, tu acceso), escribe a
-  <a href="mailto:contacto@onmyowntrip.com">contacto@onmyowntrip.com</a>
-  indicando el nombre de usuario que quieres borrar. Se elimina en un plazo
-  máximo de 7 días desde la solicitud.</p>
+  momento y no se almacenan, como se explica arriba). En nuestro servidor
+  (Cloudflare) solo se guarda lo siguiente:</p>
+  <ul>
+    <li><strong>Tu identificador:</strong> en la app para Android e iPhone,
+    un código aleatorio de 6 caracteres que la propia app crea en tu
+    dispositivo la primera vez que la abres; en la versión web, el nombre de
+    usuario de tu clave de acceso. Sirve para darte acceso y descargar el
+    contenido de las ciudades. No está asociado a tu nombre, correo,
+    teléfono ni a ningún otro dato personal.</li>
+    <li><strong>Versión de la app:</strong> junto a ese identificador, la
+    versión de la app, la plataforma (web, Android o iPhone) y el último día
+    en que la usaste. Sirve para saber cuándo avisar de que hay que
+    actualizar.</li>
+    <li><strong>Accesos Premium:</strong> si compras o te regalan el acceso
+    sin publicidad de alguna ciudad, qué ciudades tienes activas y, en las
+    compras, el justificante que envía la tienda para verificarlas.</li>
+  </ul>
+  <p>Además, la app envía <strong>contadores de uso anónimos</strong> (por
+  ejemplo, cuántas veces se abre la ficha de un lugar o se hace una
+  pregunta), sin identificador, sin dirección IP y sin ningún dato que
+  permita saber quién los ha generado. Tu dirección IP solo se usa al
+  momento para limitar abusos y no se guarda junto a tu identificador.</p>
+  <p>Estos datos se conservan mientras uses la app, o hasta que nos pidas
+  que los borremos (ver el apartado siguiente).</p>
+
+  <h3 id="eliminar-datos">Solicitar la eliminación de tus datos</h3>
+  <p>Puedes pedir en cualquier momento que borremos todos los datos de
+  OnMyOwnTrip asociados a tu dispositivo o a tu clave de acceso:</p>
+  <ol>
+    <li>Busca tu identificador. En la app, toca <strong>5 veces seguidas el
+    icono de OnMyOwnTrip</strong> de la parte superior izquierda: aparecerá
+    tu código de dispositivo. En la versión web, es el nombre de usuario de
+    tu clave de acceso.</li>
+    <li>Escribe a <a href="mailto:contacto@onmyowntrip.com">contacto@onmyowntrip.com</a>
+    con el asunto "Eliminar mis datos" e indica ese código o nombre de
+    usuario.</li>
+    <li>En un plazo máximo de 7 días borraremos tu identificador, la
+    versión de la app asociada y tus accesos Premium, y te lo confirmaremos
+    por correo.</li>
+  </ol>
+  <p><strong>Qué no se puede borrar:</strong> los contadores de uso
+  anónimos, porque no están asociados a ti y no hay forma de saber cuáles
+  son tuyos. Si tenías accesos Premium comprados, al borrar tus datos se
+  pierden y no se pueden recuperar con el mismo código. Los datos
+  guardados en tu propio dispositivo (progreso, planes, conversaciones) se
+  borran con "Reiniciar app" en la pantalla de bienvenida o desinstalando
+  la app.</p>
 
   <h3>Contacto</h3>
   <p class="contact">Dudas sobre privacidad: <a href="mailto:contacto@onmyowntrip.com">contacto@onmyowntrip.com</a></p>
