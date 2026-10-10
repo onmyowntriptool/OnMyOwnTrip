@@ -2492,6 +2492,7 @@
       const tab = e.target.closest('.plan-tab');
       if (!tab) return;
       if (tab.dataset.plan === '__new__') createPlan();
+      else if (planLimited() && tab.dataset.plan !== getCityPlans().active) planGateHit('Tener varios planes es Premium. Tus otros planes siguen guardados.', 'Having several plans is Premium. Your other plans are still saved.');
       else setActivePlan(tab.dataset.plan);
     });
     $('#planRenameBtn')?.addEventListener('click', renameActivePlan);
@@ -2507,7 +2508,8 @@
     $('#planAddBtn')?.addEventListener('click', () => {
       const id = STATE.activePoiId;
       if (!id) return;
-      if (getCityPlans().list.length > 1) { openPlanPicker(); return; }
+      // Versión gratuita: solo el plan activo, sin preguntar a cuál.
+      if (getCityPlans().list.length > 1 && !planLimited()) { openPlanPicker(); return; }
       if (isInPlan(id)) { removeFromPlan(id); return; }
       if (addToPlan(id)) showToast(PT(`Añadido a «${getPlan().name}». Ábrelo desde «Mi plan» en el menú.`, `Added to "${getPlan().name}". Open it from "My plan" in the menu.`), 2600);
     });
