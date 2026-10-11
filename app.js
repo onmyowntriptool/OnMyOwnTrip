@@ -1120,9 +1120,15 @@
       }).catch(() => merge(sent));
     };
 
+    // El Worker solo acepta ids [a-z0-9_-] (METRIC_ID_RE) y descarta el
+    // resto en silencio: p. ej. 'baklava-karakoy-gullüoglu' (Estambul) nunca
+    // se contaba. Se normaliza aquí en vez de cambiar el id del POI, que
+    // rompería los planes y visitas ya guardados en los móviles.
+    const metricId = (id) => String(id).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/[^a-z0-9_-]/g, '-').slice(0, 64);
     const track = (action, poiId) => {
       if (!ENDPOINT || !STATE.cityId) return;
-      const key = [STATE.cityId, poiId || '-', action, STATE.mode === 'kids' ? 'kids' : 'adult', STATE.lang === 'en' ? 'en' : 'es'].join('|');
+      const key = [metricId(STATE.cityId), poiId ? metricId(poiId) : '-', action, STATE.mode === 'kids' ? 'kids' : 'adult', STATE.lang === 'en' ? 'en' : 'es'].join('|');
       queue[key] = (queue[key] || 0) + 1;
       save();
       if (Object.keys(queue).length >= 60) flush();
@@ -2439,6 +2445,7 @@
     const i = p.stops.findIndex((st) => st.id === poiId);
     if (i < 0 && planStopsFull(p)) { gateFullPlan(); return false; }
     if (i >= 0) p.stops.splice(i, 1); else p.stops.push({ id: poiId, visit: null });
+    if (i < 0) METRICS.track('plan_add', poiId);
     savePlans();
     onPlanChanged();
     return i < 0;
@@ -7392,7 +7399,7 @@
         if (!STATE.activePoiId || STATE.ai.pending) return;
         if (chip.kind === 'deepen' && STATE.ai.deepenBusy) return;
         const poi = POIS.find((p) => p.id === STATE.activePoiId);
-        if (['intro', 'deepen', 'ticket', 'directions'].includes(chip.kind) && !poi.isAdHocScan) METRICS.track(chip.kind, poi.id);
+        if (['intro', 'deepen', 'ticket'].includes(chip.kind) && !poi.isAdHocScan) METRICS.track(chip.kind, poi.id);
 
         if (chip.kind === 'reset') {
           STATE.ai.explored[poi.id] = new Set();
@@ -7835,6 +7842,9 @@
   };
   const openDirectionsConfirm = (poi) => {
     if (!directionsModal || !poi || !poi.coords) return;
+    // Se cuenta aquí (y no en el chip, que ya no existe): "Llévame" de la
+    // cabecera de la ficha es la única entrada a "Cómo llegar".
+    if (!poi.isAdHocScan) METRICS.track('directions', poi.id);
     directionsPoi = poi;
     directionsModal.classList.add('-open');
     directionsModal.setAttribute('aria-hidden', 'false');
