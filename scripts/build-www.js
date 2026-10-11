@@ -18,7 +18,7 @@ const EXCLUDE = new Set([
   'poi-content-dump.txt', 'scratchpad_report.txt', 'test-photo.jpg',
   'debug-ios-localhost-regression.md',
   // material de la ficha de Play Store (vídeos y capturas): no lo usa la app
-  'video-promo', 'capturas-ficha', 'video-clips', 'promo_final.mp4',
+  'video-promo', 'capturas-ficha', 'capturas-appstore', 'video-clips', 'promo_final.mp4',
   'feature-graphic-1024x500.png', 'icon-source-1024.png',
   // JPG sueltos de iconos de patrocinio que la app no referencia (usa los
   // sponsor-*-icon.png): 2,8 MB que no pintan nada en el paquete

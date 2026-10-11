@@ -8416,8 +8416,60 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
   // Chrome/Edge la soportan de verdad (Safari/iOS no implementa
   // SpeechRecognition), así que el botón se queda oculto si no hay soporte
   // en vez de mostrar algo roto.
+  // RECONOCIMIENTO DE VOZ EN ANDROID (app nativa). El WebView de Android
+  // anuncia webkitSpeechRecognition pero no lo implementa: start() "arranca"
+  // y nunca llega audio, resultado ni error (bug real, Galaxy A50 con la 58 y
+  // el emulador, 2026-10-11). Ahí se usa el reconocedor nativo de Android
+  // (@capacitor-community/speech-recognition) con este adaptador, que imita
+  // la parte de la Web Speech API que usa la app (lang, onstart, onresult,
+  // onerror, onend, start, stop, abort), así el dictado y la llamada no
+  // cambian. Sin resultados parciales: el texto llega entero al terminar de
+  // hablar. En iPhone y en la web se sigue usando el del navegador.
+  const nativeSpeechPlugin = () => {
+    try {
+      return isNativeApp() && Capacitor.getPlatform() === 'android' ? (Capacitor.Plugins && Capacitor.Plugins.SpeechRecognition) || null : null;
+    } catch (_) { return null; }
+  };
+  class NativeSpeechRecognition {
+    constructor() {
+      this.lang = 'es-ES';
+      this.interimResults = false;
+      this.continuous = false;
+      this.onstart = this.onresult = this.onerror = this.onend = null;
+      this._active = false;
+    }
+    async start() {
+      const SR = nativeSpeechPlugin();
+      this._active = true;
+      const finish = () => { if (typeof this.onend === 'function') this.onend(); };
+      const fail = (error) => { if (typeof this.onerror === 'function') this.onerror({ error }); };
+      try {
+        let perm = await SR.checkPermissions();
+        if (perm.speechRecognition !== 'granted') perm = await SR.requestPermissions();
+        if (perm.speechRecognition !== 'granted') { fail('not-allowed'); this._active = false; finish(); return; }
+        if (!this._active) return;
+        if (typeof this.onstart === 'function') this.onstart();
+        const out = await SR.start({ language: this.lang, maxResults: 1, partialResults: false, popup: false });
+        if (!this._active) return;
+        const text = ((out && out.matches) || [])[0] || '';
+        if (text && typeof this.onresult === 'function') this.onresult({ results: [[{ transcript: text }]] });
+        else if (!text) fail('no-speech');
+      } catch (e) {
+        if (this._active) fail('no-speech');
+      }
+      this._active = false;
+      finish();
+    }
+    stop() { try { nativeSpeechPlugin().stop(); } catch (_) {} }
+    abort() { this._active = false; this.stop(); }
+  }
+  const getSpeechRecognitionCtor = () => (nativeSpeechPlugin()
+    ? NativeSpeechRecognition
+    : (window.SpeechRecognition || window.webkitSpeechRecognition || null));
+  const speechRecognitionLang = () => (STATE.lang === 'en' ? 'en-US' : 'es-ES');
+
   const wireMicInput = () => {
-    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const Recognition = getSpeechRecognitionCtor();
     const btn = $('#aiMic');
     const input = $('#aiInput');
     const sendBtn = $('#aiSend');
@@ -8436,7 +8488,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       if (!STATE.activePoiId) return;
       stopAudio(); // si la audioguía está sonando, el micro no debe "escucharla"
       recognition = new Recognition();
-      recognition.lang = 'es-ES';
+      recognition.lang = speechRecognitionLang();
       recognition.interimResults = true;
       recognition.continuous = false;
       recognition.onstart = () => setListening(true);
@@ -8485,7 +8537,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
   let callRecognition = null;
   let callInterruptRecognition = null;
 
-  const hasSpeechRecognition = () => !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  const hasSpeechRecognition = () => !!getSpeechRecognitionCtor();
 
   const setCallStatus = (text) => {
     const el = $('#aiCallStatus');
@@ -8537,11 +8589,13 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     callInterruptRecognition = null;
   };
   const startCallInterruptWatch = (onInterrupt) => {
-    if (!hasSpeechRecognition() || !callState.active) return;
-    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    // Con el reconocedor nativo de Android no hay "oído de fondo": no admite
+    // escucha continua y oiría la propia voz de la IA por el altavoz.
+    if (!hasSpeechRecognition() || !callState.active || nativeSpeechPlugin()) return;
+    const Recognition = getSpeechRecognitionCtor();
     try {
       callInterruptRecognition = new Recognition();
-      callInterruptRecognition.lang = 'es-ES';
+      callInterruptRecognition.lang = speechRecognitionLang();
       callInterruptRecognition.interimResults = true;
       callInterruptRecognition.continuous = true;
       let triggered = false;
@@ -8568,7 +8622,15 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
   // vez de esperar a que termine todo el parlamento.
   const speakCallText = (text, onDone, { interruptible = false } = {}) => {
     setCallAvatarState('-speaking');
-    if (!SPEECH.isSupported()) { setCallAvatarState(null); onDone && onDone(); return; }
+    if (!SPEECH.isSupported()) {
+      // Android (sin speechSynthesis): voz en la nube vía speakOverrideText,
+      // sin interrupción por voz (ver startCallInterruptWatch).
+      speakOverrideText(text, () => {
+        setCallAvatarState(null);
+        setTimeout(() => { onDone && onDone(); }, 300);
+      });
+      return;
+    }
     STATE.audio.overrideText = text;
     if (interruptible) {
       startCallInterruptWatch(() => {
@@ -8598,14 +8660,14 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
   const startCallListening = (handler) => {
     if (!callState.active) return;
     callState.nextHandler = handler || handleCallUserInput;
-    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const Recognition = getSpeechRecognitionCtor();
     if (!Recognition) { focusCallTextInput(callState.nextHandler); return; }
     $('#aiCallTextRow').hidden = true;
     setCallStatus(t('callListening'));
     setCallAvatarState('-listening');
     try {
       callRecognition = new Recognition();
-      callRecognition.lang = 'es-ES';
+      callRecognition.lang = speechRecognitionLang();
       callRecognition.interimResults = false;
       callRecognition.continuous = false;
       callRecognition.onresult = (e) => {
@@ -8757,6 +8819,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     callRecognition = null;
     stopCallInterruptWatch();
     SPEECH.cancel();
+    stopOverrideAudio(); // voz en la nube de la llamada (Android, ver speakCallText)
     STATE.audio.overrideText = null;
     const modal = $('#aiCallModal');
     if (modal) { modal.classList.remove('-open'); modal.setAttribute('aria-hidden', 'true'); }

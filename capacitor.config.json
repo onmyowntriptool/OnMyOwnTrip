@@ -1,5 +1,8 @@
 {
   "appId": "com.onmyowntrip",
   "appName": "OnMyOwnTrip",
-  "webDir": "www"
+  "webDir": "www",
+  "ios": {
+    "includePlugins": ["@capacitor/app", "@capacitor/share", "@capgo/native-purchases"]
+  }
 }
