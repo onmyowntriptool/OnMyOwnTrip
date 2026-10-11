@@ -239,6 +239,8 @@ explica qué falta.
 | `quota_out` | Intentó preguntar sin preguntas disponibles |
 | `plan_add` | Añadido a Mi plan |
 | `search` / `photo` | Abrió la búsqueda / usó "¿Qué estoy viendo?" |
+| `premium_view` | Abrió la ventana "Premium, próximamente" (mientras no se vende) |
+| `premium_interest` | Pulsó "Me interesa" en esa ventana (una vez por dispositivo) |
 
 ## Ranking de patrocinios
 

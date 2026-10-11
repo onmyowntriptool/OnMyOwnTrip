@@ -1415,6 +1415,17 @@
     chatQuotaExhaustedMsg: { es: { adult: 'Has usado tus {n} preguntas sobre este Punto de interés. Sigues teniendo gratis el audio, la información y {n} preguntas nuevas en cada uno de los demás Puntos de interés. Aquí se renuevan mañana.', kids: 'Has usado tus {n} preguntas sobre este Punto de interés. Sigues teniendo gratis el audio, la información y {n} preguntas nuevas en cada uno de los demás Puntos de interés. Aquí se renuevan mañana.' }, en: { adult: "You've used your {n} questions about this point of interest. The audio, the information and {n} new questions at every other point of interest are still free. They reset here tomorrow.", kids: "You've used your {n} questions about this point of interest. The audio, the information and {n} new questions at every other point of interest are still free. They reset here tomorrow." } },
     chatQuotaCallBlocked: { es: { adult: 'Has usado tus preguntas sobre este Punto de interés por hoy. Puedes seguir preguntando en los demás Puntos de interés.', kids: 'Has usado tus preguntas sobre este Punto de interés por hoy. Puedes seguir preguntando en los demás Puntos de interés.' }, en: { adult: "You've used your questions about this point of interest for today. You can keep asking at the other points of interest.", kids: "You've used your questions about this point of interest for today. You can keep asking at the other points of interest." } },
     chatQuotaUpsell: { es: { adult: 'Preguntas ilimitadas en {city} con Premium', kids: 'Preguntas ilimitadas en {city} con Premium' }, en: { adult: 'Unlimited questions in {city} with Premium', kids: 'Unlimited questions in {city} with Premium' } },
+    // Ventana "Premium, próximamente" (PREMIUM_SALES_OPEN = false): sin
+    // precios mientras no se pueda cobrar.
+    premiumSoonTitle: { es: { adult: 'Premium, próximamente', kids: 'Premium, próximamente' }, en: { adult: 'Premium, coming soon', kids: 'Premium, coming soon' } },
+    premiumSoonText: { es: { adult: 'Estamos preparando Premium. Podrás activarlo para la ciudad que elijas, o para todas a la vez, sin suscripción. Incluirá:', kids: 'Estamos preparando Premium. Podrás activarlo para la ciudad que elijas, o para todas a la vez, sin suscripción. Incluirá:' }, en: { adult: "We're getting Premium ready. You'll be able to turn it on for the city you choose, or for all of them, with no subscription. It will include:", kids: "We're getting Premium ready. You'll be able to turn it on for the city you choose, or for all of them, with no subscription. It will include:" } },
+    premiumSoonChat: { es: { adult: 'Preguntas ilimitadas al guía IA', kids: 'Preguntas ilimitadas al guía IA' }, en: { adult: 'Unlimited questions to the AI guide', kids: 'Unlimited questions to the AI guide' } },
+    premiumSoonPlan: { es: { adult: 'Mi plan sin límites: varios planes, todas las paradas que quieras y ordenarlas por cercanía', kids: 'Mi plan sin límites: varios planes, todas las paradas que quieras y ordenarlas por cercanía' }, en: { adult: 'Unlimited My plan: several plans, as many stops as you like and sorting them by proximity', kids: 'Unlimited My plan: several plans, as many stops as you like and sorting them by proximity' } },
+    premiumSoonAds: { es: { adult: 'Sin publicidad', kids: 'Sin publicidad' }, en: { adult: 'No ads', kids: 'No ads' } },
+    premiumInterestBtn: { es: { adult: 'Me interesa', kids: 'Me interesa' }, en: { adult: "I'm interested", kids: "I'm interested" } },
+    premiumInterestDone: { es: { adult: 'Apuntado', kids: 'Apuntado' }, en: { adult: 'Noted', kids: 'Noted' } },
+    premiumInterestThanks: { es: { adult: 'Gracias. Así sabemos cuánta gente lo quiere. Lo verás aquí en cuanto esté disponible.', kids: 'Gracias. Así sabemos cuánta gente lo quiere. Lo verás aquí en cuanto esté disponible.' }, en: { adult: "Thanks. It helps us know how many people want it. You'll see it here as soon as it's available.", kids: "Thanks. It helps us know how many people want it. You'll see it here as soon as it's available." } },
+    sponsorPremiumSoonLink: { es: { adult: 'Sin publicidad con Premium (próximamente)', kids: 'Sin publicidad con Premium (próximamente)' }, en: { adult: 'No ads with Premium (coming soon)', kids: 'No ads with Premium (coming soon)' } },
     premiumHintChat: { es: { adult: 'Sin publicidad y con preguntas ilimitadas al guía. Elige una ciudad, o todas de una vez.', kids: 'Sin publicidad y con preguntas ilimitadas al guía. Elige una ciudad, o todas de una vez.' }, en: { adult: 'No ads and unlimited questions to the guide. Pick a city, or all of them at once.', kids: 'No ads and unlimited questions to the guide. Pick a city, or all of them at once.' } },
     // Aviso de actualización de la app nativa (ver applyUpdatePolicy).
     updateTitle: { es: { adult: 'Hay una versión nueva', kids: 'Hay una versión nueva' }, en: { adult: 'A new version is available', kids: 'A new version is available' } },
@@ -3970,6 +3981,18 @@
       return isNativeApp() && Capacitor.getPlatform() === 'android' && !!(Capacitor.Plugins && Capacitor.Plugins.NativePurchases);
     } catch (_) { return false; }
   };
+  // Venta de Premium abierta o no. Mientras sea false (lanzamiento, sin
+  // cuenta de comercio todavía), la ventana de Premium no enseña precios ni
+  // botones de compra: explica qué incluirá y ofrece "Me interesa", que
+  // solo suma a las métricas anónimas. Se pondrá a true en la versión que
+  // traiga los pases por días.
+  const PREMIUM_SALES_OPEN = false;
+  // Dónde se habla de Premium: con la venta cerrada, en Android y en la web;
+  // con la venta abierta, solo donde se puede comprar. Nunca en iPhone
+  // (Apple rechaza anunciar compras que en la app no existen).
+  const isPremiumOfferPlatform = () => (PREMIUM_SALES_OPEN
+    ? isNativeBillingAvailable()
+    : !(isNativeApp() && Capacitor.getPlatform() === 'ios'));
 
   // Código anónimo del dispositivo: solo se usa dentro de la app nativa,
   // como "username" de cara al Worker (ver checkLicenseValidity/
@@ -4420,8 +4443,9 @@
     // para los 3 niveles, común a bronce/plata/oro -- solo se pinta dentro
     // de la app nativa Android, la única plataforma donde la compra
     // funciona de verdad (ver isNativeBillingAvailable más arriba).
-    if (isNativeBillingAvailable()) {
-      el.insertAdjacentHTML('beforeend', '<button type="button" class="sponsor-remove-ads-link" id="sponsorRemoveAdsBtn">Quitar publicidad en esta ciudad</button>');
+    if (isPremiumOfferPlatform()) {
+      const label = PREMIUM_SALES_OPEN ? 'Quitar publicidad en esta ciudad' : t('sponsorPremiumSoonLink');
+      el.insertAdjacentHTML('beforeend', `<button type="button" class="sponsor-remove-ads-link" id="sponsorRemoveAdsBtn">${label}</button>`);
       $('#sponsorRemoveAdsBtn', el)?.addEventListener('click', openPremiumModal);
     }
     // Cruz para ocultar el anuncio en ESTA ficha (deja más sitio para leer;
@@ -6602,6 +6626,7 @@
   // (ver renderSponsorDemoInsert) o, si algún día hace falta, desde
   // cualquier otro sitio con solo llamar a openPremiumModal().
   const openPremiumModal = () => {
+    if (!PREMIUM_SALES_OPEN) METRICS.track('premium_view');
     renderPremiumModalContent();
     $('#premiumModal')?.classList.add('-open');
     $('#premiumModal')?.setAttribute('aria-hidden', 'false');
@@ -6630,6 +6655,20 @@
     const restoreBtn = $('#premiumRestoreBtn');
     const hintEl = $('#premiumHint');
     if (!listEl) return;
+
+    const soonEl = $('#premiumSoon');
+    if (soonEl) soonEl.hidden = PREMIUM_SALES_OPEN;
+    $('#premiumTitle').textContent = PREMIUM_SALES_OPEN ? 'Quitar publicidad' : t('premiumSoonTitle');
+    if (!PREMIUM_SALES_OPEN) {
+      listEl.hidden = true;
+      if (allBtn) allBtn.hidden = true;
+      if (restoreBtn) restoreBtn.hidden = true;
+      if (hintEl) hintEl.hidden = true;
+      setPremiumError(null);
+      renderPremiumSoon();
+      return;
+    }
+    listEl.hidden = false;
 
     if (!isNativeBillingAvailable()) {
       listEl.innerHTML = '<li class="premium-unavailable">Disponible solo desde la app de OnMyOwnTrip para Android.</li>';
@@ -6667,7 +6706,36 @@
     }
   };
 
+  // "Me interesa" se cuenta una sola vez por dispositivo (marca en
+  // localStorage), para que la métrica premium_interest se parezca a
+  // "personas interesadas" y no a "toques".
+  const PREMIUM_INTEREST_KEY = 'omot_premium_interest_v1';
+  const hasPremiumInterest = () => {
+    try { return !!localStorage.getItem(PREMIUM_INTEREST_KEY); } catch (_) { return false; }
+  };
+  const renderPremiumSoon = () => {
+    $('#premiumSoonText').textContent = t('premiumSoonText');
+    const items = [t('premiumSoonChat')];
+    if (STATE.planPremium) items.push(t('premiumSoonPlan'));
+    items.push(t('premiumSoonAds'));
+    $('#premiumSoonList').innerHTML = items.map((s) => `<li>${s}</li>`).join('');
+    const done = hasPremiumInterest();
+    const btn = $('#premiumInterestBtn');
+    btn.textContent = done ? t('premiumInterestDone') : t('premiumInterestBtn');
+    btn.disabled = done;
+    const thanks = $('#premiumSoonThanks');
+    thanks.textContent = t('premiumInterestThanks');
+    thanks.hidden = !done;
+  };
+
   const wirePremiumModal = () => {
+    $('#premiumInterestBtn')?.addEventListener('click', () => {
+      if (hasPremiumInterest()) return;
+      try { localStorage.setItem(PREMIUM_INTEREST_KEY, new Date().toISOString().slice(0, 10)); } catch (_) {}
+      METRICS.track('premium_interest');
+      METRICS.flush();
+      renderPremiumSoon();
+    });
     $('#premiumCloseBtn')?.addEventListener('click', closePremiumModal);
     $('#premiumModal')?.addEventListener('click', (e) => {
       if (e.target.id === 'premiumModal') closePremiumModal();
@@ -6999,7 +7067,7 @@
     writeChatQuota(q);
   };
 
-  const chatUpsellAvailable = () => isChatUpsellOn() && isNativeBillingAvailable()
+  const chatUpsellAvailable = () => isChatUpsellOn() && isPremiumOfferPlatform()
     && !!STATE.cityId && !isCityPremium(STATE.cityId);
   const chatUpsellLabel = () => t('chatQuotaUpsell').replace('{city}', (CURRENT_CITY && CURRENT_CITY.name) || '');
 

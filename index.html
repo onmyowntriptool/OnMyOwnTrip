@@ -46,7 +46,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-  <link rel="stylesheet" href="styles.css?v=163" />
+  <link rel="stylesheet" href="styles.css?v=164" />
 </head>
 <body>
   <!-- PANTALLA DE ACCESO: se muestra ANTES que la de bienvenida cuando no
@@ -153,7 +153,7 @@
       </div>
     </div>
 
-    <span class="onboarding-version" id="appVersion">Beta V110.2</span>
+    <span class="onboarding-version" id="appVersion">Beta V111</span>
     <button type="button" class="onboarding-reset" id="obResetBtn">Reiniciar app</button>
     <a class="onboarding-legal" href="privacidad.html" id="obPrivacyLink">Privacidad y créditos</a>
   </div>
@@ -815,16 +815,25 @@
        en app.js. Solo funciona dentro de la app nativa Android (Google
        exige su propio sistema de cobro para esto dentro de una app de Play
        Store); en la web el enlace que abre este modal ni se pinta. -->
-  <div class="premium-modal" id="premiumModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Quitar publicidad">
+  <div class="premium-modal" id="premiumModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="premiumTitle">
     <div class="premium-card">
       <div class="premium-head">
-        <h3>Quitar publicidad</h3>
+        <h3 id="premiumTitle">Quitar publicidad</h3>
         <button type="button" class="premium-close" id="premiumCloseBtn" aria-label="Cerrar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="20" height="20">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
+      </div>
+      <!-- Mientras no se cobra (PREMIUM_SALES_OPEN = false en app.js): qué
+           incluirá Premium y un "Me interesa" que solo suma a las métricas
+           anónimas. Sin precios. -->
+      <div class="premium-soon" id="premiumSoon" hidden>
+        <p class="premium-hint" id="premiumSoonText"></p>
+        <ul class="premium-soon-list" id="premiumSoonList"></ul>
+        <button type="button" class="premium-all-btn" id="premiumInterestBtn"></button>
+        <p class="premium-soon-thanks" id="premiumSoonThanks" hidden></p>
       </div>
       <p class="premium-hint" id="premiumHint">Elige una ciudad, o quítala de todas de una vez.</p>
       <ul class="premium-city-list" id="premiumCityList"></ul>
@@ -908,7 +917,7 @@
        una versión vieja en caché: sube este número en cada cambio a esos
        archivos para forzar que se vuelvan a descargar. -->
   <script src="data/core.js?v=40"></script>
-  <script src="app.js?v=309"></script>
+  <script src="app.js?v=310"></script>
   <!-- Service Worker: cachea el shell de la app y las imágenes de POIs ya
        vistas, para que la audioguía siga funcionando con conexión
        intermitente (típico caminando por cascos históricos). Ruta relativa

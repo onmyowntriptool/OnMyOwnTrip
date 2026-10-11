@@ -618,6 +618,7 @@
       + kpi(fmtN(t.visit), 'Lugares visitados', `${ratio(t.visit, sessions)} por ciudad abierta (primera vez en cada móvil)`)
       + kpi(fmtN(t.deepen), 'Profundiza más', `${pct(t.deepen, t.open)} de las fichas abiertas`)
       + kpi(fmtN(t.question), 'Preguntas a la IA', t.quota_out ? `Sin preguntas disponibles: ${fmtN(t.quota_out)}` : '')
+      + kpi(fmtN(t.premium_interest), 'Interés en Premium', `"Me interesa" (uno por móvil) · ventana abierta ${fmtN(t.premium_view)} veces`)
       + '</div>';
 
     // Embudo: de abrir la ciudad a profundizar.

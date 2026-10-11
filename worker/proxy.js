@@ -693,7 +693,8 @@ async function handleAdminCheck(request, env, headers) {
 const METRICS_DATASET = 'omot_metrics';
 const METRIC_ACTIONS = [
   'city', 'open', 'intro', 'intro_done', 'visit', 'deepen', 'ticket', 'directions',
-  'question', 'quota_out', 'plan_add', 'photo', 'search'
+  'question', 'quota_out', 'plan_add', 'photo', 'search',
+  'premium_view', 'premium_interest'
 ];
 const METRIC_ID_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
