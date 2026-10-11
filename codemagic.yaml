@@ -44,4 +44,10 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        # false: la compilación se sube a TestFlight y llega sola al grupo interno
+        # Equipo, pero NO se envía a la revisión beta de Apple. Apple solo admite
+        # una compilación por versión en esa revisión: con otra pendiente, el
+        # envío fallaba y Codemagic marcaba "post-processing failed" aunque la
+        # subida hubiera ido bien. Para los testers externos se añade a mano la
+        # compilación a Ext_Tester, que es lo que la manda a revisión.
+        submit_to_testflight: false
