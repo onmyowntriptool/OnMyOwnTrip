@@ -2162,16 +2162,17 @@
   // cercanía (verlo en el mapa es gratis). Apagado (por defecto, mientras no se cobre): libre.
   const PLAN_FREE_STOPS = 3;
   const planLimited = () => !!STATE.planPremium && !isCityPremium(STATE.cityId);
-  // Solo el aviso: la ventana de compra actual es «Quitar publicidad» por
-  // ciudad y no habla de Mi plan, así que abrirla aquí confundía. Cuando
-  // haya pases Premium a la venta, se abrirá la ventana que los venda.
-  const planGateHit = (msgEs, msgEn) => {
-    showToast(PT(msgEs, msgEn), 3400);
-  };
+  // En iPhone Premium no se puede comprar (ni sale como "próximamente", ver
+  // isPremiumOfferPlatform): Apple rechaza mencionar funciones de pago que la
+  // app no vende. Ahí los avisos de Mi plan hablan solo del límite.
+  // PTP(esPremium, enPremium, esSinPremium, enSinPremium).
+  const PTP = (esP, enP, esN, enN) => (isPremiumOfferPlatform() ? PT(esP, enP) : PT(esN, enN));
   const planStopsFull = (plan) => planLimited() && plan.stops.length >= PLAN_FREE_STOPS;
-  const gateFullPlan = () => planGateHit(
+  const gateFullPlan = () => showToast(PTP(
     `Versión gratuita: hasta ${PLAN_FREE_STOPS} paradas por plan. Con Premium, sin límite.`,
-    `Free version: up to ${PLAN_FREE_STOPS} stops per plan. With Premium, no limit.`);
+    `Free version: up to ${PLAN_FREE_STOPS} stops per plan. With Premium, no limit.`,
+    `Puedes añadir hasta ${PLAN_FREE_STOPS} paradas por plan.`,
+    `You can add up to ${PLAN_FREE_STOPS} stops per plan.`), 3400);
   const PLAN_ROUTE_META = { id: PLAN_ROUTE_ID, color: PLAN_COLOR, name: { es: { adult: 'Mi plan', kids: 'Mi plan' }, en: { adult: 'My plan', kids: 'My plan' } } };
 
   const PLANS = (() => { try { return JSON.parse(localStorage.getItem(PLAN_KEY) || '{}') || {}; } catch (_) { return {}; } })();
@@ -2207,7 +2208,8 @@
   const createPlan = () => {
     const c = getCityPlans();
     if (planLimited() && c.list.length >= 1) {
-      planGateHit('Actualiza a Premium para crear más rutas.', 'Upgrade to Premium to create more routes.');
+      showToast(PTP('Actualiza a Premium para crear más rutas.', 'Upgrade to Premium to create more routes.',
+        'Por ahora puedes tener 1 plan por ciudad.', 'For now you can have 1 plan per city.'), 3400);
       return;
     }
     const suggested = defaultPlanName(c.list.length + 1);
@@ -2315,7 +2317,11 @@
   // Orden "por cercanía": empieza en la parada más cercana a ti (si estás en
   // la ciudad) o en la primera, y va siempre a la más cercana que quede.
   const sortPlanByProximity = () => {
-    if (planLimited()) { planGateHit('Ordenar por cercanía es Premium.', 'Sorting by proximity is Premium.'); return; }
+    if (planLimited()) {
+      showToast(PTP('Ordenar por cercanía es Premium.', 'Sorting by proximity is Premium.',
+        'Ordenar por cercanía no está disponible.', 'Sorting by proximity is not available.'), 3400);
+      return;
+    }
     const plan = getPlan();
     const items = plan.stops.map((s) => ({ s, poi: POIS.find((p) => p.id === s.id) })).filter((x) => x.poi);
     if (items.length < 3) return;
@@ -2368,7 +2374,8 @@
       .map((p) => ({ id: p.id, visit: null }));
     if (planLimited() && stops.length > PLAN_FREE_STOPS) {
       stops = stops.slice(0, PLAN_FREE_STOPS);
-      planGateHit(`Versión gratuita: se copian las ${PLAN_FREE_STOPS} primeras paradas. La ruta completa es Premium.`, `Free version: the first ${PLAN_FREE_STOPS} stops were copied. The full route is Premium.`);
+      showToast(PTP(`Versión gratuita: se copian las ${PLAN_FREE_STOPS} primeras paradas. La ruta completa es Premium.`, `Free version: the first ${PLAN_FREE_STOPS} stops were copied. The full route is Premium.`,
+        `Se han copiado las ${PLAN_FREE_STOPS} primeras paradas, el máximo por plan.`, `The first ${PLAN_FREE_STOPS} stops were copied, the maximum per plan.`), 3400);
     }
     getPlan().stops = stops;
     savePlans();
@@ -2567,9 +2574,12 @@
     const lim = planLimited();
     const tag = lim ? ' · Premium' : '';
     $('#planSortBtn').textContent = PT('Ordenar por cercanía', 'Sort by proximity') + tag;
+    // En iPhone, limitado, el botón no se enseña (no hay Premium que ofrecer).
+    $('#planSortBtn').hidden = lim && !isPremiumOfferPlatform();
     $('#planMapBtn').textContent = PT('Ver en el mapa', 'Show on map');
     if (lim) {
-      totalEl.insertAdjacentHTML('beforeend', `<em class="plan-free-note">${escHtml(PT(`Versión gratuita: 1 plan de hasta ${PLAN_FREE_STOPS} paradas. Con Premium: planes y paradas sin límite y ordenar por cercanía.`, `Free version: 1 plan with up to ${PLAN_FREE_STOPS} stops. With Premium: unlimited plans and stops and sort by proximity.`))}</em>`);
+      totalEl.insertAdjacentHTML('beforeend', `<em class="plan-free-note">${escHtml(PTP(`Versión gratuita: 1 plan de hasta ${PLAN_FREE_STOPS} paradas. Con Premium: planes y paradas sin límite y ordenar por cercanía.`, `Free version: 1 plan with up to ${PLAN_FREE_STOPS} stops. With Premium: unlimited plans and stops and sort by proximity.`,
+        `Puedes tener 1 plan de hasta ${PLAN_FREE_STOPS} paradas.`, `You can have 1 plan with up to ${PLAN_FREE_STOPS} stops.`))}</em>`);
     }
     $('#planClearBtn').textContent = PT('Vaciar', 'Clear');
   };
@@ -2692,7 +2702,8 @@
       const tab = e.target.closest('.plan-tab');
       if (!tab) return;
       if (tab.dataset.plan === '__new__') createPlan();
-      else if (planLimited() && tab.dataset.plan !== getCityPlans().active) planGateHit('Actualiza a Premium para usar más rutas. Las otras siguen guardadas.', 'Upgrade to Premium to use more routes. The others are still saved.');
+      else if (planLimited() && tab.dataset.plan !== getCityPlans().active) showToast(PTP('Actualiza a Premium para usar más rutas. Las otras siguen guardadas.', 'Upgrade to Premium to use more routes. The others are still saved.',
+        'Por ahora puedes usar 1 plan por ciudad. Los otros siguen guardados.', 'For now you can use 1 plan per city. The others are still saved.'), 3400);
       else setActivePlan(tab.dataset.plan);
     });
     $('#planRenameBtn')?.addEventListener('click', renameActivePlan);
