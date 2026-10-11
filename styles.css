@@ -4634,7 +4634,10 @@ html[data-mode="kids"] .ai-input-wrap {
   position: fixed;
   left: 12px;
   right: 12px;
-  top: calc(var(--safe-area-inset-top, 0px) + 10px);
+  /* Android: --safe-area-inset-top la pone el plugin nativo (env() ahí vale 0).
+     iPhone: esa variable no existe y el margen de la hora/batería lo da
+     env(). Se usa el mayor de los dos. */
+  top: calc(max(var(--safe-area-inset-top, 0px), env(safe-area-inset-top, 0px)) + 10px);
   max-width: 520px;
   margin: 0 auto;
   z-index: 6050;
