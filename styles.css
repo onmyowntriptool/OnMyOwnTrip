@@ -4659,3 +4659,24 @@ html[data-mode="kids"] .ai-input-wrap {
 
 /* Compartir plan: a la derecha de Renombrar/Borrar, en el rosa del plan. */
 .plan-manage button.-share { margin-left: auto; color: #DB2777; }
+
+/* Aviso de "sin conexión" (ver NET en app.js): franja fija bajo la
+   cabecera mientras no hay red; se oculta al tocarla o al volver la red.
+   El top lo calcula app.js según la altura real de la cabecera. */
+.net-banner {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(calc(100vw - 32px), 440px);
+  z-index: 5500;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #7C2D12;
+  border: 1px solid #F97316;
+  color: #FFF7ED;
+  font-size: 12.5px;
+  line-height: 1.4;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+.net-banner[hidden] { display: none; }

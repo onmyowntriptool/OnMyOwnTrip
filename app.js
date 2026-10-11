@@ -438,7 +438,7 @@
       // buildIntroText/ensureAiPanelInitialGreet, que no depende de la IA);
       // queda como fallback si algún día "summary" volviera a pedirse a la IA.
       summary(poi, m) {
-        const historyFull = poi.tabs.history[m] || poi.tabs.history.adult || '';
+        const historyFull = (pickLang(poi.tabs.history) || {})[m] || (pickLang(poi.tabs.history) || {}).adult || '';
         const historyRest = historyFull.split('.').slice(1).join('.').trim();
         const historyForSummary = historyRest || historyFull;
         const lang = this.L();
@@ -671,7 +671,7 @@
             // falsos (como antes), se reutiliza el dato real y verificado de
             // poi.tabs.legends, con un envoltorio distinto al del chip
             // "Leyendas" para que no se lea como el mismo texto dos veces.
-            const legendText = poi.tabs.legends[m] || poi.tabs.legends.adult || '';
+            const legendText = (pickLang(poi.tabs.legends) || {})[m] || (pickLang(poi.tabs.legends) || {}).adult || '';
             if (lang === 'en') {
               return m === 'kids'
                 ? `🤫 SECRET HISTORY\n\n${this.pick(this.secretIntrosKids.en)}\n\n${legendText}\n\n${this.pick(this.closingsKids.en)}\n\n🕵️‍♂️ Do you dare tell your family this secret?`
@@ -684,146 +684,71 @@
           case 'architecture':
             if (lang === 'en') {
               return m === 'kids'
-                ? `🏗️ ARCHITECTURE TRICKS!\n\n${this.pick(this.introsKids.en)}\n\n${poi.tabs.architecture.kids || ''}\n\n${this.pick(this.closingsKids.en)}\n\n👀 Observation challenge: how many of these tricks can you spot all by yourself, with no help?`
-                : `ARCHITECTURE\n\n${this.pick(this.introsAdult.en)}\n\n${poi.tabs.architecture.adult || ''}\n\n${this.pick(this.closingsAdult.en)}`;
+                ? `🏗️ ARCHITECTURE TRICKS!\n\n${this.pick(this.introsKids.en)}\n\n${(pickLang(poi.tabs.architecture) || {}).kids || ''}\n\n${this.pick(this.closingsKids.en)}\n\n👀 Observation challenge: how many of these tricks can you spot all by yourself, with no help?`
+                : `ARCHITECTURE\n\n${this.pick(this.introsAdult.en)}\n\n${(pickLang(poi.tabs.architecture) || {}).adult || ''}\n\n${this.pick(this.closingsAdult.en)}`;
             }
             return m === 'kids'
-              ? `🏗️ ¡TRUCOS DE ARQUITECTURA!\n\n${this.pick(this.introsKids.es)}\n\n${poi.tabs.architecture.kids || ''}\n\n${this.pick(this.closingsKids.es)}\n\n👀 Reto observación: ¿cuántos de estos trucos puedes encontrar tú solo, sin que nadie te ayude?`
-              : `ARQUITECTURA\n\n${this.pick(this.introsAdult.es)}\n\n${poi.tabs.architecture.adult || ''}\n\n${this.pick(this.closingsAdult.es)}`;
+              ? `🏗️ ¡TRUCOS DE ARQUITECTURA!\n\n${this.pick(this.introsKids.es)}\n\n${(pickLang(poi.tabs.architecture) || {}).kids || ''}\n\n${this.pick(this.closingsKids.es)}\n\n👀 Reto observación: ¿cuántos de estos trucos puedes encontrar tú solo, sin que nadie te ayude?`
+              : `ARQUITECTURA\n\n${this.pick(this.introsAdult.es)}\n\n${(pickLang(poi.tabs.architecture) || {}).adult || ''}\n\n${this.pick(this.closingsAdult.es)}`;
           case 'legends':
             if (lang === 'en') {
               return m === 'kids'
-                ? `🧙‍♂️ LEGEND\n\n${this.pick(this.introsKids.en)}\n\n${poi.tabs.legends.kids || ''}\n\n${this.pick(this.closingsKids.en)}`
-                : `LEGEND\n\n${this.pick(this.introsAdult.en)}\n\n${poi.tabs.legends.adult || ''}\n\n${this.pick(this.closingsAdult.en)}`;
+                ? `🧙‍♂️ LEGEND\n\n${this.pick(this.introsKids.en)}\n\n${(pickLang(poi.tabs.legends) || {}).kids || ''}\n\n${this.pick(this.closingsKids.en)}`
+                : `LEGEND\n\n${this.pick(this.introsAdult.en)}\n\n${(pickLang(poi.tabs.legends) || {}).adult || ''}\n\n${this.pick(this.closingsAdult.en)}`;
             }
             return m === 'kids'
-              ? `🧙‍♂️ LEYENDA\n\n${this.pick(this.introsKids.es)}\n\n${poi.tabs.legends.kids || ''}\n\n${this.pick(this.closingsKids.es)}`
-              : `LEYENDA\n\n${this.pick(this.introsAdult.es)}\n\n${poi.tabs.legends.adult || ''}\n\n${this.pick(this.closingsAdult.es)}`;
-          default: {
-            if (lang === 'en') {
-              if (m === 'kids') {
-                return `Wow, great question! 🤔 Here's a secret: at ${n} there are ${this.pick(['invisible windows', 'staircases that spin', 'secret colors'])}, and only really observant kids discover them. Walk around with your eyes WIDE open! 👀 What have you spotted that nobody else has?`;
-              }
-              return `Good question. When it comes to ${n}, here's what matters most: ${(poi.tabs.history.adult || '').slice(0, 200)}\n\nIf you'd like to go deeper, ask about a specific period (Roman, Caliphate, medieval, Renaissance) or a particular figure (El Greco, Covarrubias, Berruguete).`;
-            }
-            if (m === 'kids') {
-              return `¡Vaya, qué buena pregunta! 🤔 Pues mira, te cuento un secreto: en ${n} hay ${this.pick(['ventanas invisibles', 'escaleras que giran', 'colores secretos'])} y solo los niños atentos lo descubren. ¡Pasea con los ojos MUY ABIERTOS! 👀 ¿Qué has visto tú que nadie más vea?`;
-            }
-            return `Buena pregunta. En el contexto de ${n}, lo más relevante es lo siguiente: ${(poi.tabs.history.adult || '').slice(0, 200)}\n\nSi deseas profundizar, pregunta por un periodo concreto (época romana, califal, medieval, renacentista) o por un autor (El Greco, Covarrubias, Berruguete).`;
-          }
+              ? `🧙‍♂️ LEYENDA\n\n${this.pick(this.introsKids.es)}\n\n${(pickLang(poi.tabs.legends) || {}).kids || ''}\n\n${this.pick(this.closingsKids.es)}`
+              : `LEYENDA\n\n${this.pick(this.introsAdult.es)}\n\n${(pickLang(poi.tabs.legends) || {}).adult || ''}\n\n${this.pick(this.closingsAdult.es)}`;
+          default:
+            // Sin "secretos" inventados ni sugerencias de Toledo: el texto real del lugar.
+            return this.offlineAnswer(poi, m, '', false);
         }
       },
-      generic(poi, m, query) {
-        const lang = this.L();
+      // Respuestas SIN la IA real (sin red o con la IA caída): solo con lo
+      // que trae el propio Punto de interés (visitInfo, tabs, teaser). Antes
+      // aquí había horarios, precios y "datos curiosos" genéricos escritos a
+      // mano para Toledo que salían en cualquier ciudad como si fueran
+      // reales; mejor decir que no lo sabemos que inventarlo.
+      generic(poi, m, query) { return this.offlineAnswer(poi, m, query, false); },
+      // Versión corta para la conversación por voz (ver queueCallTurn).
+      genericConcise(poi, m, query) { return this.offlineAnswer(poi, m, query, true); },
+      offlineAnswer(poi, m, query, concise) {
+        const en = this.L() === 'en';
         const n = pickLang(poi.name).adult;
         const q = (query || '').toLowerCase();
         const has = (arr) => arr.some((w) => q.includes(w));
-        const scheduleWords = lang === 'en' ? ['schedule', 'hours', 'open', 'close', 'time'] : ['horario', 'abierto', 'abre', 'cierra', 'hora'];
-        const priceWords = lang === 'en' ? ['price', 'ticket', 'cost', 'money', 'euro'] : ['precio', 'entrada', 'dinero', 'cuesta', 'euro'];
-        const transportWords = lang === 'en' ? ['get there', 'arrive', 'bus', 'parking', 'car'] : ['llegar', 'cómo voy', 'autobús', 'bus', 'parking', 'coche', 'aparcamiento'];
+        const scheduleWords = en ? ['schedule', 'hours', 'open', 'close', 'time'] : ['horario', 'abierto', 'abre', 'cierra', 'hora'];
+        const priceWords = en ? ['price', 'ticket', 'cost', 'money', 'euro'] : ['precio', 'entrada', 'dinero', 'cuesta', 'euro'];
+        const transportWords = en ? ['get there', 'arrive', 'bus', 'parking', 'car'] : ['llegar', 'cómo voy', 'autobús', 'bus', 'parking', 'coche', 'aparcamiento'];
+        const F = (field) => { const v = pickLang(field); return (v && (v[m] || v.adult || v.kids)) || ''; };
+        const info = poi.visitInfo || {};
+        const firstSentences = (text, max) => {
+          const parts = (text || '').match(/[^.!?]+[.!?]+/g) || (text ? [text] : []);
+          let out = '';
+          for (const p of parts) { if (out && (out + p).length > max) break; out += p; }
+          return out.trim();
+        };
         if (has(scheduleWords)) {
-          if (lang === 'en') {
-            return m === 'kids'
-              ? `⏰ SUPER EASY schedule:\n\nTuesday to Saturday: from when you wake up until snack time (10:00 to 18:30!).\nSundays: mornings only! ☀️\nMondays: the castle takes a nap 🌙 (just like bears 🐻).\n\nTell mom or dad, and check the official website in case it changes on a holiday 🎊.`
-              : `Approximate hours (may vary on public holidays, worth confirming on the site's official website):\nTuesday–Saturday: 10:00 – 18:30 (last entry 17:45)\nSundays and public holidays: 10:00 – 14:00\nMondays: closed (except public-holiday Mondays).\n\nDiscounted entry with a youth card, large-family card, or student ID. Tip: buy your ticket online ahead of time and skip the line.`;
-          }
-          return m === 'kids'
-            ? `⏰ Horario MUY FÁCIL:\n\nDe martes a sábado: desde que te despiertas hasta la merienda (¡10:00 a 18:30!).\nDomingos: ¡solo por la mañana! ☀️\nLunes: el castillo descansa 🌙 (como los osos 🐻).\n\nCuentaselo a papá o mamá y mirad la web oficial por si cambian un día de fiesta 🎊.`
-            : `Horario orientativo (puede variar en festivos, conviene confirmar en la web oficial del lugar):\nMartes–Sábado: 10:00 – 18:30 (último acceso 17:45)\nDomingos y festivos: 10:00 – 14:00\nLunes: cerrado (salvo lunes festivos).\n\nEntrada reducida si llevas carné joven, familia numerosa o carné de estudiante. Consejo: comprála online con antelación y ahorras la cola.`;
+          const h = F(info.hours);
+          if (h) return en ? `Hours of ${n}: ${h}` : `Horario de ${n}: ${h}`;
+          return en ? `I don't have the opening hours of ${n} saved in the app. Check its official website once you're back online.`
+            : `No tengo guardado el horario de ${n} en la app. Consulta su web oficial cuando vuelvas a tener conexión.`;
         }
         if (has(priceWords)) {
-          if (lang === 'en') {
-            return m === 'kids'
-              ? `💰 It costs about the same as a burger meal 🍔 for grown-ups.\n\nKids your age get in FREE or almost free! 🎉\n\nAsk your parents to get the "family ticket" — it's cheaper 👨‍👩‍👧‍👦.`
-              : `Approximate general admission: ~€10 (or local currency equivalent). Discounted (student, 65+, large family): ~€5. Under 12: free in many cases. Many cities offer combined tickets with nearby monuments that can save up to 30% — worth asking at the ticket office or checking the official website.`;
-          }
-          return m === 'kids'
-            ? `💰 Cuesta casi lo mismo que un menú de hamburguesas 🍔 para los mayores.\n\nLos niños de tu edad ¡entran GRATIS o casi nada! 🎉\n\nPide a papá que pida "entrada familiar" que sale más barato 👨‍👩‍👧‍👦. `
-            : `Entrada general orientativa: ~10 € (moneda local equivalente). Reducida (estudiante, >65, familia numerosa): ~5 €. Menores de 12 años: gratuita en muchos casos. Muchas ciudades ofrecen bonos conjuntos con otros monumentos cercanos que permiten ahorrar hasta un 30% — merece la pena preguntar en taquilla o mirar la web oficial.`;
+          const p = F(info.price);
+          if (p) return en ? `Tickets for ${n}: ${p}` : `Entrada de ${n}: ${p}`;
+          return en ? `I don't have the ticket price of ${n} saved in the app. Check its official website once you're back online.`
+            : `No tengo guardado el precio de ${n} en la app. Consulta su web oficial cuando vuelvas a tener conexión.`;
         }
         if (has(transportWords)) {
-          if (lang === 'en') {
-            return m === 'kids'
-              ? `🚶 You almost always get there on FOOT! This city's best treasures are on narrow streets where cars can't go 🏘️.\n\nIf you come by car 🚗 you park near the center and then walk in. The views are like something from a movie! 🎬`
-              : `Recommended access: on foot from the nearest historic area (5–10 min); the old town is usually 100% pedestrian. If traveling by car, use a park-and-walk lot on the outskirts and avoid driving into the old town — narrow streets, restrictions, and very strict access hours. Local public transport usually covers the outer route in about 15 min.`;
-          }
-          return m === 'kids'
-            ? `🚶 ¡Casi siempre vas ANDANDO! Los mejores tesoros de esta ciudad están en calles estrechas donde no pasan coches 🏘️.\n\nSi venís en coche 🚗 lo dejáis en un parking cerca del centro y luego entráis caminando. ¡Las vistas son de película! 🎬`
-            : `Acceso recomendado: a pie desde la zona monumental más cercana (5–10 min); el núcleo histórico suele ser 100% peatonal. Si viajas en coche, usa algún parking disuasorio en el perímetro y evita entrar en el casco histórico con vehículo — calles estrechas, limitaciones y horarios de acceso muy estrictos. El transporte público local suele cubrir el recorrido exterior en unos 15 min.`;
+          return en ? `Without a connection I can't work out how to get there. Once you're back online, tap "${t('sheetDirectionsLabel')}" on this place's card.`
+            : `Sin conexión no puedo calcular cómo llegar. Cuando vuelvas a tener red, toca «${t('sheetDirectionsLabel')}» en la ficha de este lugar.`;
         }
-        if (m === 'kids') {
-          if (lang === 'en') {
-            return `Wow, what a curious question! 🤩 Here's what's coolest about ${n || 'this place'}: there are things from MANY years ago that are still here, like a time machine is actually working ⏳✨.\n\nYou know what? If you look REALLY closely at the walls 👀 you'll spot strange marks left by the stonemasons (builders from centuries ago). Look for a tiny "X"! Can you find it?`;
-          }
-          return `¡Guau, qué curioso/a! 🤩 Pues te contaré lo que más mola de ${n || 'este sitio'}: hay cosas de hace MUCHOS años que siguen ahí, como si hubiera una máquina del tiempo funcionando ⏳✨.\n\n¿Sabes qué? Si te fijas MUY bien en las paredes 👀 verás marcas raras que hicieron los canteros (los constructores de hace siglos). ¡Busca una "X" pequeña! ¿La encuentras?`;
-        }
-        if (lang === 'en') {
-          const extras = [
-            `If you have more time, here's a useful tip: pair this visit with the Jewish Quarter route — just 8 minutes on foot.`,
-            `Fun fact: according to the latest regional government study, only 12% of visitors notice this detail.`,
-            `A personal take: I think this place's real value lies less in what you see and more in the layering of eras — you can see 10 centuries in 20 square meters.`
-          ];
-          return `${SIM.option(poi, 'adult', null)}\n\n${this.pick(extras)}`;
-        }
-        const extras = [
-          `Si dispones de más tiempo, un dato valioso: combina esta visita con la ruta judería — apenas 8 minutos andando.`,
-          `Dato curioso: según el último estudio de la Junta de Comunidades, solo el 12% de los visitantes repara en este matiz.`,
-          `Una perspectiva personal: creo que el valor de este lugar está menos en lo que ves y más en la superposición de épocas — puedes ver 10 siglos en 20 metros cuadrados.`
-        ];
-        return `${SIM.option(poi, 'adult', null)}\n\n${this.pick(extras)}`;
-      },
-      // Versión corta de generic(), para la conversación por voz (ver
-      // queueCallTurn): nadie quiere escuchar un párrafo entero por voz solo
-      // para saber un horario o cuánto mide algo — aquí se prioriza dar el
-      // dato directo y como mucho una frase más, igual que se le pide a la
-      // IA real vía systemPromptFor(mode, cityName, concise: true).
-      genericConcise(poi, m, query) {
-        const lang = this.L();
-        const n = pickLang(poi.name).adult;
-        const q = (query || '').toLowerCase();
-        const has = (arr) => arr.some((w) => q.includes(w));
-        const scheduleWords = lang === 'en' ? ['schedule', 'hours', 'open', 'close', 'time'] : ['horario', 'abierto', 'abre', 'cierra', 'hora'];
-        const priceWords = lang === 'en' ? ['price', 'ticket', 'cost', 'money', 'euro'] : ['precio', 'entrada', 'dinero', 'cuesta', 'euro'];
-        const transportWords = lang === 'en' ? ['get there', 'arrive', 'bus', 'parking', 'car'] : ['llegar', 'cómo voy', 'autobús', 'bus', 'parking', 'coche', 'aparcamiento'];
-        if (has(scheduleWords)) {
-          if (lang === 'en') {
-            return m === 'kids'
-              ? '⏰ Open Tuesday to Saturday, 10:00 to 18:30. Sundays mornings only, and Mondays it takes a break!'
-              : 'Tuesday to Saturday, 10:00–18:30. Sundays 10:00–14:00. Closed Mondays (check the official website for holiday changes).';
-          }
-          return m === 'kids'
-            ? '⏰ Abre de martes a sábado, de 10:00 a 18:30. Los domingos solo por la mañana, ¡y los lunes descansa!'
-            : 'De martes a sábado, 10:00–18:30. Domingos 10:00–14:00. Lunes cerrado (confirma en la web oficial por si hay festivos).';
-        }
-        if (has(priceWords)) {
-          if (lang === 'en') {
-            return m === 'kids'
-              ? "💰 It doesn't cost much, and kids almost always get in free or nearly free!"
-              : 'Approximate general admission: around €10, discounted around €5. Check the exact price on the official website.';
-          }
-          return m === 'kids'
-            ? '💰 Cuesta poquito, ¡y los niños casi siempre entran gratis o casi gratis!'
-            : 'Entrada general orientativa: unos 10 €, reducida unos 5 €. Confirma el precio exacto en la web oficial.';
-        }
-        if (has(transportWords)) {
-          if (lang === 'en') {
-            return m === 'kids'
-              ? "🚶 You almost always walk there — the streets downtown are just for walking!"
-              : "Best on foot from the historic center, about 5-10 minutes; it's a very pedestrian-friendly area.";
-          }
-          return m === 'kids'
-            ? '🚶 Casi siempre se va andando, ¡las calles del centro son solo para caminar!'
-            : 'Mejor a pie desde el centro histórico, unos 5-10 minutos; es una zona muy peatonal.';
-        }
-        const firstFact = (poi.tabs.history.adult || '').split('.')[0];
-        if (lang === 'en') {
-          return m === 'kids'
-            ? `Good question! The coolest thing about ${n} is that it has centuries of history hidden in every corner. 🕰️`
-            : `About ${n}: ${firstFact}.`;
-        }
-        return m === 'kids'
-          ? `¡Buena pregunta! De ${n} lo más curioso es que tiene siglos de historia escondidos en cada rincón. 🕰️`
-          : `Sobre ${n}: ${firstFact}.`;
+        const base = F(poi.tabs && poi.tabs.history) || F(poi.teaser) || F(poi.subtitle);
+        const text = firstSentences(base, concise ? 220 : 600);
+        if (text) return text;
+        return en ? `I don't have more information about ${n} saved in the app. Ask me again once you're back online.`
+          : `No tengo más información sobre ${n} guardada en la app. Pregúntame de nuevo cuando vuelvas a tener conexión.`;
       }
     };
 
@@ -918,7 +843,13 @@
             : (e && (e.name === 'AbortError' || e.message === 'chat-timeout')) ? pickLang({ es: 'tiempo agotado', en: 'timed out' })
             : (e && e.message) ? e.message
             : pickLang({ es: 'error desconocido', en: 'unknown error' });
-          const suffix = isQuotaError
+          // Sin red (fetch rechazado con TypeError, o NET ya sabe que no hay
+          // conexión): aviso claro, sin códigos técnicos.
+          const isNoNetwork = (e instanceof TypeError) || NET.isDown();
+          if (e instanceof TypeError) NET.reportDown();
+          const suffix = isNoNetwork && !isQuotaError
+            ? pickLang(UI_STRINGS.aiNoNetSuffix)[mode]
+            : isQuotaError
             ? pickLang(UI_STRINGS.aiQuotaSuffix)[mode]
             : pickLang(UI_STRINGS.aiOfflineSuffix)[mode].replace('{code}', code);
           return await simulated(poi, mode, userQuery, optionId, concise) + suffix;
@@ -1202,6 +1133,62 @@
     return { track, flush };
   })();
 
+  // AVISO DE "SIN CONEXIÓN" (feedback #48): sin red la app sigue con lo ya
+  // descargado (ciudades abiertas antes, fotos vistas, narraciones ya
+  // escuchadas), pero el mapa, la guía IA, la foto y las narraciones nuevas
+  // fallan. En vez de dejar el mapa en blanco sin explicación, se enseña una
+  // franja fija bajo la cabecera mientras no haya red. navigator.onLine solo
+  // sabe si hay red local (una wifi sin internet cuenta como "conectado"),
+  // así que también cuenta como caída un fallo de red en la comprobación de
+  // licencia, que la app ya repite cada minuto (ver LICENSE.check).
+  const NET = (() => {
+    let down = typeof navigator !== 'undefined' && navigator.onLine === false;
+    let el = null;
+    const banner = () => {
+      if (el) return el;
+      el = document.createElement('div');
+      el.className = 'net-banner';
+      el.setAttribute('role', 'status');
+      el.hidden = true;
+      el.addEventListener('click', () => { el.hidden = true; });
+      document.body.appendChild(el);
+      return el;
+    };
+    const render = () => {
+      if (typeof document === 'undefined' || !document.body) return;
+      const b = banner();
+      if (!down) { b.hidden = true; return; }
+      b.textContent = t('netOffline');
+      place();
+      b.hidden = false;
+      // Al arrancar ya sin red la cabecera aún no tiene su tamaño final:
+      // se recoloca cuando termina de montarse la pantalla.
+      setTimeout(place, 800);
+      setTimeout(place, 2500);
+    };
+    const place = () => {
+      if (!el) return;
+      const header = document.querySelector('.header-top') || document.querySelector('.header');
+      const bottom = header ? header.getBoundingClientRect().bottom : 0;
+      el.style.top = `${Math.max(8, bottom + 6)}px`;
+    };
+    window.addEventListener('resize', place);
+    const set = (isDown) => {
+      if (isDown === down) return;
+      down = isDown;
+      render();
+      if (!down) showToast(t('netBack'), 2200);
+    };
+    window.addEventListener('offline', () => set(true));
+    window.addEventListener('online', () => set(false));
+    if (down) document.addEventListener('DOMContentLoaded', render);
+    return {
+      isDown: () => down || (typeof navigator !== 'undefined' && navigator.onLine === false),
+      reportDown: () => set(true),
+      reportUp: () => set(false)
+    };
+  })();
+
   const LICENSE = (() => {
     const STORAGE = 'omot_license_v1';
     const baseUrl = (typeof window !== 'undefined' && window.LLM_CONFIG && window.LLM_CONFIG.baseUrl) || '';
@@ -1252,9 +1239,11 @@
         // El Worker responde siempre 200 con { ok, reason? } tanto para "no
         // encontrado" como "caducado" (son resultados válidos, no errores);
         // cualquier otro status aquí es un fallo real (red, CORS, 5xx...).
+        NET.reportUp();
         if (res.status !== 200) return { ok: false, reason: 'offline' };
         return await res.json();
       } catch (_) {
+        NET.reportDown();
         return { ok: false, reason: 'offline' }; // sin red, timeout, Worker caído, etc.
       }
     };
@@ -1517,6 +1506,9 @@
     deepenFillerContinue: { es: { adult: '{fact}\n\n¿Sigo profundizando?', kids: '✨ {fact}\n\n¿Sigo contándote más? 🔍' }, en: { adult: '{fact}\n\nShall I keep digging deeper?', kids: '✨ {fact}\n\nShall I tell you more? 🔍' } },
     deepenFetchFailed: { es: { adult: 'No hemos podido obtener respuesta. Revisa tu conexión o la configuración de la API (window.LLM_CONFIG).', kids: '¡Ups! 😵 Mi cajita mágica está un poquito lenta… Vuelve a intentarlo en 1 minuto, por favor.' }, en: { adult: "We couldn't get a response. Check your connection or the API configuration (window.LLM_CONFIG).", kids: 'Oops! 😵 My magic box is running a little slow… Please try again in 1 minute.' } },
     aiQuotaSuffix: { es: { adult: '\n\n(La IA está saturada de peticiones en este momento —no es un fallo de la app—, se ha usado el simulador local mientras tanto.)', kids: '\n\n⚠️ (¡La IA está muy solicitada ahora mismo! Se ha usado el modo sin conexión mientras se libera hueco.)' }, en: { adult: "\n\n(The AI is overloaded with requests right now — this isn't an app failure — the local simulator was used in the meantime.)", kids: '\n\n⚠️ (The AI is really busy right now! Offline mode was used while it frees up.)' } },
+    aiNoNetSuffix: { es: { adult: '\n\n(Sin conexión: te respondo con la información guardada en la app. Cuando vuelvas a tener red, pregúntame de nuevo.)', kids: '\n\n(Sin conexión: te respondo con lo que tengo guardado. Cuando vuelva la red, pregúntame otra vez.)' }, en: { adult: "\n\n(Offline: I'm answering with the information saved in the app. Ask me again once you're back online.)", kids: "\n\n(Offline: I'm answering with what I have saved. Ask me again when you're back online.)" } },
+    netOffline: { es: { adult: 'Sin conexión. Puedes seguir con lo ya descargado, pero el mapa, la guía IA, la foto y las narraciones nuevas necesitan red.', kids: 'Sin conexión. Puedes seguir con lo ya descargado, pero el mapa, la guía IA, la foto y las narraciones nuevas necesitan red.' }, en: { adult: "You're offline. You can keep using what's already downloaded, but the map, the AI guide, photos and new narrations need a connection.", kids: "You're offline. You can keep using what's already downloaded, but the map, the AI guide, photos and new narrations need a connection." } },
+    netBack: { es: { adult: 'Conexión recuperada', kids: 'Conexión recuperada' }, en: { adult: 'Back online', kids: 'Back online' } },
     aiOfflineSuffix: { es: { adult: '\n\n(Modo offline. Error al conectar con la API ({code}), se ha usado el simulador local.)', kids: '\n\n⚠️ (Modo offline: la IA real respondió con error — {code})' }, en: { adult: '\n\n(Offline mode. Error connecting to the API ({code}), the local simulator was used.)', kids: '\n\n⚠️ (Offline mode: the real AI responded with an error — {code})' } },
     deepenScriptDone: { es: { adult: '\n\nEso es todo lo que tengo preparado sobre este lugar. Si quieres saber algo muy concreto, escríbeme tu pregunta aquí abajo.', kids: '\n\n¡Eso es todo lo que tengo preparado sobre este lugar! Si quieres saber algo muy concreto, escríbeme tu pregunta aquí abajo.' }, en: { adult: "\n\nThat's everything I have ready about this place. If there's something specific you'd like to know, type your question below.", kids: "\n\nThat's everything I have ready about this place! If there's something specific you'd like to know, type your question below." } },
     deepenPregenNotice: { es: { adult: '\n\nGenerando respuesta complementaria.\nVuelve a tocar "{label}" en un momento para verla.', kids: '\n\n💭 (¡Esto es solo un adelanto rápido! Estoy preparando algo todavía mejor — vuelve a tocar "{label}" en un ratito para verlo.)' }, en: { adult: '\n\nGenerating a fuller answer.\nTap "{label}" again in a moment to see it.', kids: '\n\n💭 (This is just a quick preview! I\'m preparing something even better — tap "{label}" again in a bit to see it.)' } },
@@ -8051,7 +8043,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
   // equilibrados se corta todo lo que queda desde el aviso hasta el final
   // — construction garantiza que el aviso es siempre lo último del texto.
   const stripOfflineSuffix = (text) => (text || '')
-    .replace(/\n\n(?:⚠️)?\s?\((?:¡La IA está muy solicitada|La IA está saturada|Modo offline|The AI is (?:overloaded|really busy)|Offline mode)[\s\S]*$/, '')
+    .replace(/\n\n(?:⚠️)?\s?\((?:¡La IA está muy solicitada|La IA está saturada|Modo offline|The AI is (?:overloaded|really busy)|Offline mode|Sin conexión:|Offline:)[\s\S]*$/, '')
     .trimEnd();
 
   const queueDeepenWithFillers = async ({ poi, optionId, userText }) => {
@@ -8234,7 +8226,10 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       // que el audio principal en modo niño siempre lo identifique bien sin
       // depender de su posición en el historial (ver buildNarrativeText).
       hist.push({ role: 'assistant', text, isSummary: kind === 'summary', isFullIntro: kind === 'summary' && STATE.mode === 'kids' });
-      if (kind === 'text') noteChatQuotaAfterAnswer(poi.id);
+      // Si no contestó la IA real (sin red o saturada: la respuesta trae el
+      // aviso final, ver stripOfflineSuffix), la pregunta no cuenta.
+      if (kind === 'text' && stripOfflineSuffix(text) !== text.trimEnd()) refundChatQuota(poi.id);
+      else if (kind === 'text') noteChatQuotaAfterAnswer(poi.id);
       // Solo el resumen inicial intenta CLOUD_TTS: es la única narración
       // que vale la pena cachear (el chat y las revelaciones del quiz son
       // texto de un solo uso). Si no está configurado o falla, no añade
@@ -8695,7 +8690,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
         concise: true
       });
       aiHistoryFor(poi.id).push({ role: 'assistant', text });
-      noteChatQuotaAfterAnswer(poi.id);
+      if (stripOfflineSuffix(text) !== text.trimEnd()) refundChatQuota(poi.id);
+      else noteChatQuotaAfterAnswer(poi.id);
       saveState();
     } catch (e) {
       text = t('callAnswerFailed');
