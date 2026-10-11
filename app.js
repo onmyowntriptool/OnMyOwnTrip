@@ -9330,6 +9330,12 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       const startWordIndex = startRatio > 0 ? Math.min(words.length - 1, Math.floor(startRatio * words.length)) : 0;
       const text = startWordIndex > 0 ? words.slice(startWordIndex).join(' ') : fullText;
       cancel(false);
+      // Progreso real (0-1) sobre el texto completo, a partir de los avisos
+      // "boundary" que da el motor de voz en cada palabra. null si el motor
+      // no los da (algunas voces de Chrome de escritorio): entonces la barra
+      // usa la estimación (ver el intervalo de startAudio).
+      const charOffset = fullText.length - text.length;
+      S.progress = null;
 
       const makeUtt = (usePickedVoice = true) => {
         const u = new SpeechSynthesisUtterance(text);
@@ -9344,6 +9350,9 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
           try { u.voice = S.pickedVoice; } catch (_) {}
         }
         u.onstart = () => { clearStartWatch(); };
+        u.onboundary = (ev) => {
+          if (typeof ev.charIndex === 'number') S.progress = Math.min(1, (charOffset + ev.charIndex) / fullText.length);
+        };
         u.onend = () => {
           clearStartWatch();
           S.utterance = null;
@@ -9412,6 +9421,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       isSpeaking: () => S.supported ? synth.speaking : false,
       isPaused: () => S.supported ? synth.paused : false,
       getText: buildNarrativeText,
+      getProgress: () => (S.supported ? S.progress ?? null : null),
       speak, pause, resume, cancel, warmUp
     };
   })();
@@ -9808,7 +9818,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       const spokeOk = SPEECH.isSupported() && SPEECH.speak(({ finished, error, startFailed }) => {
         if (finished) {
           markIntroHeardIfDone();
-          STATE.audio.currentTime = duration;
+          STATE.audio.currentTime = STATE.audio.duration;
           stopAudio();
           STATE.audio.currentTime = 0;
           updateAudioUi();
@@ -9844,7 +9854,22 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
 
     STATE.audio.timer = setInterval(() => {
       STATE.audio.currentTime += 0.2;
-      if (STATE.audio.currentTime >= duration) {
+      // BUG REAL (Basílica de San Pedro: la barra marcaba 1:26 y llegaba al
+      // final con la voz aún hablando): la duración era solo la estimación
+      // por palabras. Con el progreso real del motor (SPEECH.getProgress)
+      // se recalcula el total = tiempo transcurrido / parte leída, suavizado
+      // para que el contador no dé saltos. Sin ese dato, si la voz sigue
+      // sonando al llegar al 97 %, se alarga el total en vez de llenar la
+      // barra.
+      const spoken = SPEECH.getProgress();
+      if (spoken && spoken > 0.08 && spoken < 1) {
+        const realTotal = STATE.audio.currentTime / spoken;
+        STATE.audio.duration = STATE.audio.duration * 0.7 + realTotal * 0.3;
+      }
+      if (SPEECH.isSpeaking() && STATE.audio.currentTime >= STATE.audio.duration * 0.97) {
+        STATE.audio.duration = STATE.audio.currentTime / 0.97;
+      }
+      if (STATE.audio.currentTime >= STATE.audio.duration) {
         // OJO: "duration" aquí es una ESTIMACIÓN por nº de palabras (ver
         // estimateSpeechDuration), no la duración real de la voz — el ritmo
         // real varía con pausas, puntuación y la propia síntesis del
@@ -9857,7 +9882,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
         // finished/error/startFailed), que sí escucha el evento genuino del
         // motor de voz: aquí solo se congela la barra al 100% y se para
         // este intervalo, sin tocar la voz ni disparar avisos de fin.
-        STATE.audio.currentTime = duration;
+        STATE.audio.currentTime = STATE.audio.duration;
         clearInterval(STATE.audio.timer);
         STATE.audio.timer = null;
         updateAudioUi();
