@@ -691,6 +691,7 @@ async function handleAdminCheck(request, env, headers) {
 // agrupados en lotes (ver METRICS en app.js).
 // ============================================================
 const METRICS_DATASET = 'omot_metrics';
+const METRICS_SINCE_KEY = 'config:metricsSince'; // en el KV PREMIUM, junto al resto de config:
 const METRIC_ACTIONS = [
   'city', 'open', 'intro', 'intro_done', 'visit', 'deepen', 'ticket', 'directions',
   'question', 'quota_out', 'plan_add', 'photo', 'search',
@@ -753,7 +754,20 @@ async function handleMetricsQuery(request, env, headers) {
     return jsonResponse({ ok: false, reason: 'not-configured' }, 501, headers);
   }
   const days = Math.min(90, Math.max(1, parseInt(payload && payload.days, 10) || 30));
-  const since = `timestamp > NOW() - INTERVAL '${days}' DAY`;
+  // "Limpiar métricas" (botón del panel): Analytics Engine no permite borrar
+  // datos, así que se guarda la hora del reinicio en KV y las consultas solo
+  // cuentan lo posterior. action 'reset' la fija ahora; 'undo' la quita y
+  // vuelve a verse todo (lo de las pruebas incluido, mientras siga en los
+  // ~3 meses que guarda Analytics Engine).
+  const action = payload && payload.action;
+  if (env.PREMIUM && action === 'reset') await env.PREMIUM.put(METRICS_SINCE_KEY, new Date().toISOString());
+  if (env.PREMIUM && action === 'undo') await env.PREMIUM.delete(METRICS_SINCE_KEY);
+  const resetAt = env.PREMIUM ? await env.PREMIUM.get(METRICS_SINCE_KEY) : null;
+  let since = `timestamp > NOW() - INTERVAL '${days}' DAY`;
+  if (resetAt) {
+    const secs = Math.max(0, Math.floor((Date.now() - Date.parse(resetAt)) / 1000));
+    if (secs < days * 86400) since = `timestamp > NOW() - INTERVAL '${secs}' SECOND`;
+  }
   const total = 'SUM(_sample_interval * double1) AS n';
   try {
     const [rows, daily, segments] = await Promise.all([
@@ -761,7 +775,7 @@ async function handleMetricsQuery(request, env, headers) {
       runMetricsSql(env, `SELECT toStartOfInterval(timestamp, INTERVAL '1' DAY) AS day, blob3 AS action, ${total} FROM ${METRICS_DATASET} WHERE ${since} GROUP BY day, action ORDER BY day`),
       runMetricsSql(env, `SELECT blob4 AS platform, blob5 AS lang, blob6 AS mode, ${total} FROM ${METRICS_DATASET} WHERE ${since} AND blob3 = 'city' GROUP BY platform, lang, mode`)
     ]);
-    return jsonResponse({ ok: true, days, rows, daily, segments }, 200, headers);
+    return jsonResponse({ ok: true, days, rows, daily, segments, resetAt }, 200, headers);
   } catch (e) {
     return jsonResponse({ ok: false, reason: 'query-failed', detail: String(e.message || e) }, 502, headers);
   }

@@ -101,6 +101,9 @@
     height: 38px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface);
     color: var(--text); padding: 0 10px; font-size: 13px; font-family: inherit;
   }
+  .mx-reset-btn { margin-left: auto; }
+  .mx-reset-note { margin: -8px 0 16px; font-size: 12.5px; color: var(--text-soft); }
+  .mx-reset-note button { background: none; border: none; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; }
   .mx-kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 28px; }
   .mx-kpi { background: var(--surface); border-radius: 12px; padding: 14px 16px; }
   .mx-kpi b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
@@ -227,8 +230,10 @@
           <option value="90">Últimos 90 días</option>
         </select>
         <select id="mxCity" aria-label="Ciudad"><option value="">Todas las ciudades</option></select>
+        <button type="button" class="small-btn mx-reset-btn" id="mxResetBtn">Limpiar métricas</button>
         <span class="error" id="mxError" hidden></span>
       </div>
+      <p class="mx-reset-note" id="mxResetNote" hidden></p>
       <div id="mxBody"><p class="empty">Cargando…</p></div>
     </div>
 
@@ -711,7 +716,7 @@
     }));
   };
 
-  const loadMetrics = async () => {
+  const loadMetrics = async (action) => {
     const box = $('#mxBody');
     const err = $('#mxError');
     err.hidden = true;
@@ -719,7 +724,7 @@
       const res = await fetch(`${WORKER_BASE}/metrics/admin/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminKey, days: Number($('#mxDays').value) })
+        body: JSON.stringify({ adminKey, days: Number($('#mxDays').value), action: typeof action === 'string' ? action : undefined })
       });
       const data = await res.json().catch(() => ({}));
       if (res.status === 501 || res.status === 404) {
@@ -732,6 +737,7 @@
         return;
       }
       metricsData = data;
+      renderResetNote(data.resetAt);
       const sel = $('#mxCity');
       const current = sel.value;
       const cities = [...new Set(data.rows.map((r) => r.city))].sort((a, b) => cityName(a).localeCompare(cityName(b), 'es'));
@@ -744,7 +750,23 @@
       err.textContent = 'Error de red: ' + e.message;
     }
   };
-  $('#mxDays').addEventListener('change', loadMetrics);
+  // Limpiar métricas: Analytics Engine no deja borrar, así que el Worker
+  // guarda la hora del reinicio y solo cuenta lo posterior (ver
+  // handleMetricsQuery). "Deshacer" vuelve a mostrar lo anterior.
+  const renderResetNote = (resetAt) => {
+    const note = $('#mxResetNote');
+    if (!resetAt) { note.hidden = true; return; }
+    const when = new Date(resetAt).toLocaleString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    note.innerHTML = `Contando desde el ${escapeHtml(when)} (métricas limpiadas). <button type="button" id="mxUndoBtn">Deshacer</button>`;
+    note.hidden = false;
+    $('#mxUndoBtn').addEventListener('click', () => {
+      if (confirm('¿Volver a mostrar también las métricas de antes de la limpieza?')) loadMetrics('undo');
+    });
+  };
+  $('#mxResetBtn').addEventListener('click', () => {
+    if (confirm('Las métricas empezarán a contar desde cero a partir de ahora. Los datos anteriores no se borran: se pueden volver a mostrar con "Deshacer". ¿Continuar?')) loadMetrics('reset');
+  });
+  $('#mxDays').addEventListener('change', () => loadMetrics());
   $('#mxCity').addEventListener('change', renderMetrics);
 
   // Un fallo aquí (namespace SPONSOR_METRICS sin configurar todavía) no debe
