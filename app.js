@@ -4444,9 +4444,16 @@
         else showSponsorDemoMenu(sponsor);
       });
       const dirBtn = $('#sponsorDemoDirBtn', el);
+      // "Cómo llegar" del patrocinador: antes solo centraba el mapa en el
+      // negocio con un pin de 3 s (flyToSponsorDemo), pero el aviso sale con
+      // la ficha abierta tapando el mapa y parecía que no hacía nada. Ahora
+      // abre el mismo aviso de Google Maps que "Llévame" en un Punto de
+      // interés. trackPoi: false, porque se cuenta como patrocinador, no
+      // como "directions" de un Punto de interés.
       if (dirBtn) dirBtn.addEventListener('click', () => {
         trackSponsorDemoEvent(sponsor, 'directions');
-        flyToSponsorDemo(sponsor);
+        hideSponsorPopup();
+        openDirectionsConfirm({ id: sponsor.id, name: sponsor.name, coords: sponsor.coords }, { trackPoi: false });
       });
     }
     // EXPERIMENTAL (rama experimento-premium-sin-publicidad): mismo enlace
@@ -7851,11 +7858,11 @@
     SPEECH.cancel();
     STATE.audio.overrideText = null;
   };
-  const openDirectionsConfirm = (poi) => {
+  const openDirectionsConfirm = (poi, { trackPoi = true } = {}) => {
     if (!directionsModal || !poi || !poi.coords) return;
     // Se cuenta aquí (y no en el chip, que ya no existe): "Llévame" de la
     // cabecera de la ficha es la única entrada a "Cómo llegar".
-    if (!poi.isAdHocScan) METRICS.track('directions', poi.id);
+    if (trackPoi && !poi.isAdHocScan) METRICS.track('directions', poi.id);
     directionsPoi = poi;
     directionsModal.classList.add('-open');
     directionsModal.setAttribute('aria-hidden', 'false');
