@@ -84,3 +84,18 @@ data/cities/
 
 # Web generada para Cloudflare Pages (scripts/build-site.js)
 site/
+
+# Clave local para lanzar omot-monitor a mano (/run)
+worker/monitor/.monitor-key
+
+# ---- Guiones "Profundiza más" y su herramienta: contenido de pago y
+#      proceso interno, igual que data/cities/ (repo público) ----
+data/deepen/
+scripts/build-deepen.js
+scripts/deepen-prompt.js
+
+# ---- Notas internas de consumo y facturación ----
+consumo-api.md
+
+# Configuración local del monitor: lleva el correo personal de destino
+worker/monitor/wrangler.toml

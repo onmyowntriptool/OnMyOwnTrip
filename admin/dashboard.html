@@ -185,6 +185,13 @@
   .import-card textarea { width: 100%; min-height: 110px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
   .premium-city-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px 12px; margin-bottom: 4px; }
   .premium-city-checkboxes label { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); font-weight: 400; }
+  /* Pestaña Consumo: barra de uso frente al límite gratuito. */
+  .use-bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; min-width: 80px; }
+  .use-bar i { display: block; height: 100%; border-radius: 999px; background: #22C55E; }
+  .use-bar i.-warn { background: var(--accent); }
+  .use-bar i.-urgent { background: #EF4444; }
+  .use-alert { border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; font-size: 13px; background: #78350F; color: #FDE68A; }
+  .use-alert.-urgent { background: #7F1D1D; color: #FECACA; }
 </style>
 </head>
 <body>
@@ -215,6 +222,7 @@
       <button type="button" class="tab-btn" id="tabBtnPremium" role="tab" aria-selected="false">Acceso premium</button>
       <button type="button" class="tab-btn" id="tabBtnAi" role="tab" aria-selected="false">IA</button>
       <button type="button" class="tab-btn" id="tabBtnSurvey" role="tab" aria-selected="false">Encuesta</button>
+      <button type="button" class="tab-btn" id="tabBtnUsage" role="tab" aria-selected="false">Consumo</button>
     </div>
 
     <!-- Métricas de uso anónimas (ver METRICS en app.js y handleMetricsTrack
@@ -535,6 +543,29 @@
           <span class="error" id="surveyError" hidden></span>
         </div>
         <div id="surveyResults"><p class="empty">Cargando…</p></div>
+      </section>
+    </div>
+
+    <!-- Consumo (ver handleUsageAdmin en worker/proxy.js): lo calcula cada
+         hora el Worker omot-monitor (worker/monitor/), que además avisa por
+         correo desde alertaconsumoapi@onmyowntrip.com. -->
+    <div class="tab-panel" id="tabUsage" role="tabpanel" hidden>
+      <div class="form-actions" style="margin-bottom:14px">
+        <button type="button" class="refresh-btn" id="usageRefresh">Actualizar</button>
+        <span id="usageStamp" style="color:var(--text-soft);font-size:13px"></span>
+        <span class="error" id="usageError" hidden></span>
+      </div>
+      <div id="usageBody"><p class="empty">Cargando…</p></div>
+      <section>
+        <h2>Saldo real de Gemini</h2>
+        <p class="hint" style="margin-top:-6px">AI Studio no deja leer el saldo por API: apunta aquí el "Crédito disponible" de <a href="https://aistudio.google.com/billing" target="_blank" rel="noopener" style="color:var(--accent)">AI Studio &rarr; Facturación</a>. El monitor descuenta desde ese día el gasto estimado.</p>
+        <div class="form-card">
+          <div class="form-grid">
+            <div class="field"><label for="usageBalance">Saldo (€)</label><input type="number" id="usageBalance" step="0.01" min="0"></div>
+            <div class="field"><label for="usageBalanceDate">Leído el</label><input type="date" id="usageBalanceDate"></div>
+          </div>
+          <div class="form-actions"><button type="button" class="refresh-btn" id="usageBalanceSave">Guardar saldo</button></div>
+        </div>
       </section>
     </div>
 
@@ -898,7 +929,13 @@
   const tabAi = $('#tabAi');
   const tabBtnSurvey = $('#tabBtnSurvey');
   const tabSurvey = $('#tabSurvey');
+  const tabBtnUsage = $('#tabBtnUsage');
+  const tabUsage = $('#tabUsage');
   const showTab = (name) => {
+    tabUsage.hidden = name !== 'usage';
+    tabBtnUsage.classList.toggle('-active', name === 'usage');
+    tabBtnUsage.setAttribute('aria-selected', String(name === 'usage'));
+    if (name === 'usage') loadUsage();
     tabAccess.hidden = name !== 'access';
     tabSponsors.hidden = name !== 'sponsors';
     tabManage.hidden = name !== 'manage';
@@ -932,6 +969,89 @@
   tabBtnPremium.addEventListener('click', () => showTab('premium'));
   tabBtnAi.addEventListener('click', () => showTab('ai'));
   tabBtnSurvey.addEventListener('click', () => showTab('survey'));
+  tabBtnUsage.addEventListener('click', () => showTab('usage'));
+
+  // ============================================================
+  // Consumo (ver handleUsageAdmin en worker/proxy.js y worker/monitor/).
+  // ============================================================
+  const fmtEur = (n) => `${Number(n || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+  const useBar = (ratio) => {
+    const level = ratio >= 0.85 ? ' -urgent' : ratio >= 0.6 ? ' -warn' : '';
+    return `<div class="use-bar"><i class="${level.trim()}" style="width:${Math.min(100, Math.max(1, ratio * 100))}%"></i></div>`;
+  };
+  const renderUsage = (snap) => {
+    if (!snap) return '<p class="empty">Todavía no hay datos: el monitor (omot-monitor) los guarda cada hora, en el minuto 17.</p>';
+    let html = '';
+    (snap.alerts || []).forEach((a) => {
+      html += `<div class="use-alert${a.level === 2 ? ' -urgent' : ''}">${escapeHtml(a.text)}</div>`;
+    });
+    if (snap.ai && snap.ai.gemini) {
+      const g = snap.ai.gemini, l7 = snap.ai.last7;
+      const ends = g.endsBy === 'balance' ? `hasta el ${g.endsOn}` : g.endsBy === 'expiry' ? `hasta que caduca (${g.expiry})` : 'sin final previsto';
+      html += '<section><h2>Gemini</h2><div class="mx-kpis">'
+        + `<div class="mx-kpi"><b>${fmtEur(g.remainingEur)}</b><span>Saldo estimado</span><small>Leído ${fmtEur(g.balanceEur)} el ${escapeHtml(g.balanceDate)}</small></div>`
+        + `<div class="mx-kpi"><b>${fmtEur(l7.avgDailyEur)}</b><span>Gasto medio al día</span><small>${fmtN(l7.n)} respuestas en 7 días</small></div>`
+        + `<div class="mx-kpi"><b>${fmtEur(g.monthlyNowEur)}</b><span>Al mes, ritmo actual</span><small>${fmtEur(g.monthly2027Eur)} desde enero de 2027</small></div>`
+        + `<div class="mx-kpi"><b>${g.runwayDays == null ? '—' : `${g.runwayDays} días`}</b><span>Duración del saldo</span><small>${ends}</small></div>`
+        + (l7.costPerSessionEur != null ? `<div class="mx-kpi"><b>${fmtEur(l7.costPerSessionEur * 1000)}</b><span>Cada 1.000 sesiones</span><small>Sesión = abrir una ciudad</small></div>` : '')
+        + `<div class="mx-kpi"><b>${fmtN(snap.ai.tts.monthChars)}</b><span>Caracteres de voz este mes</span><small>Gratis hasta ${fmtN(snap.ai.tts.freeChars)}</small></div>`
+        + '</div>';
+      const days = snap.ai.days.slice(-14).reverse();
+      html += '<div class="table-wrap"><table><thead><tr><th>Día</th><th>Respuestas Gemini</th><th>Tokens entrada</th><th>Tokens salida</th><th>Coste estimado</th><th>Claude</th><th>Sesiones</th></tr></thead><tbody>'
+        + (days.length ? days.map((d) => `<tr><td style="white-space:nowrap">${escapeHtml(d.day)}</td><td>${fmtN(d.gemini.n)}</td><td>${fmtN(d.gemini.input)}</td><td>${fmtN(d.gemini.output)}</td><td>${fmtEur(d.gemini.eur)}</td><td>${fmtN(d.claude.n)}</td><td>${fmtN(d.sessions)}</td></tr>`).join('')
+          : '<tr><td colspan="7" class="empty">Sin respuestas anotadas todavía.</td></tr>')
+        + '</tbody></table></div></section>';
+    } else if (snap.aiError) {
+      html += `<p class="error">Gemini: ${escapeHtml(snap.aiError)}</p>`;
+    }
+    if (snap.cf && snap.cf.metrics) {
+      html += '<section><h2>Cloudflare · límites diarios del plan gratuito</h2><div class="table-wrap"><table><thead><tr><th>Recurso</th><th>Hoy</th><th></th><th>Previsión hoy</th><th>Ayer</th><th>Máx. 7 días</th><th>Límite</th></tr></thead><tbody>'
+        + snap.cf.metrics.map((m) => `<tr><td>${escapeHtml(m.label)}</td><td>${fmtN(m.today)}</td><td>${useBar(m.today / m.limit)}</td><td>${m.projected == null ? '—' : fmtN(m.projected)}</td><td>${fmtN(m.yesterday)}</td><td>${fmtN(m.max7)}</td><td>${fmtN(m.limit)}</td></tr>`).join('')
+        + `<tr><td>Almacenamiento KV</td><td>${(snap.cf.storage.totalBytes / 1e6).toLocaleString('es-ES', { maximumFractionDigits: 1 })} MB</td><td>${useBar(snap.cf.storage.totalBytes / snap.cf.storage.limit)}</td><td></td><td></td><td></td><td>1.000 MB</td></tr>`
+        + '</tbody></table></div>';
+      html += '<h2 style="margin-top:20px">Por Worker</h2><div class="table-wrap"><table><thead><tr><th>Worker</th><th>Hoy</th><th>Ayer</th><th>Errores hoy</th><th>Cortadas por CPU hoy</th></tr></thead><tbody>'
+        + snap.cf.scripts.map((s) => `<tr><td>${escapeHtml(s.name)}</td><td>${fmtN(s.today)}</td><td>${fmtN(s.yesterday)}</td><td>${fmtN(s.errorsToday)}</td><td>${fmtN(s.cpuLimitToday)}</td></tr>`).join('')
+        + '</tbody></table></div>';
+      if (snap.cf.kvToday.length) {
+        html += '<h2 style="margin-top:20px">KV hoy por espacio</h2><div class="table-wrap"><table><thead><tr><th>Espacio</th><th>Lecturas</th><th>Escrituras</th><th>Borrados</th><th>Listados</th></tr></thead><tbody>'
+          + snap.cf.kvToday.map((n) => `<tr><td>${escapeHtml(n.name)}</td><td>${fmtN(n.kvRead)}</td><td>${fmtN(n.kvWrite)}</td><td>${fmtN(n.kvDelete)}</td><td>${fmtN(n.kvList)}</td></tr>`).join('')
+          + '</tbody></table></div>';
+      }
+      html += '</section>';
+    } else if (snap.cfError) {
+      html += `<p class="error">Cloudflare: ${escapeHtml(snap.cfError)}</p>`;
+    }
+    return html;
+  };
+  const loadUsage = async (extra) => {
+    const err = $('#usageError');
+    err.hidden = true;
+    try {
+      const res = await fetch(`${WORKER_BASE}/usage/admin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey, ...(extra || {}) })
+      });
+      if (!res.ok) throw new Error(res.status === 404 ? 'falta volver a desplegar el proxy' : 'código ' + res.status);
+      const data = await res.json();
+      $('#usageBody').innerHTML = renderUsage(data.snapshot);
+      $('#usageStamp').textContent = data.snapshot ? `Datos de ${fmtDate(data.snapshot.generatedAt)}` : '';
+      // Lo guardado en KV manda; el snapshot trae además los valores por defecto del monitor.
+      const cfg = { ...((data.snapshot && data.snapshot.config) || {}), ...(data.config || {}) };
+      if (cfg.balanceEur != null) $('#usageBalance').value = cfg.balanceEur;
+      if (cfg.balanceDate) $('#usageBalanceDate').value = cfg.balanceDate;
+    } catch (e) {
+      err.hidden = false;
+      err.textContent = 'No se pudo cargar el consumo: ' + e.message;
+    }
+  };
+  $('#usageRefresh').addEventListener('click', () => loadUsage());
+  $('#usageBalanceSave').addEventListener('click', () => {
+    const eur = Number($('#usageBalance').value);
+    const date = $('#usageBalanceDate').value;
+    if (!(eur >= 0) || !date) return;
+    loadUsage({ action: 'setBalance', eur, date });
+  });
 
   // ============================================================
   // Resultados de la encuesta (ver handleSurveyResults en worker/proxy.js):

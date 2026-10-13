@@ -124,8 +124,11 @@ export default {
     // Planificador "Mi plan" (ver handleWalkRoute): camino a pie real entre
     // paradas elegidas por el usuario, con caché en KV.
     const isWalkRoute = url.pathname.endsWith('/route/walk');
+    // Pestaña "Consumo" del panel: lee el resumen que guarda el Worker
+    // omot-monitor (ver worker/monitor/) y deja apuntar el saldo real de Gemini.
+    const isUsageAdmin = url.pathname.endsWith('/usage/admin');
 
-    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isAdminCheck && !isMetricsTrack && !isMetricsQuery && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify && !isPremiumGrant && !isPremiumRevoke && !isPremiumAdminList && !isPremiumAdminConfig && !isSurveyQuestions && !isSurveySubmit && !isSurveyResults && !isWalkRoute)) {
+    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isAdminCheck && !isMetricsTrack && !isMetricsQuery && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify && !isPremiumGrant && !isPremiumRevoke && !isPremiumAdminList && !isPremiumAdminConfig && !isSurveyQuestions && !isSurveySubmit && !isSurveyResults && !isWalkRoute && !isUsageAdmin)) {
       return new Response(JSON.stringify({ error: 'not found' }), {
         status: 404,
         headers: { ...headers, 'Content-Type': 'application/json' }
@@ -168,6 +171,7 @@ export default {
     if (isSurveySubmit) return handleSurveySubmit(request, env, headers);
     if (isSurveyResults) return handleSurveyResults(request, env, headers);
     if (isWalkRoute) return handleWalkRoute(request, env, headers);
+    if (isUsageAdmin) return handleUsageAdmin(request, env, headers);
 
     // Rate limiting por IP (binding "RATE_LIMITER", configurado en el panel
     // de Cloudflare → pestaña "Bindings" → Add binding → Rate Limiting).
@@ -287,7 +291,10 @@ async function handleChatWithFallback(rawBody, env, headers) {
     }
     const res = await callGemini(arg, cap);
     const text = await res.text();
-    if (res.ok) return json(text, res.status, `gemini:${arg}`);
+    if (res.ok) {
+      try { recordAiUsage(env, 'gemini', arg, JSON.parse(text).usage); } catch (_) {}
+      return json(text, res.status, `gemini:${arg}`);
+    }
     last = { text, status: res.status };
     console.warn(`[chat] gemini ${arg} -> ${res.status}: ${text.slice(0, 200)}`);
     // Un 400 del modelo principal es un fallo de la petición: se devuelve
@@ -298,7 +305,10 @@ async function handleChatWithFallback(rawBody, env, headers) {
 
   if (env.ANTHROPIC_API_KEY && left() > 2000) {
     const res = await callClaude(payload, env, left());
-    if (res.ok) return json(JSON.stringify(res.body), 200, `claude:${CLAUDE_MODEL}`);
+    if (res.ok) {
+      recordAiUsage(env, 'claude', CLAUDE_MODEL, res.body.usage);
+      return json(JSON.stringify(res.body), 200, `claude:${CLAUDE_MODEL}`);
+    }
     console.warn(`[chat] claude -> ${res.status}: ${res.detail}`);
   }
 
@@ -306,6 +316,25 @@ async function handleChatWithFallback(rawBody, env, headers) {
   // ya sabe mostrar como "IA saturada" y cubrir con el simulador local.
   return json(last ? last.text : JSON.stringify({ error: 'all providers failed' }), last ? last.status : 503, 'none');
 }
+
+// Consumo de la IA para el Worker omot-monitor (ver worker/monitor/): un punto
+// por respuesta en el mismo dataset de Analytics Engine que las métricas,
+// marcado con blob1 = '_usage' para que handleMetricsQuery lo ignore. Gratis
+// hasta 100.000 puntos al día, sin tocar el KV. Gemini cobra el "pensamiento"
+// como salida y en el formato OpenAI va dentro de total_tokens, así que la
+// salida se calcula como total - entrada cuando total viene.
+function recordAiUsage(env, provider, model, usage) {
+  if (!env.METRICS || !usage) return;
+  const input = Number(usage.prompt_tokens) || 0;
+  const total = Number(usage.total_tokens) || 0;
+  const output = total > input ? total - input : Number(usage.completion_tokens) || 0;
+  env.METRICS.writeDataPoint({
+    blobs: [USAGE_MARK, model, 'ai', provider],
+    doubles: [1, input, output],
+    indexes: [USAGE_MARK]
+  });
+}
+const USAGE_MARK = '_usage';
 
 // Traduce la petición OpenAI (chat.completions) de la app a la Messages API de
 // Anthropic y la respuesta de vuelta al formato OpenAI. Fetch directo porque
@@ -484,6 +513,15 @@ async function handleTts(request, env, headers) {
   if (env.CITY_CONTENT) {
     try { await env.CITY_CONTENT.put(cacheKey, bytes, { expirationTtl: TTS_CACHE_TTL_S }); } catch (_) {}
   }
+  // Caracteres que Google cobra (solo en los fallos de caché): la capa
+  // gratis de WaveNet es de 1 millón al mes (ver omot-monitor).
+  if (env.METRICS) {
+    env.METRICS.writeDataPoint({
+      blobs: [USAGE_MARK, voice.name, 'tts', 'google'],
+      doubles: [1, text.length, 0],
+      indexes: [USAGE_MARK]
+    });
+  }
 
   return new Response(bytes, {
     status: 200,
@@ -600,7 +638,14 @@ async function handleLicenseCheck(request, env, headers) {
   const origin = request.headers.get('Origin') || '';
   if (NATIVE_ORIGINS.includes(origin) && /^[A-HJKMNP-Z2-9]{6}$/.test(username)) {
     const existing = await env.LICENSES.get(username);
-    if (existing == null) await env.LICENSES.put(username, 'libre');
+    if (existing == null) {
+      // Si la escritura falla (p. ej. agotadas las 1.000 escrituras diarias del
+      // KV gratis), se deja entrar igual: origen y formato ya prueban que es la
+      // app nativa, y la próxima comprobación volverá a intentar guardarla.
+      try { await env.LICENSES.put(username, 'libre'); } catch (_) {
+        return respond({ ok: true, expires: null });
+      }
+    }
   }
 
   const result = await checkLicenseValidity(env, username);
@@ -775,6 +820,8 @@ async function handleMetricsQuery(request, env, headers) {
     const secs = Math.max(0, Math.floor((Date.now() - Date.parse(resetAt)) / 1000));
     if (secs < days * 86400) since = `timestamp > NOW() - INTERVAL '${secs}' SECOND`;
   }
+  // Los puntos de consumo de la IA (recordAiUsage) comparten dataset.
+  since += ` AND blob1 != '${USAGE_MARK}'`;
   const total = 'SUM(_sample_interval * double1) AS n';
   try {
     const [rows, daily, segments, demand] = await Promise.all([
@@ -787,6 +834,30 @@ async function handleMetricsQuery(request, env, headers) {
   } catch (e) {
     return jsonResponse({ ok: false, reason: 'query-failed', detail: String(e.message || e) }, 502, headers);
   }
+}
+
+// Pestaña "Consumo" del panel. Los números los calcula cada hora el Worker
+// omot-monitor (worker/monitor/index.js) y los deja en el KV PREMIUM:
+// usage:snapshot (último resumen) y usage:config (saldo de Gemini leído a
+// mano en AI Studio, que no tiene API). action 'setBalance' apunta un saldo
+// nuevo; el monitor descuenta desde ahí el gasto estimado.
+async function handleUsageAdmin(request, env, headers) {
+  const { error, payload } = await checkAdminAccess(request, env, headers, 'PREMIUM');
+  if (error) return error;
+  let config = {};
+  try { config = JSON.parse(await env.PREMIUM.get('usage:config')) || {}; } catch (_) {}
+  if (payload.action === 'setBalance') {
+    const eur = Number(payload.eur);
+    const date = String(payload.date || '');
+    if (!(eur >= 0 && eur < 100000) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return jsonResponse({ ok: false, reason: 'bad-request' }, 400, headers);
+    }
+    config = { ...config, balanceEur: eur, balanceDate: date };
+    await env.PREMIUM.put('usage:config', JSON.stringify(config));
+  }
+  let snapshot = null;
+  try { snapshot = JSON.parse(await env.PREMIUM.get('usage:snapshot')); } catch (_) {}
+  return jsonResponse({ ok: true, config, snapshot }, 200, headers);
 }
 
 
