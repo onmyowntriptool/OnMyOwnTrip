@@ -615,6 +615,17 @@
     }
     const t = sumByAction(rows);
     const sessions = t.city || 0;
+    // Reparto por plataforma de las señales de demanda (plan_limit, quota_out,
+    // premium_interest). El Worker lo da para todas las ciudades juntas, así
+    // que solo se enseña sin filtro de ciudad. En iPhone no se ofrece Premium:
+    // allí plan_limit y quota_out son la única pista de quién quiere más.
+    const demandSplit = (action) => {
+      if (city || !Array.isArray(metricsData.demand)) return '';
+      const by = {};
+      metricsData.demand.filter((d) => d.action === action).forEach((d) => { by[d.platform] = (by[d.platform] || 0) + d.n; });
+      return [['android', 'Android'], ['ios', 'iPhone'], ['web', 'Web']].filter(([k]) => by[k]).map(([k, label]) => `${label} ${fmtN(by[k])}`).join(' · ');
+    };
+    const joinNotes = (...xs) => xs.filter(Boolean).join(' · ');
 
     let html = '<div class="mx-kpis">'
       + kpi(fmtN(sessions), 'Ciudades abiertas', 'cada vez que alguien abre una ciudad')
@@ -622,8 +633,9 @@
       + kpi(fmtN(t.intro_done), 'Introducciones completas', `${pct(t.intro_done, t.open)} de las fichas abiertas`)
       + kpi(fmtN(t.visit), 'Lugares visitados', `${ratio(t.visit, sessions)} por ciudad abierta (primera vez en cada móvil)`)
       + kpi(fmtN(t.deepen), 'Profundiza más', `${pct(t.deepen, t.open)} de las fichas abiertas`)
-      + kpi(fmtN(t.question), 'Preguntas a la IA', t.quota_out ? `Sin preguntas disponibles: ${fmtN(t.quota_out)}` : '')
-      + kpi(fmtN(t.premium_interest), 'Interés en Premium', `"Me interesa" (uno por móvil) · ventana abierta ${fmtN(t.premium_view)} veces`)
+      + kpi(fmtN(t.question), 'Preguntas a la IA', t.quota_out ? joinNotes(`Sin preguntas disponibles: ${fmtN(t.quota_out)}`, demandSplit('quota_out')) : '')
+      + kpi(fmtN(t.premium_interest), 'Interés en Premium', joinNotes(`"Me interesa" (uno por móvil) · ventana abierta ${fmtN(t.premium_view)} veces`, demandSplit('premium_interest')))
+      + kpi(fmtN(t.plan_limit), 'Límite de Mi plan', joinNotes('veces que alguien choca con el límite gratuito (4.ª parada, 2.º plan, ordenar…)', demandSplit('plan_limit')))
       + '</div>';
 
     // Embudo: de abrir la ciudad a profundizar.

@@ -695,8 +695,14 @@ const METRICS_SINCE_KEY = 'config:metricsSince'; // en el KV PREMIUM, junto al r
 const METRIC_ACTIONS = [
   'city', 'open', 'intro', 'intro_done', 'visit', 'deepen', 'ticket', 'directions',
   'question', 'quota_out', 'plan_add', 'photo', 'search',
-  'premium_view', 'premium_interest'
+  'premium_view', 'premium_interest',
+  // Choques con el límite gratuito de Mi plan (4.ª parada, 2.º plan, ordenar
+  // por cercanía, ruta o plan compartido recortados). En iPhone no se ofrece
+  // Premium, así que es la única señal de demanda que hay allí.
+  'plan_limit'
 ];
+// Señales de demanda que el panel enseña separadas por plataforma.
+const METRIC_DEMAND_ACTIONS = ['plan_limit', 'quota_out', 'premium_interest'];
 const METRIC_ID_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
 async function handleMetricsTrack(request, env, headers) {
@@ -770,12 +776,13 @@ async function handleMetricsQuery(request, env, headers) {
   }
   const total = 'SUM(_sample_interval * double1) AS n';
   try {
-    const [rows, daily, segments] = await Promise.all([
+    const [rows, daily, segments, demand] = await Promise.all([
       runMetricsSql(env, `SELECT blob1 AS city, blob2 AS poi, blob3 AS action, ${total} FROM ${METRICS_DATASET} WHERE ${since} GROUP BY city, poi, action ORDER BY n DESC LIMIT 10000`),
       runMetricsSql(env, `SELECT toStartOfInterval(timestamp, INTERVAL '1' DAY) AS day, blob3 AS action, ${total} FROM ${METRICS_DATASET} WHERE ${since} GROUP BY day, action ORDER BY day`),
-      runMetricsSql(env, `SELECT blob4 AS platform, blob5 AS lang, blob6 AS mode, ${total} FROM ${METRICS_DATASET} WHERE ${since} AND blob3 = 'city' GROUP BY platform, lang, mode`)
+      runMetricsSql(env, `SELECT blob4 AS platform, blob5 AS lang, blob6 AS mode, ${total} FROM ${METRICS_DATASET} WHERE ${since} AND blob3 = 'city' GROUP BY platform, lang, mode`),
+      runMetricsSql(env, `SELECT blob4 AS platform, blob3 AS action, ${total} FROM ${METRICS_DATASET} WHERE ${since} AND blob3 IN (${METRIC_DEMAND_ACTIONS.map((a) => `'${a}'`).join(', ')}) GROUP BY platform, action`)
     ]);
-    return jsonResponse({ ok: true, days, rows, daily, segments, resetAt }, 200, headers);
+    return jsonResponse({ ok: true, days, rows, daily, segments, demand, resetAt }, 200, headers);
   } catch (e) {
     return jsonResponse({ ok: false, reason: 'query-failed', detail: String(e.message || e) }, 502, headers);
   }

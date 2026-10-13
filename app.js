@@ -2168,11 +2168,18 @@
   // PTP(esPremium, enPremium, esSinPremium, enSinPremium).
   const PTP = (esP, enP, esN, enN) => (isPremiumOfferPlatform() ? PT(esP, enP) : PT(esN, enN));
   const planStopsFull = (plan) => planLimited() && plan.stops.length >= PLAN_FREE_STOPS;
-  const gateFullPlan = () => showToast(PTP(
-    `Versión gratuita: hasta ${PLAN_FREE_STOPS} paradas por plan. Con Premium, sin límite.`,
-    `Free version: up to ${PLAN_FREE_STOPS} stops per plan. With Premium, no limit.`,
-    `Puedes añadir hasta ${PLAN_FREE_STOPS} paradas por plan.`,
-    `You can add up to ${PLAN_FREE_STOPS} stops per plan.`), 3400);
+  // Cada choque con el límite gratuito de Mi plan cuenta como "plan_limit"
+  // (ver METRIC_ACTIONS en worker/proxy.js): en iPhone, donde no se ofrece
+  // Premium, es la única señal de cuánta gente necesita más.
+  const trackPlanLimit = () => METRICS.track('plan_limit');
+  const gateFullPlan = () => {
+    trackPlanLimit();
+    showToast(PTP(
+      `Versión gratuita: hasta ${PLAN_FREE_STOPS} paradas por plan. Con Premium, sin límite.`,
+      `Free version: up to ${PLAN_FREE_STOPS} stops per plan. With Premium, no limit.`,
+      `Puedes añadir hasta ${PLAN_FREE_STOPS} paradas por plan.`,
+      `You can add up to ${PLAN_FREE_STOPS} stops per plan.`), 3400);
+  };
   const PLAN_ROUTE_META = { id: PLAN_ROUTE_ID, color: PLAN_COLOR, name: { es: { adult: 'Mi plan', kids: 'Mi plan' }, en: { adult: 'My plan', kids: 'My plan' } } };
 
   const PLANS = (() => { try { return JSON.parse(localStorage.getItem(PLAN_KEY) || '{}') || {}; } catch (_) { return {}; } })();
@@ -2208,6 +2215,7 @@
   const createPlan = () => {
     const c = getCityPlans();
     if (planLimited() && c.list.length >= 1) {
+      trackPlanLimit();
       showToast(PTP('Actualiza a Premium para crear más rutas.', 'Upgrade to Premium to create more routes.',
         'Por ahora puedes tener 1 plan por ciudad.', 'For now you can have 1 plan per city.'), 3400);
       return;
@@ -2318,6 +2326,7 @@
   // la ciudad) o en la primera, y va siempre a la más cercana que quede.
   const sortPlanByProximity = () => {
     if (planLimited()) {
+      trackPlanLimit();
       showToast(PTP('Ordenar por cercanía es Premium.', 'Sorting by proximity is Premium.',
         'Ordenar por cercanía no está disponible.', 'Sorting by proximity is not available.'), 3400);
       return;
@@ -2373,6 +2382,7 @@
       .sort((a, b) => a.essential.order - b.essential.order)
       .map((p) => ({ id: p.id, visit: null }));
     if (planLimited() && stops.length > PLAN_FREE_STOPS) {
+      trackPlanLimit();
       stops = stops.slice(0, PLAN_FREE_STOPS);
       showToast(PTP(`Versión gratuita: se copian las ${PLAN_FREE_STOPS} primeras paradas. La ruta completa es Premium.`, `Free version: the first ${PLAN_FREE_STOPS} stops were copied. The full route is Premium.`,
         `Se han copiado las ${PLAN_FREE_STOPS} primeras paradas, el máximo por plan.`, `The first ${PLAN_FREE_STOPS} stops were copied, the maximum per plan.`), 3400);
@@ -2673,6 +2683,7 @@
       const cur = getPlan();
       if (cur.stops.length && !window.confirm(PT(`Con la versión gratuita tienes un solo plan. ¿Cambiar «${cur.name}» por el compartido?`, `The free version has a single plan. Replace "${cur.name}" with the shared one?`))) return;
       if (stops.length > PLAN_FREE_STOPS) {
+        trackPlanLimit();
         stops = stops.slice(0, PLAN_FREE_STOPS);
         note = PT(` Versión gratuita: solo las ${PLAN_FREE_STOPS} primeras paradas.`, ` Free version: only the first ${PLAN_FREE_STOPS} stops.`);
       }
@@ -2702,8 +2713,11 @@
       const tab = e.target.closest('.plan-tab');
       if (!tab) return;
       if (tab.dataset.plan === '__new__') createPlan();
-      else if (planLimited() && tab.dataset.plan !== getCityPlans().active) showToast(PTP('Actualiza a Premium para usar más rutas. Las otras siguen guardadas.', 'Upgrade to Premium to use more routes. The others are still saved.',
-        'Por ahora puedes usar 1 plan por ciudad. Los otros siguen guardados.', 'For now you can use 1 plan per city. The others are still saved.'), 3400);
+      else if (planLimited() && tab.dataset.plan !== getCityPlans().active) {
+        trackPlanLimit();
+        showToast(PTP('Actualiza a Premium para usar más rutas. Las otras siguen guardadas.', 'Upgrade to Premium to use more routes. The others are still saved.',
+          'Por ahora puedes usar 1 plan por ciudad. Los otros siguen guardados.', 'For now you can use 1 plan per city. The others are still saved.'), 3400);
+      }
       else setActivePlan(tab.dataset.plan);
     });
     $('#planRenameBtn')?.addEventListener('click', renameActivePlan);
