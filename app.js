@@ -890,6 +890,9 @@
     // Interruptor a distancia de la oferta Premium del chat (ver CHAT_QUOTA
     // y getChatUpsellEnabled en worker/proxy.js): llega con la licencia.
     chatUpsell: false,
+    // Preguntas por Punto de interés y día que manda el Worker (ver
+    // chatQuotaPerPoi más abajo); null = usar el valor por defecto.
+    chatQuotaPerPoi: null,
     category: CATEGORIES.ALL,
     activeRoute: null, // id de la ruta imprescindible activa (para ciudades con varios circuitos)
     activePoiId: null,
@@ -1293,8 +1296,8 @@
       const recheck = async () => {
         const result = await check(username, 'watch');
         if (result.ok) {
-          writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell, planPremium: !!result.planPremium });
-          STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; STATE.planPremium = !!result.planPremium; applyUpdatePolicy(result.updatePolicy);
+          writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell, planPremium: !!result.planPremium, chatQuotaPerPoi: result.chatQuotaPerPoi });
+          STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; STATE.planPremium = !!result.planPremium; STATE.chatQuotaPerPoi = result.chatQuotaPerPoi; applyUpdatePolicy(result.updatePolicy);
         } else if (result.reason !== 'offline') {
           stopWatching();
           clearStored();
@@ -4114,7 +4117,7 @@
       const data = await res.json().catch(() => ({ ok: false }));
       if (data.ok && Array.isArray(data.premiumCities)) {
         STATE.premiumCities = data.premiumCities;
-        LICENSE.writeStored({ username, expires: (stored && stored.expires) ?? null, premiumCities: data.premiumCities, chatUpsell: STATE.chatUpsell });
+        LICENSE.writeStored({ username, expires: (stored && stored.expires) ?? null, premiumCities: data.premiumCities, chatUpsell: STATE.chatUpsell, planPremium: STATE.planPremium, chatQuotaPerPoi: STATE.chatQuotaPerPoi });
       }
       return data;
     } catch (e) {
@@ -7023,7 +7026,7 @@
    * LÍMITE DE PREGUNTAS AL GUÍA IA (plan gratis)
    * =======================================================*/
   // Cuentan las preguntas libres al guía (escritas, dictadas o en la llamada
-  // por voz). Plan gratis: CHAT_QUOTA.perPoi por Punto de interés y día, más
+  // por voz). Plan gratis: chatQuotaPerPoi() por Punto de interés y día, más
   // un tope diario total invisible (dailyFree) que solo frena abusos y
   // controla el gasto de IA. Con el Premium de la ciudad (isCityPremium) no
   // hay límite por Punto de interés, solo un tope diario alto (dailyPremium).
@@ -7037,10 +7040,17 @@
   // pestaña Gestión, sin publicar versión nueva). Apagado, el límite
   // funciona igual pero sin ningún enlace ni ventana de Premium. Aun
   // encendido, solo se ofrece donde la compra funciona (isNativeBillingAvailable).
+  // perPoi es el valor por defecto: el real lo manda el Worker con la
+  // licencia (config:chatQuotaPerPoi, se ajusta en el panel, pestaña "Acceso
+  // premium") y llega en STATE.chatQuotaPerPoi -- ver chatQuotaPerPoi().
   const CHAT_QUOTA = {
-    perPoi: 3,
+    perPoi: 5,
     dailyFree: 40,
     dailyPremium: 200
+  };
+  const chatQuotaPerPoi = () => {
+    const n = Number(STATE.chatQuotaPerPoi);
+    return Number.isInteger(n) && n >= 1 && n <= 50 ? n : CHAT_QUOTA.perPoi;
   };
   const isChatUpsellOn = () => !!STATE.chatUpsell;
   const CHAT_QUOTA_KEY = 'omot_chat_quota_v1';
@@ -7071,7 +7081,7 @@
     return {
       premium,
       used,
-      remaining: premium ? null : Math.max(0, CHAT_QUOTA.perPoi - used),
+      remaining: premium ? null : Math.max(0, chatQuotaPerPoi() - used),
       dailyReached: q.total >= (premium ? CHAT_QUOTA.dailyPremium : CHAT_QUOTA.dailyFree),
       noticeSeen: !!q.noticeSeen
     };
@@ -7122,7 +7132,7 @@
   const noteChatQuotaAfterAnswer = (poiId) => {
     const s = chatQuotaStatus(poiId);
     if (s.premium || s.remaining !== 0) return;
-    aiHistoryFor(poiId).push({ role: 'notice', text: t('chatQuotaExhaustedMsg').replace(/\{n\}/g, CHAT_QUOTA.perPoi) });
+    aiHistoryFor(poiId).push({ role: 'notice', text: t('chatQuotaExhaustedMsg').replace(/\{n\}/g, chatQuotaPerPoi()) });
   };
 
   const renderChatQuotaHint = () => {
@@ -7131,7 +7141,7 @@
     const poiId = STATE.activePoiId;
     if (!poiId || STATE.mode === 'kids') { el.hidden = true; return; }
     const s = chatQuotaStatus(poiId);
-    const n = CHAT_QUOTA.perPoi;
+    const n = chatQuotaPerPoi();
     let text = '';
     let tone = '';
     if (s.dailyReached) { text = t('chatQuotaDailyReached'); tone = ' -out'; }
@@ -10762,8 +10772,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       submit.disabled = false;
       submit.textContent = 'Entrar';
       if (result.ok) {
-        LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell, planPremium: !!result.planPremium });
-        STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; STATE.planPremium = !!result.planPremium; applyUpdatePolicy(result.updatePolicy);
+        LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell, planPremium: !!result.planPremium, chatQuotaPerPoi: result.chatQuotaPerPoi });
+        STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; STATE.planPremium = !!result.planPremium; STATE.chatQuotaPerPoi = result.chatQuotaPerPoi; applyUpdatePolicy(result.updatePolicy);
         hideLicenseGate();
         revealApp(); // no-op si la app ya se había revelado antes de un bloqueo
         LICENSE.startWatching(username, lockApp);
@@ -10791,8 +10801,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     const username = getDeviceCode();
     const result = await LICENSE.check(username);
     if (!result.ok) return false;
-    LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell, planPremium: !!result.planPremium });
-    STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; STATE.planPremium = !!result.planPremium; applyUpdatePolicy(result.updatePolicy);
+    LICENSE.writeStored({ username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell, planPremium: !!result.planPremium, chatQuotaPerPoi: result.chatQuotaPerPoi });
+    STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; STATE.planPremium = !!result.planPremium; STATE.chatQuotaPerPoi = result.chatQuotaPerPoi; applyUpdatePolicy(result.updatePolicy);
     revealApp();
     LICENSE.startWatching(username, lockApp);
     return true;
@@ -11000,7 +11010,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       // ficha con patrocinio que se abriera (antes de que responda el
       // Worker) podría mostrar publicidad a alguien que ya la había
       // comprado, un instante hasta que llegue la revalidación de abajo.
-      STATE.premiumCities = cached.premiumCities || []; STATE.chatUpsell = !!cached.chatUpsell; STATE.planPremium = !!cached.planPremium;
+      STATE.premiumCities = cached.premiumCities || []; STATE.chatUpsell = !!cached.chatUpsell; STATE.planPremium = !!cached.planPremium; STATE.chatQuotaPerPoi = cached.chatQuotaPerPoi;
       revealApp();
       // Revalidación contra el Worker real: si ya no es válido, bloquea de
       // inmediato en vez de esperar a la siguiente apertura de la app. Si
@@ -11009,8 +11019,8 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
       // app sigue abierta.
       LICENSE.check(cached.username).then((result) => {
         if (result.ok) {
-          LICENSE.writeStored({ username: cached.username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell, planPremium: !!result.planPremium });
-          STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; STATE.planPremium = !!result.planPremium; applyUpdatePolicy(result.updatePolicy);
+          LICENSE.writeStored({ username: cached.username, expires: result.expires, premiumCities: result.premiumCities || [], chatUpsell: !!result.chatUpsell, planPremium: !!result.planPremium, chatQuotaPerPoi: result.chatQuotaPerPoi });
+          STATE.premiumCities = result.premiumCities || []; STATE.chatUpsell = !!result.chatUpsell; STATE.planPremium = !!result.planPremium; STATE.chatQuotaPerPoi = result.chatQuotaPerPoi; applyUpdatePolicy(result.updatePolicy);
           LICENSE.startWatching(cached.username, lockApp);
         } else if (result.reason !== 'offline') {
           LICENSE.clearStored();

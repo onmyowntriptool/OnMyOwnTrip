@@ -612,6 +612,7 @@ async function handleLicenseCheck(request, env, headers) {
     result.premiumCities = await getPremiumCities(env, username);
     result.chatUpsell = await getChatUpsellEnabled(env);
     result.planPremium = await getPlanPremiumEnabled(env);
+    result.chatQuotaPerPoi = await getChatQuotaPerPoi(env);
     // Versión y plataforma que manda la app (ver LICENSE.check en app.js):
     // se apunta para el panel y se le devuelve su aviso de actualización.
     const platform = String((payload && payload.platform) || '');
@@ -1455,6 +1456,19 @@ async function getPlanPremiumEnabled(env) {
   if (!env.PREMIUM) return false;
   try { return (await env.PREMIUM.get(PLAN_PREMIUM_KEY)) === 'on'; } catch (_) { return false; }
 }
+// Preguntas libres al guía IA por Punto de interés y día en el plan gratis
+// (ver CHAT_QUOTA en app.js). Se ajusta desde el panel (pestaña "Acceso
+// premium") sin publicar versión nueva; si no hay valor guardado, 5.
+const CHAT_QUOTA_PER_POI_KEY = 'config:chatQuotaPerPoi';
+const CHAT_QUOTA_PER_POI_DEFAULT = 5;
+const isValidChatQuota = (n) => Number.isInteger(n) && n >= 1 && n <= 50;
+async function getChatQuotaPerPoi(env) {
+  if (!env.PREMIUM) return CHAT_QUOTA_PER_POI_DEFAULT;
+  try {
+    const n = parseInt(await env.PREMIUM.get(CHAT_QUOTA_PER_POI_KEY), 10);
+    return isValidChatQuota(n) ? n : CHAT_QUOTA_PER_POI_DEFAULT;
+  } catch (_) { return CHAT_QUOTA_PER_POI_DEFAULT; }
+}
 async function getChatUpsellEnabled(env) {
   if (!env.PREMIUM) return false;
   try { return (await env.PREMIUM.get(CHAT_UPSELL_KEY)) === 'on'; } catch (_) { return false; }
@@ -1964,6 +1978,9 @@ async function handlePremiumAdminConfig(request, env, headers) {
   if (payload && typeof payload.planPremium === 'boolean') {
     await env.PREMIUM.put(PLAN_PREMIUM_KEY, payload.planPremium ? 'on' : 'off');
   }
+  if (payload && payload.chatQuotaPerPoi != null && isValidChatQuota(Number(payload.chatQuotaPerPoi))) {
+    await env.PREMIUM.put(CHAT_QUOTA_PER_POI_KEY, String(Number(payload.chatQuotaPerPoi)));
+  }
   if (payload && payload.updatePolicy && typeof payload.updatePolicy === 'object') {
     const clean = {};
     ['android', 'ios'].forEach((p) => {
@@ -1979,6 +1996,7 @@ async function handlePremiumAdminConfig(request, env, headers) {
     ok: true,
     chatUpsell: await getChatUpsellEnabled(env),
     planPremium: await getPlanPremiumEnabled(env),
+    chatQuotaPerPoi: await getChatQuotaPerPoi(env),
     updatePolicy: { android: updatePolicyFor(policy, 'android'), ios: updatePolicyFor(policy, 'ios') },
     versions: await getAppVersionStats(env)
   }), {

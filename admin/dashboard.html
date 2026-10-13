@@ -430,10 +430,22 @@
            getChatUpsellEnabled en worker/proxy.js y CHAT_QUOTA en app.js). -->
       <section>
         <h2>Oferta Premium en el chat</h2>
-        <p class="hint" style="margin-top:-6px">Enciéndelo cuando Google Play ya cobre. Con él apagado, el límite de 3 preguntas por Punto de interés sigue igual, pero sin enlace ni ventana de Premium. Solo se ve en la app de Android; llega a los móviles en su siguiente comprobación de licencia (al abrir la app o en menos de un minuto).</p>
+        <p class="hint" style="margin-top:-6px">Enciéndelo cuando Google Play ya cobre. Con él apagado, el límite de preguntas por Punto de interés (ver abajo) sigue igual, pero sin enlace ni ventana de Premium. Solo se ve en la app de Android; llega a los móviles en su siguiente comprobación de licencia (al abrir la app o en menos de un minuto).</p>
         <div class="form-actions">
           <button type="button" class="refresh-btn" id="chatUpsellToggle" disabled>Cargando…</button>
           <span class="error" id="chatUpsellError" hidden></span>
+        </div>
+      </section>
+
+      <!-- Preguntas gratis al guía IA por Punto de interés y día (ver
+           getChatQuotaPerPoi en worker/proxy.js y chatQuotaPerPoi en app.js). -->
+      <section>
+        <h2>Preguntas gratis al guía IA</h2>
+        <p class="hint" style="margin-top:-6px">Preguntas libres (escritas, dictadas o en la llamada) por Punto de interés y día en el plan gratis, de 1 a 50. Los botones de tema y «Profundiza más» no cuentan. Llega a los móviles en su siguiente comprobación de licencia (al abrir la app o en menos de un minuto). Si cambias el número, actualiza también el texto de la portada.</p>
+        <div class="form-actions">
+          <input type="number" id="chatQuotaInput" min="1" max="50" step="1" style="width:90px" disabled>
+          <button type="button" class="refresh-btn" id="chatQuotaSaveBtn" disabled>Guardar</button>
+          <span class="error" id="chatQuotaError" hidden></span>
         </div>
       </section>
 
@@ -1593,7 +1605,15 @@
       $(`#upd${cap}Url`).value = pol.url || '';
     });
   };
-  const chatUpsellRequest = async (value, updatePolicy, planValue) => {
+  const renderChatQuota = (n) => {
+    const input = $('#chatQuotaInput');
+    const btn = $('#chatQuotaSaveBtn');
+    const ok = Number.isInteger(n);
+    if (ok) input.value = n;
+    input.disabled = !ok;
+    btn.disabled = !ok;
+  };
+  const chatUpsellRequest = async (value, updatePolicy, planValue, quotaValue) => {
     const err = $('#chatUpsellError');
     err.hidden = true;
     try {
@@ -1601,6 +1621,7 @@
       if (typeof value === 'boolean') body.chatUpsell = value;
       if (updatePolicy) body.updatePolicy = updatePolicy;
       if (typeof planValue === 'boolean') body.planPremium = planValue;
+      if (Number.isInteger(quotaValue)) body.chatQuotaPerPoi = quotaValue;
       const res = await fetch(`${WORKER_BASE}/premium/admin/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1610,6 +1631,7 @@
       const data = await res.json();
       chatUpsellOn = !!data.chatUpsell;
       planPremiumOn = !!data.planPremium;
+      renderChatQuota(data.chatQuotaPerPoi);
       renderAppVersions(data.versions);
       renderUpdatePolicy(data.updatePolicy);
     } catch (e) {
@@ -1619,6 +1641,22 @@
     renderChatUpsellToggle();
     renderPlanPremiumToggle();
   };
+  $('#chatQuotaSaveBtn').addEventListener('click', async () => {
+    const err = $('#chatQuotaError');
+    err.hidden = true;
+    const n = Number($('#chatQuotaInput').value);
+    if (!Number.isInteger(n) || n < 1 || n > 50) {
+      err.hidden = false;
+      err.textContent = 'Pon un número entero entre 1 y 50.';
+      return;
+    }
+    if (!confirm(`¿Dejar en ${n} las preguntas gratis por Punto de interés y día?`)) return;
+    const btn = $('#chatQuotaSaveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    await chatUpsellRequest(undefined, undefined, undefined, n);
+    btn.textContent = 'Guardar';
+  });
   $('#planPremiumToggle').addEventListener('click', () => {
     if (planPremiumOn == null) return;
     const next = !planPremiumOn;
