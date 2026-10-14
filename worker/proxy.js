@@ -438,8 +438,8 @@ async function handleTts(request, env, headers) {
   // indebido. Antes era 3000 y cortaba el final de las introducciones más
   // largas (hay de ~3100); ahora el texto se trocea (ver splitTtsText) y el
   // tope sube al mismo que usa la app (6000, ver buildNarrativeText).
-  const text = String((payload && payload.text) || '').slice(0, 6000);
-  if (!text.trim()) {
+  const rawText = String((payload && payload.text) || '').slice(0, 6000);
+  if (!rawText.trim()) {
     return new Response(JSON.stringify({ error: 'missing text' }), {
       status: 400,
       headers: { ...headers, 'Content-Type': 'application/json' }
@@ -447,6 +447,7 @@ async function handleTts(request, env, headers) {
   }
   const lang = payload && payload.lang === 'en' ? 'en' : 'es';
   const voice = TTS_VOICES[lang];
+  const text = fixTtsPronunciation(rawText, lang);
 
   // Caché compartida en KV (CITY_CONTENT): cada texto se genera con Google
   // UNA vez y todos los usuarios lo reciben al momento después (antes solo
@@ -538,6 +539,21 @@ const TTS_CACHE_TTL_S = 180 * 24 * 3600;
 // Parte el texto en trozos de como mucho maxBytes (UTF-8), cortando al final
 // de una frase siempre que se pueda y, si una frase sola no cabe, en un
 // espacio.
+// Palabras que la voz de Google deletrea o pronuncia mal. Se cambian solo en
+// el texto que se manda a sintetizar (la app muestra el original). Como la
+// clave de la caché usa el texto ya corregido, los audios viejos con el
+// fallo se regeneran solos. Se detectan comparando la duración del audio
+// con la de una palabra parecida: "Ella ocupó el puesto" dura 1,7 s más que
+// "Ella tomó el puesto" porque es-ES-Wavenet-B lee "ocupó" letra a letra
+// (2026-10-14); con mayúscula inicial la lee bien.
+const TTS_FIXES = {
+  es: [[/(?<!\p{L})ocupó(?!\p{L})/gu, 'Ocupó']],
+  en: []
+};
+function fixTtsPronunciation(text, lang) {
+  return (TTS_FIXES[lang] || []).reduce((t, [re, to]) => t.replace(re, to), text);
+}
+
 function splitTtsText(text, maxBytes) {
   const enc = new TextEncoder();
   const size = (t) => enc.encode(t).length;
