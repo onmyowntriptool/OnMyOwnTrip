@@ -1017,7 +1017,7 @@ async function handleDeepenScript(request, env, headers) {
   if (!entry || !Array.isArray(entry.titles) || !Array.isArray(entry.points) || !entry.points.length) {
     return reply({ ok: false, reason: 'missing' });
   }
-  return reply({ ok: true, titles: entry.titles, points: entry.points });
+  return reply({ ok: true, titles: entry.titles, points: entry.points, ver: script.ver || null });
 }
 
 // ============================================================

@@ -1073,6 +1073,20 @@
   // (ver recordAppVersion y updatePolicyFor en worker/proxy.js). La versión
   // sale del propio "Beta VXX" de index.html, que ya se sube en cada
   // cambio, para no tener que mantener el mismo número en dos sitios.
+  // Etiqueta de pruebas bajo el icono de IA en "Profundiza más" (V1 IA en
+  // vivo, V0 guion original, V2 guion revisado con Sonnet, V3 con Opus).
+  // Solo se ve en el dispositivo donde se active manteniendo pulsado 2 s el
+  // icono de IA de cualquier respuesta (ver wireVersionTags); nadie más la ve.
+  const VERSION_TAGS = {
+    key: 'omot-version-tags',
+    on() { try { return localStorage.getItem(this.key) === '1'; } catch (_) { return false; } },
+    toggle() {
+      const next = !this.on();
+      try { next ? localStorage.setItem(this.key, '1') : localStorage.removeItem(this.key); } catch (_) {}
+      return next;
+    }
+  };
+
   const appVersionNumber = () => {
     const m = (document.getElementById('appVersion')?.textContent || '').match(/V(\d+(?:\.\d+)?)/);
     return m ? m[1] : '';
@@ -7658,8 +7672,30 @@
     card.appendChild(nextBtn);
   };
 
+  // Mantener pulsado el icono de IA de una respuesta activa o desactiva las
+  // etiquetas de versión (ver VERSION_TAGS). Se engancha una sola vez al
+  // contenedor, porque los mensajes se repintan enteros.
+  let versionTagsWired = false;
+  const wireVersionTags = (box) => {
+    if (versionTagsWired) return;
+    versionTagsWired = true;
+    let timer = null;
+    const cancel = () => clearTimeout(timer);
+    box.addEventListener('pointerdown', (e) => {
+      cancel();
+      if (!e.target.closest('.ai-msg-avatar.-plain')) return;
+      timer = setTimeout(() => {
+        const on = VERSION_TAGS.toggle();
+        alert(on ? 'Etiquetas de versión activadas' : 'Etiquetas de versión desactivadas');
+        renderAiMessages();
+      }, 2000);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel', 'scroll'].forEach((ev) => box.addEventListener(ev, cancel, true));
+  };
+
   const renderAiMessages = () => {
     const box = $('#aiMessages');
+    if (box) wireVersionTags(box);
     if (!box || !STATE.activePoiId) return;
     const history = aiHistoryFor(STATE.activePoiId);
     box.innerHTML = '';
@@ -7713,6 +7749,12 @@
         const icon = document.createElement('img');
         icon.className = 'ai-msg-avatar-icon';
         icon.src = 'assets/icons/ai.png';
+        if (msg.ver && VERSION_TAGS.on()) {
+          const tag = document.createElement('span');
+          tag.className = 'ai-msg-ver';
+          tag.textContent = msg.ver;
+          av.appendChild(tag);
+        }
         icon.alt = '';
         av.appendChild(icon);
       }
@@ -8122,7 +8164,7 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
         signal: ctrl.signal
       });
       const data = await res.json();
-      if (data && data.ok && Array.isArray(data.points) && data.points.length) return { titles: data.titles, points: data.points };
+      if (data && data.ok && Array.isArray(data.points) && data.points.length) return { titles: data.titles, points: data.points, ver: data.ver || 'V0' };
       return data && (data.reason === 'off' || data.reason === 'missing') ? false : null;
     } catch (_) {
       return null;
@@ -8278,7 +8320,9 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     }
 
     await new Promise((resolve) => {
-      hist.push({ role: 'assistant', text, pregen });
+      // ver: de dónde sale el texto, solo para la etiqueta de pruebas (ver
+      // VERSION_TAGS): V1 IA en vivo, V0 guion original, V2/V3 guion revisado.
+      hist.push({ role: 'assistant', text, pregen, ver: script ? script.ver : (pregen ? undefined : 'V1') });
       renderAiMessages();
       scrollAiToBottom();
       if (STATE.activePoiId !== poi.id) { resolve(); return; }

@@ -2892,6 +2892,8 @@ html[data-mode="kids"] .ai-chat-tools { display: none; }
 }
 .ai-msg.-user .ai-msg-avatar { background: var(--color-border); color: var(--color-text); }
 .ai-msg-avatar-icon { width: 62%; height: 62%; object-fit: contain; }
+.ai-msg-avatar { position: relative; }
+.ai-msg-ver { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 3px; font-size: 8px; line-height: 1; color: var(--color-text); opacity: .45; pointer-events: none; }
 /* Icono de IA "en limpio": sin el círculo de fondo, el propio dibujo (ya
    lleva su borde blanco) se apoya en una sombra para no perderse sobre
    fondos claros. */
