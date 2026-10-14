@@ -7679,18 +7679,28 @@
   const wireVersionTags = (box) => {
     if (versionTagsWired) return;
     versionTagsWired = true;
+    // Dos caminos, porque no todos los navegadores avisan igual: el
+    // "contextmenu" (clic derecho en el ordenador, pulsación larga en
+    // Android) y un temporizador de 1,5 s para iOS, que no lo lanza.
     let timer = null;
     const cancel = () => clearTimeout(timer);
+    const toggle = () => {
+      cancel();
+      const on = VERSION_TAGS.toggle();
+      alert(on ? 'Etiquetas de versión activadas' : 'Etiquetas de versión desactivadas');
+      renderAiMessages();
+    };
+    box.addEventListener('contextmenu', (e) => {
+      if (!e.target.closest('.ai-msg-avatar.-plain')) return;
+      e.preventDefault();
+      toggle();
+    });
     box.addEventListener('pointerdown', (e) => {
       cancel();
-      if (!e.target.closest('.ai-msg-avatar.-plain')) return;
-      timer = setTimeout(() => {
-        const on = VERSION_TAGS.toggle();
-        alert(on ? 'Etiquetas de versión activadas' : 'Etiquetas de versión desactivadas');
-        renderAiMessages();
-      }, 2000);
+      if (e.button > 0 || !e.target.closest('.ai-msg-avatar.-plain')) return;
+      timer = setTimeout(toggle, 1500);
     });
-    ['pointerup', 'pointerleave', 'pointercancel', 'scroll'].forEach((ev) => box.addEventListener(ev, cancel, true));
+    ['pointerup', 'pointercancel', 'scroll'].forEach((ev) => box.addEventListener(ev, cancel, true));
   };
 
   const renderAiMessages = () => {
@@ -7749,6 +7759,7 @@
         const icon = document.createElement('img');
         icon.className = 'ai-msg-avatar-icon';
         icon.src = 'assets/icons/ai.png';
+        icon.draggable = false;
         if (msg.ver && VERSION_TAGS.on()) {
           const tag = document.createElement('span');
           tag.className = 'ai-msg-ver';
