@@ -127,8 +127,10 @@ export default {
     // Pestaña "Consumo" del panel: lee el resumen que guarda el Worker
     // omot-monitor (ver worker/monitor/) y deja apuntar el saldo real de Gemini.
     const isUsageAdmin = url.pathname.endsWith('/usage/admin');
+    // Guiones pregenerados de "Profundiza más" (ver handleDeepenScript).
+    const isDeepenScript = url.pathname.endsWith('/deepen/script');
 
-    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isAdminCheck && !isMetricsTrack && !isMetricsQuery && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify && !isPremiumGrant && !isPremiumRevoke && !isPremiumAdminList && !isPremiumAdminConfig && !isSurveyQuestions && !isSurveySubmit && !isSurveyResults && !isWalkRoute && !isUsageAdmin)) {
+    if (request.method !== 'POST' || (!isChat && !isTts && !isLicense && !isVisit && !isAdminCheck && !isMetricsTrack && !isMetricsQuery && !isContent && !isSponsorTrack && !isSponsorRank && !isSponsorsList && !isSponsorsAdminList && !isSponsorsUpsert && !isSponsorsDelete && !isSponsorsSubmit && !isSponsorsPendingList && !isSponsorsPendingDelete && !isPremiumVerify && !isPremiumGrant && !isPremiumRevoke && !isPremiumAdminList && !isPremiumAdminConfig && !isSurveyQuestions && !isSurveySubmit && !isSurveyResults && !isWalkRoute && !isUsageAdmin && !isDeepenScript)) {
       return new Response(JSON.stringify({ error: 'not found' }), {
         status: 404,
         headers: { ...headers, 'Content-Type': 'application/json' }
@@ -172,6 +174,7 @@ export default {
     if (isSurveyResults) return handleSurveyResults(request, env, headers);
     if (isWalkRoute) return handleWalkRoute(request, env, headers);
     if (isUsageAdmin) return handleUsageAdmin(request, env, headers);
+    if (isDeepenScript) return handleDeepenScript(request, env, headers);
 
     // Rate limiting por IP (binding "RATE_LIMITER", configurado en el panel
     // de Cloudflare → pestaña "Bindings" → Add binding → Rate Limiting).
@@ -932,6 +935,73 @@ async function handleContent(request, env, headers) {
     status: 200,
     headers: { ...headers, 'Content-Type': 'application/json' }
   });
+}
+
+// Guiones pregenerados de "Profundiza más": 7 títulos + 7 puntos por Punto
+// de interés, escritos de antemano (data/deepen/, fuera del repo) y subidos
+// a CITY_CONTENT como "deepen:<ciudad>:<poiId>" = { es: {titles, points},
+// en: {...} } con scripts/upload-deepen.js. Solo se sirven en las ciudades
+// encendidas desde el panel (config:deepenCities en PREMIUM, pestaña
+// "Acceso premium"); en el resto, o si falta el guion, la app sigue
+// pidiéndolo a la IA como siempre. Una clave por Punto de interés (no una
+// por ciudad) para no parsear ~1 MB de JSON en cada petición.
+const DEEPEN_CITIES_KEY = 'config:deepenCities';
+async function getDeepenCities(env) {
+  if (!env.PREMIUM) return [];
+  try {
+    const list = JSON.parse((await env.PREMIUM.get(DEEPEN_CITIES_KEY)) || '[]');
+    return Array.isArray(list) ? list.filter((id) => ALL_CITY_IDS.includes(id)) : [];
+  } catch (_) { return []; }
+}
+// Cuántos Puntos de interés tienen guion subido en cada ciudad (para el
+// panel). Un list() por cada 1.000 claves: solo lo usa el panel.
+async function getDeepenUploaded(env) {
+  const counts = {};
+  if (!env.CITY_CONTENT) return counts;
+  let cursor;
+  do {
+    const page = await env.CITY_CONTENT.list({ prefix: 'deepen:', cursor });
+    page.keys.forEach((k) => {
+      const city = k.name.split(':')[1];
+      counts[city] = (counts[city] || 0) + 1;
+    });
+    cursor = page.list_complete ? null : page.cursor;
+  } while (cursor);
+  return counts;
+}
+
+async function handleDeepenScript(request, env, headers) {
+  const reply = (body, status = 200) => new Response(JSON.stringify(body), {
+    status,
+    headers: { ...headers, 'Content-Type': 'application/json' }
+  });
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (env.RATE_LIMITER) {
+    const { success } = await env.RATE_LIMITER.limit({ key: `deepen:${ip}` });
+    if (!success) return reply({ ok: false, reason: 'rate-limited' }, 429);
+  }
+  let payload;
+  try { payload = await request.json(); } catch (_) { return reply({ ok: false, reason: 'bad-request' }, 400); }
+  if (!env.CITY_CONTENT || !env.LICENSES) return reply({ ok: false, reason: 'not-configured' }, 501);
+
+  const username = String((payload && payload.username) || '').trim();
+  const cityId = String((payload && payload.cityId) || '').trim();
+  const poiId = String((payload && payload.poiId) || '').trim();
+  const lang = (payload && payload.lang) === 'en' ? 'en' : 'es';
+  if (!username || !cityId || !poiId) return reply({ ok: false, reason: 'bad-request' }, 400);
+
+  // El interruptor va antes que la licencia: en las ciudades apagadas la
+  // respuesta sale con una sola lectura de KV.
+  if (!(await getDeepenCities(env)).includes(cityId)) return reply({ ok: false, reason: 'off' });
+  const licenseResult = await checkLicenseValidity(env, username);
+  if (!licenseResult.ok) return reply({ ok: false, reason: licenseResult.reason }, 403);
+
+  const script = await env.CITY_CONTENT.get(`deepen:${cityId}:${poiId}`, 'json');
+  const entry = script && script[lang];
+  if (!entry || !Array.isArray(entry.titles) || !Array.isArray(entry.points) || !entry.points.length) {
+    return reply({ ok: false, reason: 'missing' });
+  }
+  return reply({ ok: true, titles: entry.titles, points: entry.points });
 }
 
 // ============================================================
@@ -2052,6 +2122,10 @@ async function handlePremiumAdminConfig(request, env, headers) {
   if (payload && payload.chatQuotaPerPoi != null && isValidChatQuota(Number(payload.chatQuotaPerPoi))) {
     await env.PREMIUM.put(CHAT_QUOTA_PER_POI_KEY, String(Number(payload.chatQuotaPerPoi)));
   }
+  if (payload && Array.isArray(payload.deepenCities)) {
+    const clean = payload.deepenCities.map(String).filter((id) => ALL_CITY_IDS.includes(id));
+    await env.PREMIUM.put(DEEPEN_CITIES_KEY, JSON.stringify([...new Set(clean)]));
+  }
   if (payload && payload.updatePolicy && typeof payload.updatePolicy === 'object') {
     const clean = {};
     ['android', 'ios'].forEach((p) => {
@@ -2068,6 +2142,8 @@ async function handlePremiumAdminConfig(request, env, headers) {
     chatUpsell: await getChatUpsellEnabled(env),
     planPremium: await getPlanPremiumEnabled(env),
     chatQuotaPerPoi: await getChatQuotaPerPoi(env),
+    deepenCities: await getDeepenCities(env),
+    deepenUploaded: await getDeepenUploaded(env),
     updatePolicy: { android: updatePolicyFor(policy, 'android'), ios: updatePolicyFor(policy, 'ios') },
     versions: await getAppVersionStats(env)
   }), {

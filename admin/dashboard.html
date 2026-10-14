@@ -457,6 +457,18 @@
         </div>
       </section>
 
+      <!-- Guiones pregenerados de "Profundiza más" por ciudad (ver
+           handleDeepenScript en worker/proxy.js y fetchDeepenScript en app.js). -->
+      <section>
+        <h2>«Profundiza más» con guion propio</h2>
+        <p class="hint" style="margin-top:-6px">En las ciudades marcadas, «Profundiza más» cuenta los 7 puntos ya escritos y revisados, sin gastar IA. En el resto, o en un Punto de interés sin guion, sigue usando la IA. Entre paréntesis, cuántos Puntos de interés tienen guion subido. Se aplica al siguiente Punto de interés que se abra.</p>
+        <div class="premium-city-checkboxes" id="deepenCityCheckboxes"></div>
+        <div class="form-actions">
+          <button type="button" class="refresh-btn" id="deepenSaveBtn" disabled>Guardar</button>
+          <span class="error" id="deepenError" hidden></span>
+        </div>
+      </section>
+
       <!-- "Mi plan" solo para Premium (ver getPlanPremiumEnabled en
            worker/proxy.js y PLAN_FREE_STOPS en app.js). -->
       <section>
@@ -1733,7 +1745,15 @@
     input.disabled = !ok;
     btn.disabled = !ok;
   };
-  const chatUpsellRequest = async (value, updatePolicy, planValue, quotaValue) => {
+  const renderDeepenCities = (enabled, uploaded) => {
+    const box = $('#deepenCityCheckboxes');
+    if (!Array.isArray(enabled)) return;
+    const counts = uploaded || {};
+    box.innerHTML = PREMIUM_CITIES.map((c) => `
+      <label><input type="checkbox" class="deepenCityCheckbox" value="${c.id}"${enabled.includes(c.id) ? ' checked' : ''}> ${c.name} (${counts[c.id] || 0})</label>`).join('');
+    $('#deepenSaveBtn').disabled = false;
+  };
+  const chatUpsellRequest = async (value, updatePolicy, planValue, quotaValue, deepenCities) => {
     const err = $('#chatUpsellError');
     err.hidden = true;
     try {
@@ -1742,6 +1762,7 @@
       if (updatePolicy) body.updatePolicy = updatePolicy;
       if (typeof planValue === 'boolean') body.planPremium = planValue;
       if (Number.isInteger(quotaValue)) body.chatQuotaPerPoi = quotaValue;
+      if (Array.isArray(deepenCities)) body.deepenCities = deepenCities;
       const res = await fetch(`${WORKER_BASE}/premium/admin/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1752,6 +1773,7 @@
       chatUpsellOn = !!data.chatUpsell;
       planPremiumOn = !!data.planPremium;
       renderChatQuota(data.chatQuotaPerPoi);
+      renderDeepenCities(data.deepenCities, data.deepenUploaded);
       renderAppVersions(data.versions);
       renderUpdatePolicy(data.updatePolicy);
     } catch (e) {
@@ -1776,6 +1798,17 @@
     btn.textContent = 'Guardando…';
     await chatUpsellRequest(undefined, undefined, undefined, n);
     btn.textContent = 'Guardar';
+  });
+  $('#deepenSaveBtn').addEventListener('click', async () => {
+    const ids = [...document.querySelectorAll('.deepenCityCheckbox:checked')].map((el) => el.value);
+    const names = ids.map((id) => (PREMIUM_CITIES.find((c) => c.id === id) || { name: id }).name);
+    if (!confirm(ids.length ? `¿Usar el guion propio en: ${names.join(', ')}?` : '¿Volver a usar la IA en todas las ciudades?')) return;
+    const btn = $('#deepenSaveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    await chatUpsellRequest(undefined, undefined, undefined, undefined, ids);
+    btn.textContent = 'Guardar';
+    btn.disabled = false;
   });
   $('#planPremiumToggle').addEventListener('click', () => {
     if (planPremiumOn == null) return;

@@ -99,3 +99,4 @@ consumo-api.md
 
 # Configuración local del monitor: lleva el correo personal de destino
 worker/monitor/wrangler.toml
+scripts/upload-deepen.js

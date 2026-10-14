@@ -8098,11 +8098,70 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     .replace(/\n\n(?:⚠️)?\s?\((?:¡La IA está muy solicitada|La IA está saturada|Modo offline|The AI is (?:overloaded|really busy)|Offline mode|Sin conexión:|Offline:)[\s\S]*$/, '')
     .trimEnd();
 
+  // Guiones pregenerados (ver handleDeepenScript en worker/proxy.js): en las
+  // ciudades encendidas desde el panel, el primer toque de "Profundiza más"
+  // pide al Worker los 7 puntos ya escritos de este Punto de interés y se
+  // cuentan sin llamar a la IA. Devuelve el guion, false si el Worker dice
+  // que no hay (ciudad apagada o sin guion: se recuerda y se usa la IA) o
+  // null si falla la red (se vuelve a intentar en el siguiente toque).
+  // Los textos se guardan solo en memoria (no en saveState) para no llenar
+  // el almacenamiento; tras recargar se vuelven a pedir.
+  const DEEPEN_SCRIPT_ENDPOINT = CONTENT_BASE_URL ? `${CONTENT_BASE_URL.replace(/\/$/, '')}/deepen/script` : '';
+  const deepenScripts = {};
+  const fetchDeepenScript = async (poi) => {
+    const stored = LICENSE.readStored();
+    const username = stored && stored.username;
+    if (!DEEPEN_SCRIPT_ENDPOINT || !username || !CURRENT_CITY || poi.isAdHocScan || STATE.mode === 'kids') return false;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 4000);
+    try {
+      const res = await fetch(DEEPEN_SCRIPT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, cityId: CURRENT_CITY.id, poiId: poi.id, lang: STATE.lang }),
+        signal: ctrl.signal
+      });
+      const data = await res.json();
+      if (data && data.ok && Array.isArray(data.points) && data.points.length) return { titles: data.titles, points: data.points };
+      return data && (data.reason === 'off' || data.reason === 'missing') ? false : null;
+    } catch (_) {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
   const queueDeepenWithFillers = async ({ poi, optionId, userText }) => {
     if (!poi || STATE.ai.deepenBusy) return;
     const hist = aiHistoryFor(poi.id);
     const fallbackText = t('deepenFetchFailed');
     const progress = deepenProgressFor(poi.id);
+
+    // Guion pregenerado: se pide al empezar el guion de este Punto de interés
+    // (o al volver a una partida guardada que ya lo usaba). Si tras recargar
+    // no se puede volver a descargar, progress.titles ya trae sus títulos y
+    // la IA desarrolla los puntos que faltan, igual que en el flujo normal.
+    const scriptKey = `${poi.id}:${STATE.lang}`;
+    const wantsScript = progress.scripted
+      ? !deepenScripts[scriptKey]
+      : progress.scripted == null && !progress.titles && !progress.fallback && !deepenInFlight[poi.id];
+    if (wantsScript) {
+      STATE.ai.deepenBusy = true;
+      renderAiSuggestions();
+      const script = await fetchDeepenScript(poi);
+      STATE.ai.deepenBusy = false;
+      if (script) {
+        deepenScripts[scriptKey] = script;
+        if (!progress.scripted) {
+          progress.scripted = true;
+          progress.titles = script.titles;
+          progress.nextIndex = 1;
+        }
+      } else if (script === false && !progress.scripted) {
+        progress.scripted = false;
+      }
+    }
+    const script = progress.scripted ? deepenScripts[scriptKey] : null;
 
     // Lanza (sin esperar aquí) una consulta real nueva y la registra como
     // la consulta en curso para este POI. Qué pide exactamente depende de
@@ -8142,14 +8201,22 @@ Responde solo con el desarrollo de ese punto: no repitas el título tal cual, no
     };
 
     let entry = deepenInFlight[poi.id];
-    if (!entry) entry = launchAiQuery();
+    if (!entry && !script) entry = launchAiQuery();
 
     STATE.ai.deepenBusy = true;
     if (STATE.activePoiId === poi.id) updateAudioUi();
     renderAiSuggestions();
 
     let text, pregen;
-    if (entry.settled) {
+    if (script) {
+      pregen = false;
+      text = script.points[progress.nextIndex - 1];
+      progress.nextIndex += 1;
+      if (progress.nextIndex > script.points.length) {
+        progress.exhausted = true;
+        text += t('deepenScriptDone');
+      }
+    } else if (entry.settled) {
       pregen = false;
       if (!progress.titles && !progress.fallback) {
         const parsed = parseStructuredInit(entry.text);
